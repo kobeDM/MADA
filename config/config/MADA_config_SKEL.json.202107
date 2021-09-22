@@ -1,0 +1,17 @@
+{
+    "general":{},
+    "gigaIwaki":{
+	"GBKB-00":{"active":1,"IP":"192.168.100.16","Vth":9200,
+		   "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-00/20210713/base_correct2.dac"},
+	"GBKB-01":{"active":0,"IP":"192.168.100.17","Vth":9400,
+		   "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-01/20210713/base_correct.dac"},
+	"GBKB-02":{"active":1,"IP":"192.168.100.24","Vth":8700,
+		   "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-02/20210713/base_correct2.dac"},
+	"GBKB-03":{"active":0,"IP":"192.168.100.25","Vth":8900,
+		   "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-03/20210713/base_correct2.dac"}
+    },
+    "ADALM":{
+	"MADALM_0":{"active":1,"URI":"usb:1.9.5","S/N":"10447384b904001612002500df1edb6193","Clock_d":1.0e+8},
+	"MADALM_1":{"active":1,"URI":"usb:1.10.5","S/N":"104473961406000712000e0056e64887db","Clock_d":1.0e+8}
+    }
+ }
