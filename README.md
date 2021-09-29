@@ -16,7 +16,6 @@ $SetDAC IP DACfile
 --- 個々のボードのVthを設定 
 $SetVth IP Vth  
 例 $SetDAC 192.168.100.24 8000 
-
 -- DAC, Vth scan  
 $MADA_runVthScan.py IP Vth下限 Vth上限 Vth_step  
 例　$MADA_runVthScan.py 192.168.100.16 8500 10000 1000  
@@ -24,7 +23,8 @@ $MADA_VthScan
 -- DAC値scan
 MADA_runDACScan.py  Vth
 
-
+-その他
+-- MADA_clockout.py [-f rate(Hz)] [-u URI]
 MADA_VthAna          
 MADA_runVthAna.py
 MADA.py~                      MADA_runVthScan.py
