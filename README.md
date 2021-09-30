@@ -4,7 +4,7 @@ MiraclueArgonDAQ
 $MADA.py [-n num of events per file] [-m num of files per fir]   
 -- config file を準備  (MADA.pyから呼ばれる)  
 $MADA_fetch_config.py 
-必要に応じて MADA_config.json  
+必要に応じて MADA_config.json  を作成
 
 - Vth調整関係  
 -- DAC、Vth設定  
@@ -25,7 +25,7 @@ MADA_runDACScan.py  Vth
 
 -その他
 -- $MADA_clockout.py [-f rate(Hz)] [-u URI]
--- $MADA_DAQenable : DAQ enable出す。 　
+-- $MADA_DAQenable.py [-d] : DAQ enable出す。 -d optionでenable下げる。　
 
 MADA_VthAna          
 MADA_runVthAna.py
