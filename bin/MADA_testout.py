@@ -3,10 +3,25 @@
 import subprocess
 import argparse
 
-ADAPATH="/home/msgc/adalm/adalm_out"
-import subprocess
-URI="usb:1.15.5"
 
+import subprocess
+from subprocess import PIPE
+
+MADAPATH="/home/msgc/miraclue/MADA/bin/"
+ADAPATH="/home/msgc/adalm/adalm_out"
+findADALM="findADALM2000.py"
+
+#configs
+CONFIG="MADA_config.json"
+CONFIG_SKEL="MADA_config_SKEL.json"
+
+#URI="usb:1.7.5"
+SN="104473961406000712000e0056e64887db"
+
+cmd=MADAPATH+findADALM+" "+SN
+proc=subprocess.run(cmd,shell=True,stdout=PIPE,stderr=None,check=False,capture_output=False)
+URI=proc.stdout.decode("utf8").replace("\n","")
+print("\tURI " +URI+ "for S/N: "+SN)      
 parser = argparse.ArgumentParser()
 parser.add_argument("-f",help="test pulse frequency",default=1000,type=int)
 parser.add_argument("-u",help="ADALM URI",default=URI)
