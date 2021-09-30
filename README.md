@@ -23,9 +23,11 @@ $MADA_VthScan
 -- DAC値scan
 MADA_runDACScan.py  Vth
 
--その他
--- $MADA_clockout.py [-f rate(Hz)] [-u URI]
+- その他  
+-- $MADA_clockout.py [-f rate(Hz)] [-u URI]  
 -- $MADA_DAQenable.py [-d] : DAQ enable出す。 -d optionでenable下げる。　
+-- $MADA_counterreset.py : counter reset出す。  
+
 
 MADA_VthAna          
 MADA_runVthAna.py
