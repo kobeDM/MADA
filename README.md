@@ -8,8 +8,10 @@ $MADA_fetch_config.py
 
 - Vth調整関係  
 -- DAC、Vth設定  
---- 全ボードのDAC、Vthを設定  
+--- 全ボードのDAC、Vthを設定、確認  
 $MADA_SetAllDAC.py [-c configfile]   
+$MADA_checkVths.py  
+
 --- 個々のボードのDACを設定  
 $SetDAC IP DACfile  
 例 $SetDAC 192.168.100.24 DAC_run0006/base_correct.dac  
@@ -27,6 +29,8 @@ MADA_runDACScan.py  Vth
 -- $MADA_clockout.py [-f rate(Hz)] [-u URI]  
 -- $MADA_DAQenable.py [-d] : DAQ enable出す。 -d optionでenable下げる。　
 -- $MADA_counterreset.py : counter reset出す。  
+
+
 
 
 MADA_VthAna          
