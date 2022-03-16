@@ -46,6 +46,7 @@ print("**Micacle Argon DAQ (http://github.com/kobeDM/MADA)**")
 print("**2021 Sep by K. Miuchi**")
 
 num=1000 #data size in Mbyte
+num_max=1000 # max size
 run_control=0 #option for run control only
 
 #read option parameters
@@ -58,6 +59,10 @@ CONFIG=args.c
 num=args.n
 run_control=args.s
 
+if num > num_max:
+    num=num_max
+
+print("data size per file:"+num+"Mbyte")
 #fetch config file
 #print(FETCHCON)
 proc=subprocess.run(FETCHCON,shell=True,stdout=PIPE,stderr=None,check=False,capture_output=False)
