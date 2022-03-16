@@ -4,18 +4,21 @@ import os, sys
 import subprocess
 import numpy
 import glob
-import time
+import time,datetime
 import argparse
 import json
 
 from subprocess import PIPE
 from time import sleep
+#from datetime import datetime
 #from subprocess import STDOUT
 
 HOME=os.environ["HOME"]
 
 #PATH
 MADAPATH=HOME+"/miraclue/MADA/bin/"
+ITPATH=HOME+"/ITECH/"
+RATEPATH=HOME+"/rate/"
 MADACONFIGPATH=HOME+"/miraclue/MADA/config/"
 
 #binary
@@ -29,19 +32,22 @@ findADALM=MADAPATH+"findADALM2000.py"
 SETDAC=MADAPATH+"MADA_SetAllDACs.py"
 ENABLE=MADAPATH+"MADA_DAQenable.py"
 DISABLE=MADAPATH+"MADA_DAQenable.py -d"
+COUNTERRESET=MADAPATH+"MADA_counterreset.py"
 KILLER=MADAPATH+"MADA_killmodules.py"
+ADKILLER=MADAPATH+"MADA_killads.py"
+POWERRESET=ITPATH+"IT6332_reset.py"
 
 #configs
 CONFIG="MADA_config.json"
 CONFIG_SKEL="MADA_config_SKEL.json"
 
-
 print("**MADA.py**")
 print("**Micacle Argon DAQ (http://github.com/kobeDM/MADA)**")
 print("**2021 Sep by K. Miuchi**")
 
-num=100#data size in Mbyte
+num=1000 #data size in Mbyte
 run_control=0 #option for run control only
+
 #read option parameters
 parser = argparse.ArgumentParser()
 parser.add_argument("-c",help="config file name",default=CONFIG)
@@ -127,25 +133,16 @@ fileID=0
 #    subprocess.run(cmd,shell=True)
 
 
-#for IP in activeIP:
-#    filename_info=newper+"/GBIP_"+IP.split(".")[3].zfill(3)+"_"+str(fileID).zfill(4)+".info"
-#    print("board "+IP+" info was written in "+filename_info)
-#    dict={}
-#    for x in config_load['gigaIwaki']:
-#        if (config_load['gigaIwaki'][x]['IP']==IP):
-#            config_load['gigaIwaki'].pop(x)
-#            print(x,"\t\t",config_load['gigaIwaki'][x])
-#            dict.update(config_load['gigaIwaki'][x])
-                    
-#    with open(filename_info, mode='wt', encoding='utf-8') as file:
-#        json.dump(dict, file, ensure_ascii=False, indent=2)
 
 fileID=0
+
+subprocess.run(KILLER,shell=True)
 #DAQ run
 while fileID < fileperdir:
+    subprocess.run(POWERRESET,shell=True)
     print(fileID,"/",fileperdir)
     #print(DISABLE)
-    subprocess.run(KILLER,shell=True)
+    subprocess.run(ADKILLER,shell=True)
     subprocess.run(DISABLE,shell=True)
     pids=[]
     for i in range(len(activeIP)):
@@ -159,55 +156,131 @@ while fileID < fileperdir:
         for x in config_load['gigaIwaki']:
             if (config_load['gigaIwaki'][x]['IP']==IP):
                 dict.update(config_load['gigaIwaki'][x])
+                dd={"gigaIwaki":dict}
+#                dict.update(config_load)
                 with open(filename_info, mode='wt', encoding='utf-8') as file:
-                    json.dump(dict, file, ensure_ascii=False, indent=2)
+#                    json.dump(dict, file, ensure_ascii=False, indent=2)
+                    json.dump(dd, file, ensure_ascii=False, indent=2)
                     #wirte info file done
 
-                    
+#        exit(0)                    
         print(IP)
-        cmd="xterm -geometry 50x10+100+"+str(i*80)+" -e "+MADAIWAKI+" -n "+str(num)+" -f "+str(filename_mada)+" -i "+IP 
+        cmd="xterm -geometry 50x10+50+"+str(i*100)+" -e "+MADAIWAKI+" -n "+str(num)+" -f "+str(filename_mada)+" -i "+IP 
         print(cmd)
         #roc=subprocess.run(cmd,shell=True,stdout=PIPE,stderr=None)
         proc=subprocess.Popen(cmd,shell=True,stdout=PIPE,stderr=None)
         pids.append(proc.pid)
         
-    cmd="xterm -geometry 50x10+100+400 -e "+ENABLE
+    cmd="xterm -geometry 50x10+400+0 -e "+ENABLE
     #cmd=ENABLE+" &"
-    subprocess.Popen(cmd,shell=True)
+    starttime=time.time()#.now().timestamp()
+    proc=subprocess.Popen(cmd,shell=True)
+    enablepid=proc.pid
+    subprocess.run(COUNTERRESET,shell=True)
+#    enablepid=proc.pid
+    print("GIGAiwaki pids: ",pids)    
+    print("enable pid: ",enablepid)    
     print("working directory: ",newper)
+    print("started at ",starttime)
+
     running=1
-    ps="ps -aux "
+#    ps="ps -aux "
     while running:
         sleep(1)
         runs=0
         for i in range(len(pids)):
-            process = (subprocess.Popen(ps, stdout=subprocess.PIPE,
-                           shell=True).communicate()[0]).decode('utf-8')
-    #        print(process)
-            pl=process.split("\n")
-#            print(pl)
-            for j in range(len(pl)-1):
- #               print((pl[j].split())[1])
-                pll=pl[j].split()
-#                print(pll[1].replace(" ",""),pids[i])
-                if str(pll[1].replace(" ","")) == str(pids[i]):
-#                    print("PID ",pids[i]," is running.")
-                    runs+=1
-                    #            print(pids[0])
-                    #        print("running IDs",runs)
-
+            cmd='ps -aux | awk \'$2=='+str(pids[i])+'\' | wc -l'
+#            subprocess.run(cmd,
+#                          shell=True)
+                           #.communicate()[0].decode('utf-8')
+            pnum = (subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                        shell=True).communicate()[0]).decode('utf-8')
+#            print("number of proscess: ",pnum)
+            if int(pnum) == 1:
+                runs+=1
+ 
+#        print("running IDs",runs)
         if runs < len(pids):
             running=0
             print("file terminate")
-            for i in range(len(pids)):
-                kill="kill -KILL "+str(pids[i])
-                print(kill)
-                subprocess.run(kill,shell=True)
+            #kill="kill -KILL "+str(enablepid)
+            #subprocess.run(kill,shell=True)
+            subprocess.run(ADKILLER,shell=True)
+            subprocess.run(DISABLE,shell=True)
+            endtime=time.time()#.now().timestamp()
+
+
+            ps="ps -aux | grep -v \' grep \' | grep xterm | grep iwaki "
+            process = (subprocess.Popen(ps, stdout=subprocess.PIPE,
+                                shell=True).communicate()[0]).decode('utf-8')
+            pl=process.split("\n")
+            killpids=[]
+            for j in range(len(pl)-1):
+                pll=pl[j].split()
+                #        print(pll)
+                killpids.append(pll[1])
+                #print(killpids)
+                for i in range(len(killpids)):
+                    kill="kill -KILL "+killpids[i]
+                    subprocess.run(kill,shell=True)
+    
             break
             #            proc.poll()
-        
+            
     
             #        print(".",end="")
-    print(fileID," finished.")
+    print("file ",fileID," finished at ",str(endtime))
+    realtime=endtime-starttime
+    print("real time=",str(realtime))
+    size=[]
+    for i in range(len(activeIP)):
+        filename_head=newper+"/"+boardID[i]+"_"+str(fileID).zfill(4)
+        filename_info=filename_head+".info"
+        filename_mada=filename_head+".mada"
+        cmd='ls -l '+filename_mada
+        #proc=subprocess.run(cmd,shell=True)
+#        proc = (subprocess.Popen(cmd, stdout=subprocess.PIPE,
+#                         shell=True).communicate()[0]).decode('utf-8')
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                         shell=True).communicate()[0].decode('utf-8')
+        print(proc)
+        sizel=str(proc).split()
+#        print
+        print("size= ",str(sizel[4]),"byte")
+        dmes={}
+        dmes['start']=starttime
+        dmes['end']=endtime
+        dmes['size']=sizel[4]
+        size.append(sizel[4])
+        ddmes={"runinfo":dmes}
+        with open(filename_info, mode='a', encoding='utf-8') as file:
+#            json.dump(dmes, file, ensure_ascii=False, indent=2)
+            json.dump(ddmes, file, ensure_ascii=False, indent=2)
+            #        endtimei=int(endtime)
+            
+        with open(filename_info, encoding='utf-8') as file:
+            data_lines=file.read()
+        data_lines=data_lines.replace("}{",",")
+        with open(filename_info, mode="w",encoding='utf-8') as file:
+            file.write(data_lines)
+    y  =    str(datetime.datetime.fromtimestamp(endtime).year)
+    m  =    str(datetime.datetime.fromtimestamp(endtime).month)
+    d  =    str(datetime.datetime.fromtimestamp(endtime).day)
+    hh  =    str(datetime.datetime.fromtimestamp(endtime).hour)
+    mm  =    str(datetime.datetime.fromtimestamp(endtime).minute)
+    ss  =    str(datetime.datetime.fromtimestamp(endtime).second)
+    ofile=RATEPATH+y+m.zfill(2)+d.zfill(2)#+"_"+str(i)
+    t=y+"/"+m.zfill(2)+"/"+d.zfill(2)+"/"+hh.zfill(2)+":"+mm.zfill(2)+":"+ss.zfill(2)
+
+        
+    f = open(ofile, 'a')
+        #f.write(t+"\t")
+        #print
+       # s=t+"\t"+str(starttime)+"\t"+str(endtime)+"\t"+str(sizel[4])+"\t"+str(float(sizel[4])/(endtime-starttime))+"\n"
+        #print(s)
+        #f.write(s)
+    f.write(t+"\t"+str(starttime)+"\t"+str(endtime)+"\t"+str(size[0])+"\t"+str(size[1])+"\t"+str(size[2])+"\t"+str(size[3])+"\t"+str(float(size[0])/realtime)+"\t"+str(float(size[1])/realtime)+"\t"+str(float(size[2])/realtime)+"\t"+str(float(size[3])/realtime)+"\n")
+    f.close()
+       
     fileID+=1
     
