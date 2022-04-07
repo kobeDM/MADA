@@ -7,6 +7,7 @@ import glob
 import time,datetime
 import argparse
 import json
+import glob
 
 from subprocess import PIPE
 from time import sleep
@@ -33,6 +34,7 @@ SETDAC=MADAPATH+"MADA_SetAllDACs.py"
 ENABLE=MADAPATH+"MADA_DAQenable.py"
 DISABLE=MADAPATH+"MADA_DAQenable.py -d"
 COUNTERRESET=MADAPATH+"MADA_counterreset.py"
+DAQKILLER=MADAPATH+"MADA_DAQkiller.py"
 KILLER=MADAPATH+"MADA_killmodules.py"
 ADKILLER=MADAPATH+"MADA_killads.py"
 POWERRESET=ITPATH+"IT6332_reset.py"
@@ -40,6 +42,8 @@ POWERRESET=ITPATH+"IT6332_reset.py"
 #configs
 CONFIG="MADA_config.json"
 CONFIG_SKEL="MADA_config_SKEL.json"
+
+sql_dbname="rate"
 
 print("**MADA.py**")
 print("**Micacle Argon DAQ (http://github.com/kobeDM/MADA)**")
@@ -59,10 +63,10 @@ CONFIG=args.c
 num=args.n
 run_control=args.s
 
-if num > num_max:
+if int(num) > num_max:
     num=num_max
 
-print("data size per file:"+num+"Mbyte")
+print("data size per file: "+str(num)+" Mbyte")
 #fetch config file
 #print(FETCHCON)
 proc=subprocess.run(FETCHCON,shell=True,stdout=PIPE,stderr=None,check=False,capture_output=False)
@@ -141,10 +145,24 @@ fileID=0
 
 fileID=0
 
+# database setting for rate
+import pymysql.cursors
+conn = pymysql.connect(host='10.37.0.214',port=3306,user='rubis',passwd='password',autocommit='true')
+cursor = conn.cursor()
+cursor.execute("CREATE DATABASE IF NOT EXISTS " + sql_dbname)
+cursor.execute("USE " + sql_dbname)
+cursor.execute("CREATE TABLE IF NOT EXISTS  MADA_rate(time TIMESTAMP not null default CURRENT_TIMESTAMP,start FLOAT,end FLOAT,ch0_size FLOAT,ch1_size FLOAT,ch2_size FLOAT,ch3_size FLOAT,ch0_rate FLOAT,ch1_rate FLOAT,ch2_rate FLOAT,ch3_rate FLOAT)")
+
 subprocess.run(KILLER,shell=True)
+
+cmd="xterm -geometry 50x5+800+600 -title 'MADA killer' -background black -foreground green -e "+DAQKILLER+" -p "+str(newper)
+prockiller=subprocess.Popen(cmd,shell=True)
+
+
+
 #DAQ run
 while fileID < fileperdir:
-    subprocess.run(POWERRESET,shell=True)
+ #   subprocess.run(POWERRESET,shell=True)
     print(fileID,"/",fileperdir)
     #print(DISABLE)
     subprocess.run(ADKILLER,shell=True)
@@ -157,20 +175,18 @@ while fileID < fileperdir:
         filename_info=filename_head+".info"
         filename_mada=filename_head+".mada"
         print("board "+IP+" info was written in "+filename_info)
-        dict={}
-        for x in config_load['gigaIwaki']:
-            if (config_load['gigaIwaki'][x]['IP']==IP):
-                dict.update(config_load['gigaIwaki'][x])
-                dd={"gigaIwaki":dict}
-#                dict.update(config_load)
-                with open(filename_info, mode='wt', encoding='utf-8') as file:
-#                    json.dump(dict, file, ensure_ascii=False, indent=2)
-                    json.dump(dd, file, ensure_ascii=False, indent=2)
+#        dict={}
+#        for x in config_load['gigaIwaki']:
+#            if (config_load['gigaIwaki'][x]['IP']==IP):
+#                dict.update(config_load['gigaIwaki'][x])
+#                dd={"gigaIwaki":dict}
+#                with open(filename_info, mode='wt', encoding='utf-8') as file:
+#                    json.dump(dd, file, ensure_ascii=False, indent=2)
                     #wirte info file done
 
 #        exit(0)                    
         print(IP)
-        cmd="xterm -geometry 50x10+50+"+str(i*100)+" -e "+MADAIWAKI+" -n "+str(num)+" -f "+str(filename_mada)+" -i "+IP 
+        cmd="xterm -geometry 50x10+50+"+str(i*200)+" -e "+MADAIWAKI+" -n "+str(num)+" -f "+str(filename_mada)+" -i "+IP 
         print(cmd)
         #roc=subprocess.run(cmd,shell=True,stdout=PIPE,stderr=None)
         proc=subprocess.Popen(cmd,shell=True,stdout=PIPE,stderr=None)
@@ -181,6 +197,25 @@ while fileID < fileperdir:
     starttime=time.time()#.now().timestamp()
     proc=subprocess.Popen(cmd,shell=True)
     enablepid=proc.pid
+
+    for i in range(len(activeIP)):
+        IP=activeIP[i]
+        filename_head=newper+"/"+boardID[i]+"_"+str(fileID).zfill(4)
+        filename_info=filename_head+".info"
+        dict={}
+        for x in config_load['gigaIwaki']:
+            if (config_load['gigaIwaki'][x]['IP']==IP):
+                dict.update(config_load['gigaIwaki'][x])
+                dd={"gigaIwaki":dict}
+                dmes={}
+                dmes['start']=starttime
+                ddmes={"runinfo":dmes}
+                dd.update(ddmes)
+                #                dinfo={"gigaIwaki":dd,"runinfo":ddmes}
+                
+                with open(filename_info, mode='wt', encoding='utf-8') as file:
+                    json.dump(dd, file, ensure_ascii=False, indent=2) 
+            
     subprocess.run(COUNTERRESET,shell=True)
 #    enablepid=proc.pid
     print("GIGAiwaki pids: ",pids)    
@@ -191,7 +226,7 @@ while fileID < fileperdir:
     running=1
 #    ps="ps -aux "
     while running:
-        sleep(1)
+#        sleep(1)
         runs=0
         for i in range(len(pids)):
             cmd='ps -aux | awk \'$2=='+str(pids[i])+'\' | wc -l'
@@ -253,21 +288,31 @@ while fileID < fileperdir:
 #        print
         print("size= ",str(sizel[4]),"byte")
         dmes={}
-        dmes['start']=starttime
+#        dmes['start']=starttime
         dmes['end']=endtime
         dmes['size']=sizel[4]
         size.append(sizel[4])
         ddmes={"runinfo":dmes}
-        with open(filename_info, mode='a', encoding='utf-8') as file:
-#            json.dump(dmes, file, ensure_ascii=False, indent=2)
-            json.dump(ddmes, file, ensure_ascii=False, indent=2)
-            #        endtimei=int(endtime)
+        info_open= open(filename_info,'r')
+        info_load = json.load(info_open)
+        dict_giga={}
+        dict_info={}
+        for x in info_load['gigaIwaki']:
+#            dict_giga.update(info_load['gigaIwaki'][x])
+            dict_giga.update(info_load['gigaIwaki'])
+        for x in info_load['runinfo']:
+#            dict_info.update(info_load['runinfo'][x])
+            dict_info.update(info_load['runinfo'])
+        dict_info.update(dmes)
+        dict={"gigaIwaki":dict_giga,"runinfo":dict_info}
+        with open(filename_info, mode='w', encoding='utf-8') as file:
+            json.dump(dict, file, ensure_ascii=False, indent=2)
             
-        with open(filename_info, encoding='utf-8') as file:
-            data_lines=file.read()
-        data_lines=data_lines.replace("}{",",")
-        with open(filename_info, mode="w",encoding='utf-8') as file:
-            file.write(data_lines)
+#        with open(filename_info, encoding='utf-8') as file:
+#            data_lines=file.read()
+#        data_lines=data_lines.replace("}{",",")
+#        with open(filename_info, mode="w",encoding='utf-8') as file:
+#            file.write(data_lines)
     y  =    str(datetime.datetime.fromtimestamp(endtime).year)
     m  =    str(datetime.datetime.fromtimestamp(endtime).month)
     d  =    str(datetime.datetime.fromtimestamp(endtime).day)
@@ -279,13 +324,30 @@ while fileID < fileperdir:
 
         
     f = open(ofile, 'a')
-        #f.write(t+"\t")
-        #print
-       # s=t+"\t"+str(starttime)+"\t"+str(endtime)+"\t"+str(sizel[4])+"\t"+str(float(sizel[4])/(endtime-starttime))+"\n"
-        #print(s)
-        #f.write(s)
+    #f.write(t+"\t")
+    #print
+    # s=t+"\t"+str(starttime)+"\t"+str(endtime)+"\t"+str(sizel[4])+"\t"+str(float(sizel[4])/(endtime-starttime))+"\n"
+    #print(s)
+    #f.write(s)
+    rate=[]
+    for ii in range(4):
+        rate.append(float(size[ii])/realtime);
+#    rate[1]=float(size[1])/realtime;
+#    rate[2]=float(size[2])/realtime;
+#    rate[3]=float(size[3])/realtime;
     f.write(t+"\t"+str(starttime)+"\t"+str(endtime)+"\t"+str(size[0])+"\t"+str(size[1])+"\t"+str(size[2])+"\t"+str(size[3])+"\t"+str(float(size[0])/realtime)+"\t"+str(float(size[1])/realtime)+"\t"+str(float(size[2])/realtime)+"\t"+str(float(size[3])/realtime)+"\n")
     f.close()
-       
+
+    
+    #    cursor.execute("CREATE TABLE IF NOT EXISTS  MADA_rate(time TIMESTAMP not null default CURRENT_TIMESTAMP,start,end,ch0_size FLOAT,ch1_size FLOAT,ch2_size FLOAT,ch3_size FLOAT,ch0_rate FLOAT,ch1_rate FLOAT,ch2_rate FLOAT,ch3_rate FLOAT)")
+
+    date_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("insert into MADA_rate(start,end,ch0_size,ch1_size,ch2_size,ch3_size,ch0_rate,ch1_rate,ch2_rate,ch3_rate) values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",(str(starttime),str(endtime),str(size[0]),str(size[1]),str(size[2]),str(size[3]),str(rate[0]),str(rate[1]),str(rate[2]),str(rate[3])))
+
+
+    #(str(float((polarities[0]+voltages[0]))),currents[0],str(float((polarities[1]+voltages[1]))),currents[1],str(float((polarities[2]+voltages[2]))),currents[2],str(float((polarities[3]+voltages[3]))),currents[3]))
+
+
+
     fileID+=1
     
