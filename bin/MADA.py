@@ -327,8 +327,8 @@ while fileID < fileperdir:
         rate=[]
         for ii in range(len(activeIP)):
             rate.append(float(size[ii])/realtime);
-        out_list = [starttime, endtime] + size + [float(s) / realtime for s in size]
-        out_str = "\t".join(map(str, out_list))
+        out_list = [t, starttime, endtime] + size + [float(s) / realtime for s in size]
+        out_str = "\t".join(map(str, out_list)) + "\n"
         f.write(out_str)
     
     # PENDING: how many boards
