@@ -148,7 +148,7 @@ int main(int argc, char *argv[]){
     // double avr = proj->GetMean();
 
     //    erf->SetParameters(pol, avr, 5,0.5);
-    if(proj->GetBinContent(2)>0.5)
+    if(proj->GetBinContent(4)>0.5)
     erf->SetParameters(-0.5, 31, 5,0.5);
     else
     erf->SetParameters(0.5, 31, 5,0.5);

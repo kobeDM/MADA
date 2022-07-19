@@ -23,10 +23,9 @@ reset=0
 parser=argparse.ArgumentParser()
 #    argparser.add_argument("MADA_config_file",type=str,nargs='?',const=None,help='MADA config file')
 parser.add_argument("-r",help="reset DACs",action='store_true')
+parser.add_argument("-c",help="config file name",default=CONFIG)
 args=parser.parse_args()
 reset=args.r
-parser.add_argument("-c",help="config file name",default=CONFIG)
-args = parser.parse_args( )
 CONFIG=args.c
 #return(opts)
 
@@ -57,7 +56,6 @@ else:
 
 with open(CONFIG) as f:
     d = json.load(f)
-
 
 for i in d['gigaIwaki']:
 #    name=d['gigaIwaki'][i]['board name']

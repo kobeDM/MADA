@@ -8,6 +8,8 @@ import json
 import time
 import datetime
 
+HOME=os.environ["HOME"]
+
 #scripts
 MADAPATH="/home/msgc/miraclue/MADA/bin/"
 ADAPATH="/home/msgc/adalm/adalm_out"
@@ -15,12 +17,13 @@ FETCHCON=MADAPATH+"MADA_fetch_config.py"
 Enable=MADAPATH+"MADA_DAQenable.py"
 TestPulse=MADAPATH+"MADA_testout.py -f 1000"
 VthScan=MADAPATH+"MADA_runVthScan.py"
+KILLER=MADAPATH+"MADA_killmodules.py"
 
 #configs
 CONFIG="MADA_config.json"
 CONFIG_SKEL="MADA_config_SKEL.json"
 
-#LOGPATH="/home/msgc/miraclue/log/VthCheck/"
+LOGPATH="/home/msgc/miraclue/log/VthCheck/"
 
 PIDs=[]
 VthStep=100
@@ -47,6 +50,8 @@ for x in config_load['gigaIwaki']:
 #        print(config_load['gigaIwaki'][x]['IP'])
 #load config file ends.
 
+#kill related programs
+KILLER=MADAPATH+"MADA_killmodules.py"
 
 
 #make new directory
@@ -79,9 +84,9 @@ for i in range(len(activeIP)):
     print(activeIP[i].split(".",3))
     if int(activeIP[i].split(".")[3]) < 20:
         Vthlow=Vth[i]-400
-        Vthhigh=Vth[i]+700
+        Vthhigh=Vth[i]+1000
     else: 
-        Vthlow=Vth[i]-700
+        Vthlow=Vth[i]-1000
         Vthhigh=Vth[i]+400
     cmd=VthScan+" -b "+activeIP[i]+" "+str(Vthlow)+" "+str(Vthhigh)+" 100"
     subprocess.run(cmd,shell=True)
@@ -116,9 +121,12 @@ hh  =    str(datetime.datetime.now().hour)
 mm  =    str(datetime.datetime.now().minute)
 ss  =    str(datetime.datetime.now().second)
 ofile=y+m.zfill(2)+d.zfill(2)+hh.zfill(2)+mm.zfill(2)+ss.zfill(2)+".png"
-cmd="montage "+pngs+" -geometry 800x600 "+ofile+"; eog  "+ ofile
+cmd="montage "+pngs+" -geometry 800x600 "+ofile+"; eog  "+ ofile+"&"
 print(cmd)
 print("written in",ofile)
-subprocess.run(cmd,shell=True)
+#subprocess.run(cmd,shell=True)
+pnum = (subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                         shell=True).communicate()[0]).decode('utf-8')
+cmd="cp "+ofile+" LOGPATH"
 
-
+subprocess.run(KILLER,shell=True)

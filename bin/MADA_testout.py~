@@ -1,7 +1,0 @@
-#!/usr/bin/python3
-
-import subprocess
-
-ADAPATH="/home/msgc/adalm"
-import subprocess
-./ad_out -u usb:1.15.5 -a -v -1. -t 100 -f 100

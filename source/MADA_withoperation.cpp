@@ -20,11 +20,11 @@
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
 #include "rapidjson/istreamwrapper.h"
-//#include "RBCP.h"
-//#include "SiTCP.h"
+#include "RBCP.h"
+#include "SiTCP.h"
 
 #include "MADA_ad.hpp"
-//#include "MADA_iwaki.hpp"
+#include "MADA_iwaki.hpp"
 
 using namespace std;
 using namespace libm2k;
@@ -47,14 +47,15 @@ int main(int argc, char* argv[]){
   double dfreq[maxnumADALM];
   vector<string> MADALM_URI;
   vector<string> MADALM_SN;
-  //  vector<string> gigaIwaki_IP;
-  //vector<string> gigaIwaki_DAC;
-  //vector<int> gigaIwaki_Vth;
-  // vector<int> gigaIwaki_Active;
+  vector<string> gigaIwaki_NAME;
+  vector<string> gigaIwaki_IP;
+  vector<string> gigaIwaki_DAC;
+  vector<int> gigaIwaki_Vth;
+  vector<int> gigaIwaki_Active;
   //should be read from config file end
 
   char str_dummy[2];
-  //  int numgigaIwaki;
+  int numgigaIwaki;
   string filename_head;
   //option handling
   struct option longopts[] = {
@@ -73,7 +74,7 @@ int main(int argc, char* argv[]){
   int hopt = 0;
   int nopt=0;
   int vopt=0;
-  int sopt=1;
+  int sopt=0;
   int gopt=1;
   char filename[128];
   //  int BoardNo;
@@ -146,18 +147,19 @@ int main(int argc, char* argv[]){
    //read general configurations ends
    if(!sopt&&gopt){
    //read gigaIwaki configurations
-     //   int gigaIwakiid=0;
-     //const rapidjson::Value& og =doc["gigaIwaki"];
-     //if(!doc["gigaIwaki"].IsObject()) {
-     // std::cout << "gigaiwaki is not a json Object. Check the config file." << std::endl;     
-     // return 1;
-     // }
-     //   cout <<"==gigaIwaki configs=="<<endl;
-     /**   
+   int gigaIwakiid=0;
+   const rapidjson::Value& og =doc["gigaIwaki"];
+   if(!doc["gigaIwaki"].IsObject()) {
+     std::cout << "gigaiwaki is not a json Object. Check the config file." << std::endl;     
+     return 1;
+   }
+   cout <<"==gigaIwaki configs=="<<endl;
+   
    for(rapidjson::Value::ConstMemberIterator itrg = og.MemberBegin();
        itrg != og.MemberEnd(); itrg++){
      const char* name = itrg->name.GetString();
      cout<<name<<": ";
+     gigaIwaki_NAME.insert(gigaIwaki_NAME.begin()+gigaIwakiid,name);
      const rapidjson::Value& oog = itrg->value;  
      gigaIwaki_Active.insert(gigaIwaki_Active.begin()+gigaIwakiid,oog["active"].GetInt());
      gigaIwaki_IP.insert(gigaIwaki_IP.begin()+gigaIwakiid,oog["IP"].GetString());
@@ -172,7 +174,7 @@ int main(int argc, char* argv[]){
    numgigaIwaki=gigaIwakiid;   
    //read gigaIwaki configurations ends
    }
-     **/
+  
    //read adalm configurations
    int ADALMid=0;
    const rapidjson::Value& o =doc["ADALM"];
@@ -180,27 +182,23 @@ int main(int argc, char* argv[]){
      std::cout << "ADALM is not a json Object. Check the config file." << std::endl;
      return 1;
    }
-   string thisMADALM="MADALM_0";
+
    cout <<"==ADALM configs=="<<endl;
    for(rapidjson::Value::ConstMemberIterator itr = o.MemberBegin();
        itr != o.MemberEnd(); itr++){     
      const char* name = itr->name.GetString();
      cout<<name<<": ";
-     if(name==thisMADALM){
-       const rapidjson::Value& oo = itr->value;     
-       MADALM_URI.insert(MADALM_URI.begin()+ADALMid,oo["URI"].GetString());
-       MADALM_SN.insert(MADALM_SN.begin()+ADALMid,oo["S/N"].GetString());
-       dfreq[ADALMid] = oo["Clock_d"].GetDouble();
-       cout << "URI: " << MADALM_URI[ADALMid];
-       cout << " S/N: " << MADALM_SN[ADALMid] << std::endl;
-       cout<<"\tClock(D): "<<scientific<<setprecision(1)<<  dfreq[ADALMid]<<" Hz"<<dec<<endl;
-       ADALMid++;
-     }
+     const rapidjson::Value& oo = itr->value;     
+     MADALM_URI.insert(MADALM_URI.begin()+ADALMid,oo["URI"].GetString());
+     MADALM_SN.insert(MADALM_SN.begin()+ADALMid,oo["S/N"].GetString());
+     dfreq[ADALMid] = oo["Clock_d"].GetDouble();
+     cout << "URI: " << MADALM_URI[ADALMid];
+     cout << " S/N: " << MADALM_SN[ADALMid] << std::endl;
+     cout<<"\tClock(D): "<<scientific<<setprecision(1)<<  dfreq[ADALMid]<<" Hz"<<dec<<endl;
+     ADALMid++;
    }
    int numADALM=ADALMid;
-   
 
-   
   cout << "----Loading config file, done. ----" << std::endl;
 
  //read adalm configurations ends
@@ -227,21 +225,21 @@ int main(int argc, char* argv[]){
     ad_d_init(dMADALM[i]);
     cout<<", ok"<<endl;
   }
-  //  ad_d_cyclic(dMADALM[1],false);
+  ad_d_cyclic(dMADALM[1],false);
   cout << "----Initializing ADALM boards, done ----" << std::endl;
   if(sopt)numperdir=1;
 
-  //  for(f_index=0;f_index<numperdir;f_index++){
+  for(f_index=0;f_index<numperdir;f_index++){
 
 //data taking
-    // ad_d_pulse(dMADALM[1],15);
+  ad_d_pulse(dMADALM[1],15);
   ad_d_latch_up(dMADALM[0]);
-  //  cout<<"data size per file:"<<numperfile<<" bytes."<<endl;
+  cout<<"data size per file:"<<numperfile<<" bytes."<<endl;
 
 
-  /**
+
   if(!sopt&&gopt){
-    //  thread ths[numgigaIwaki];
+  thread ths[numgigaIwaki];
   thread th0,th2;
   int BoardIDi;
   string BoardID;
@@ -256,7 +254,8 @@ int main(int argc, char* argv[]){
       oss.str("");
       oss<< std::setfill('0') << std::right << std::setw(3)<<BoardIDi<<"_"<<std::setw(4)<<f_index<<flush;
       BoardID=oss.str();
-      filename_head_IP=regex_replace(filename_head, regex("thisIP"),BoardID);
+      //filename_head_IP=regex_replace(filename_head, regex("thisIP"),BoardID);
+      filename_head_IP=regex_replace(filename_head, regex("GBKB_thisIP"),gigaIwaki_NAME[gigaIwakiid]);
       //MADA_iwaki(gigaIwaki_IP[gigaIwakiid],filename_head_IP,numperfile);
       ths[gigaIwakiid]=thread(MADA_iwaki,gigaIwaki_IP[gigaIwakiid],filename_head_IP,numperfile);
       //cout <<"watching thread ID for IP "<<gigaIwaki_IP[gigaIwakiid]<<" with the thread ID "<< ths[gigaIwakiid].get_id()<<endl;
@@ -268,13 +267,12 @@ int main(int argc, char* argv[]){
       ths[gigaIwakiid].join();
     }
   }
-  }**/
+  }
   if(sopt){
     printf("\n");
-    printf("return to finish>");
+    printf("carriage return>");
     scanf("%1[^\n]",str_dummy);
   }
-  
   ad_d_latch_down(dMADALM[0]);  
   }//end of f_index loop
   return 0;

@@ -155,7 +155,7 @@ cursor.execute("CREATE TABLE IF NOT EXISTS  MADA_rate(time TIMESTAMP not null de
 
 subprocess.run(KILLER,shell=True)
 
-cmd="xterm -geometry 50x5+800+600 -title 'MADA killer' -background black -foreground green -e "+DAQKILLER+" -p "+str(newper)
+cmd="xterm -geometry 50x5+50+850 -title 'MADA killer' -background black -foreground green -e "+DAQKILLER+" -p "+str(newper)
 prockiller=subprocess.Popen(cmd,shell=True)
 
 
@@ -330,7 +330,7 @@ while fileID < fileperdir:
     #print(s)
     #f.write(s)
     rate=[]
-    for ii in range(4):
+    for ii in range(len(activeIP)):
         rate.append(float(size[ii])/realtime);
 #    rate[1]=float(size[1])/realtime;
 #    rate[2]=float(size[2])/realtime;

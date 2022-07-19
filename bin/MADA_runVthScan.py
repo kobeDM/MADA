@@ -38,6 +38,8 @@ VTHSCAN="MADA_VthScan"
 EXE_SETDAC=MADAPATH+"SetDAC"
 EXE_DAQ=MADAPATH+"MADA_VthScan"
 EXE_ANA=MADAPATH+"MADA_runVthAna.py"
+Enable=MADAPATH+"MADA_DAQenable.py"
+TestPulse=MADAPATH+"MADA_testout.py -f 1000"
 
 
 
@@ -81,6 +83,9 @@ if args.batch:
 else:
     batch_mode=0
 
+#procEnable.kill()
+#procTP.kill()
+
 print("IP:",IP)
 print("Vth low:",VthLow)
 print("Vth high:",VthHigh)
@@ -98,20 +103,31 @@ print_and_exe(CMD)
 #subprocess.run(CMD,shell=True)
 os.chdir(newrun)
 
+#procEnable = subprocess.Popen(Enable,stdout=subprocess.PIPE)
+#procTP = subprocess.Popen(TestPulse,stdout=subprocess.PIPE,shell=True)
+
+
 #EXECOM=EXEPATH+"/"+EXE+" "+IP+" "+srt(VthLow)+" "+srt(VthHigh)+" "+srt(VthStep)
 CMD=EXE_DAQ+" "+IP+" "+str(VthLow)+" "+str(VthHigh)+" "+str(VthStep)
 print_and_exe(CMD)
+
+
+#procEnable.kill()
+#procTP.kill()
 
 os.chdir("../")
 
 
 if batch_mode:
+    print("batch mode")
     CMD=EXE_ANA+" -b "+newrun
 else:
     CMD=EXE_ANA+" "+newrun
 
 print_and_exe(CMD)
 
+CMD="mv Vthcheck.png "+newrun
+print_and_exe(CMD)
 
 #CMD="mv scan_config.out Vth.root"+
 #print("execute:",EXECOM)

@@ -4,6 +4,7 @@
 	"MADA2RAW":1,
 	"RAWSORT":1,
 	"RAW2SAO":1,
-	"SAOANA":1},
+	"SAOANA":1,
+        "MASK":1},
     "parameters":{"th":10} 
 }
