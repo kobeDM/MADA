@@ -8,11 +8,10 @@ import time,datetime
 import argparse
 import json
 import glob
-
 from subprocess import PIPE
 from time import sleep
-#from datetime import datetime
-#from subprocess import STDOUT
+
+import MADA_utils
 
 HOME=os.environ["HOME"]
 
@@ -322,32 +321,17 @@ while fileID < fileperdir:
     ofile=RATEPATH+y+m.zfill(2)+d.zfill(2)#+"_"+str(i)
     t=y+"/"+m.zfill(2)+"/"+d.zfill(2)+"/"+hh.zfill(2)+":"+mm.zfill(2)+":"+ss.zfill(2)
 
-        
-    f = open(ofile, 'a')
-    #f.write(t+"\t")
-    #print
-    # s=t+"\t"+str(starttime)+"\t"+str(endtime)+"\t"+str(sizel[4])+"\t"+str(float(sizel[4])/(endtime-starttime))+"\n"
-    #print(s)
-    #f.write(s)
-    rate=[]
-    for ii in range(len(activeIP)):
-        rate.append(float(size[ii])/realtime);
-#    rate[1]=float(size[1])/realtime;
-#    rate[2]=float(size[2])/realtime;
-#    rate[3]=float(size[3])/realtime;
-    f.write(t+"\t"+str(starttime)+"\t"+str(endtime)+"\t"+str(size[0])+"\t"+str(size[1])+"\t"+str(size[2])+"\t"+str(size[3])+"\t"+str(float(size[0])/realtime)+"\t"+str(float(size[1])/realtime)+"\t"+str(float(size[2])/realtime)+"\t"+str(float(size[3])/realtime)+"\n")
-    f.close()
-
+    # write out event rate into DB and tsb
+    # starttime, endtime, mada size, , , mada size / realtime, , , 
+    with open(ofile, 'a') as f:
+        rate=[]
+        for ii in range(len(activeIP)):
+            rate.append(float(size[ii])/realtime);
+        out_list = [t, starttime, endtime] + size + [float(s) / realtime for s in size]
+        out_str = "\t".join(map(str, out_list)) + "\n"
+        f.write(out_str)
     
-    #    cursor.execute("CREATE TABLE IF NOT EXISTS  MADA_rate(time TIMESTAMP not null default CURRENT_TIMESTAMP,start,end,ch0_size FLOAT,ch1_size FLOAT,ch2_size FLOAT,ch3_size FLOAT,ch0_rate FLOAT,ch1_rate FLOAT,ch2_rate FLOAT,ch3_rate FLOAT)")
-
-    date_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cursor.execute("insert into MADA_rate(start,end,ch0_size,ch1_size,ch2_size,ch3_size,ch0_rate,ch1_rate,ch2_rate,ch3_rate) values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",(str(starttime),str(endtime),str(size[0]),str(size[1]),str(size[2]),str(size[3]),str(rate[0]),str(rate[1]),str(rate[2]),str(rate[3])))
-
-
-    #(str(float((polarities[0]+voltages[0]))),currents[0],str(float((polarities[1]+voltages[1]))),currents[1],str(float((polarities[2]+voltages[2]))),currents[2],str(float((polarities[3]+voltages[3]))),currents[3]))
-
-
-
+    # PENDING: how many boards
+    # cursor.execute("insert into MADA_rate(start,end,ch0_size,ch1_size,ch2_size,ch3_size,ch0_rate,ch1_rate,ch2_rate,ch3_rate) values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",(str(starttime),str(endtime),str(size[0]),str(size[1]),str(size[2]),str(size[3]),str(rate[0]),str(rate[1]),str(rate[2]),str(rate[3])))
     fileID+=1
     

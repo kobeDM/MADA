@@ -3,9 +3,35 @@
   "gigaIwaki": {
     "GBKB-13": {
       "active": 1,
+      "connection": "c1-0",
+      "pitch": "400",
       "IP": "192.168.100.27",
-      "Vth": 8800,
-      "DACfile": "/home/msgc/miraclue/LAuPIC_1/20220413/DAC_run0001/base_correct.dac"
+      "Vth": 8500,
+      "DACfile": "/home/msgc/miraclue/MADA/DAC_run0003/base_correct.dac"
+    },
+    "GBKB-11": {
+      "active": 1,
+      "connection": "c1-1",
+      "pitch": "400",
+      "IP": "192.168.100.25",
+      "Vth": 8500,
+      "DACfile": "/home/msgc/miraclue/MADA/DAC_run0003/base_correct.dac"
+    },
+    "GBKB-00": {
+      "active": 1,
+      "connection": "a1-1",
+      "pitch": "400",
+      "IP": "192.168.100.16",
+      "Vth": 8500,
+      "DACfile": "/home/msgc/miraclue/MADA/DAC_run0003/base_correct.dac"
+    },
+    "GBKB-01": {
+      "active": 1,
+      "connection": "a1-0",
+      "pitch": "400",
+      "IP": "192.168.100.17",
+      "Vth": 8500,
+      "DACfile": "/home/msgc/miraclue/MADA/DAC_run0003/base_correct.dac"
     }
   },
   "ADALM": {
