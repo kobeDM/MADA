@@ -9,3 +9,5 @@
 **/*~
 **/*.mada
 /per*
+/Vth_run*
+/DAC_run*
