@@ -114,11 +114,6 @@ def start_daq(args, newper):
 
     subprocess.run(KILLER, shell=True)
 
-    # open killer window
-    cmd = "xterm -geometry 50x5+50+850 -title 'MADA killer' -background black -foreground green -e " + \
-        DAQKILLER+" -p "+str(newper)
-    prockiller = subprocess.Popen(cmd, shell=True)
-
     # DAQ run
     while fileID < fileperdir:
         print(fileID, "/", fileperdir)
