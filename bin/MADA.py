@@ -48,13 +48,22 @@ print("**Micacle Argon DAQ (http://github.com/kobeDM/MADA)**")
 print("**2021 Sep by K. Miuchi**")
 
 
-def main():
-    # read option parameters
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-c", help="config file name", default=CONFIG)
-    parser.add_argument("-s", help="silent mode (control only)", action='store_true')
-    parser.add_argument("-n", help="file size in MB", default=FILE_SIZE)
-    args = parser.parse_args()
+def make_new_period() -> str:
+    """
+    カレントディレクトリを走査して新しいperXXXXディレクトリを作成する
+    """
+    p = 0
+    while (os.path.isdir("per"+str(p).zfill(4))):
+        p += 1
+
+    newper = "per" + str(p).zfill(4)
+    cmd = "mkdir " + newper
+    subprocess.run(cmd, shell=True)
+
+    return newper
+
+
+def start_daq(args, newper):
     mada_config_path = args.c
     file_size = args.n
     run_control = args.s
@@ -89,18 +98,8 @@ def main():
     print("Number of Iwaki boards: ", len(activeIP))
     # print(activeIP.len)
 
-    # make new period
-    p = 0
-    while (os.path.isdir("per"+str(p).zfill(4))):
-        #      print("per",p," exixts.")
-        p += 1
-
-    newper = "per"+str(p).zfill(4)
-    cmd = "mkdir "+newper
-    proc = subprocess.run(cmd, shell=True)
     cmd = "cp "+mada_config_path+" "+newper
     proc = subprocess.run(cmd, shell=True)
-    print("New directory ", newper, "is made.")
 
     fileperdir = 1000
     fileID = 0
@@ -252,6 +251,29 @@ def main():
         # PENDING: how many boards
         # cursor.execute("insert into MADA_rate(start,end,ch0_size,ch1_size,ch2_size,ch3_size,ch0_rate,ch1_rate,ch2_rate,ch3_rate) values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",(str(starttime),str(endtime),str(size[0]),str(size[1]),str(size[2]),str(size[3]),str(rate[0]),str(rate[1]),str(rate[2]),str(rate[3])))
         fileID += 1
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", help="config file name", default=CONFIG)
+    parser.add_argument("-s", help="silent mode (control only)", action='store_true')
+    parser.add_argument("-n", help="file size in MB", default=FILE_SIZE)
+
+    args = parser.parse_args()
+    current_period = make_new_period()
+
+    try:
+        start_daq(args, current_period)
+    except KeyboardInterrupt:
+        print()
+        print("===========================")
+        print("aborted DAQ")
+        print("===========================")
+
+        # DAQ enableを lowに
+        subprocess.run(DISABLE, shell=True)
+        # DAQKILLER は色々終了処理する (infoファイルの終了時間のtimestampとか)
+        subprocess.run(f"{DAQKILLER} -p {current_period} -c {args.c}", shell=True)
 
 
 main()
