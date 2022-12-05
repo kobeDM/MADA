@@ -11,3 +11,10 @@
 /per*
 /Vth_run*
 /DAC_run*
+
+*.png
+
+scan_config.out
+*.scn
+
+ShowVth.cxx

@@ -173,13 +173,12 @@ def start_daq(args, newper):
             if runs < len(pids):
                 running = 0
                 print("file terminate")
-                subprocess.run(ADKILLER, shell=True)
-                subprocess.run(DISABLE, shell=True)
+                subprocess.Popen(ADKILLER, shell=True)
+                subprocess.Popen(DISABLE, shell=True)
                 endtime = time.time()
 
                 ps = "ps -aux | grep -v \' grep \' | grep xterm | grep iwaki "
-                process = (subprocess.Popen(ps, stdout=subprocess.PIPE,
-                                            shell=True).communicate()[0]).decode('utf-8')
+                process = subprocess.Popen(ps, stdout=subprocess.PIPE, shell=True).communicate()[0].decode('utf-8')
                 pl = process.split("\n")
                 killpids = []
                 for j in range(len(pl)-1):
@@ -189,7 +188,7 @@ def start_daq(args, newper):
                     # print(killpids)
                     for i in range(len(killpids)):
                         kill = "kill -KILL "+killpids[i]
-                        subprocess.run(kill, shell=True)
+                        subprocess.Popen(kill, shell=True)
                 break
 
         print("file ", fileID, " finished at ", str(endtime))
@@ -266,9 +265,12 @@ def main():
         print("===========================")
 
         # DAQ enableを lowに
-        subprocess.run(DISABLE, shell=True)
+        proc_daq_disable = subprocess.Popen(DISABLE, shell=True)
         # DAQKILLER は色々終了処理する (infoファイルの終了時間のtimestampとか)
-        subprocess.run(f"{DAQKILLER} -p {current_period} -c {args.c}", shell=True)
+        proc_daq_killer = subprocess.Popen(f"{DAQKILLER} -p {current_period} -c {args.c}", shell=True)
+
+        proc_daq_disable.communicate()
+        proc_daq_killer.communicate()
 
 
 main()
