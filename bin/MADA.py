@@ -12,13 +12,10 @@ HOME = os.environ["HOME"]
 
 # PATH
 MADAPATH = HOME+"/miraclue/MADA/bin/"
-ITPATH = HOME+"/ITECH/"
 RATEPATH = HOME+"/rate/"
 MADACONFIGPATH = HOME+"/miraclue/MADA/config/"
 
 # binary
-# MADA="MADA"
-# MADACON="MADA_con"
 MADAIWAKI = "MADA_iwaki"
 
 # scripts
@@ -31,11 +28,9 @@ COUNTERRESET = MADAPATH+"MADA_counterreset.py"
 DAQKILLER = MADAPATH+"MADA_DAQkiller.py"
 KILLER = MADAPATH+"MADA_killmodules.py"
 ADKILLER = MADAPATH+"MADA_killads.py"
-POWERRESET = ITPATH+"IT6332_reset.py"
 
 # configs
 CONFIG = "MADA_config.json"
-CONFIG_SKEL = "MADA_config_SKEL.json"
 
 sql_dbname = "rate"
 
