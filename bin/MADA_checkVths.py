@@ -74,7 +74,7 @@ for i in range(active_board_count):
     else:
         Vthlow = Vth[i]-1000
         Vthhigh = Vth[i]+400
-    cmd = VthScan+" -b "+activeIP[i]+" "+str(Vthlow)+" "+str(Vthhigh)+" 100"
+    cmd = f"{VthScan} -b {activeIP[i]} {Vthlow} {Vthhigh} {VthStep}"
     vth_scan_comannds.append(cmd)
 
 run_commands(vth_scan_comannds, 1)
