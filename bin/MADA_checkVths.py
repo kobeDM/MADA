@@ -5,8 +5,6 @@ import datetime
 import json
 import os
 import subprocess
-import sys
-import time
 from concurrent.futures import ThreadPoolExecutor
 from subprocess import PIPE
 
@@ -59,33 +57,9 @@ for x in config_load['gigaIwaki']:
     if config_load['gigaIwaki'][x]['active'] == 1:
         Vth.append(config_load['gigaIwaki'][x]['Vth'])
         activeIP.append(config_load['gigaIwaki'][x]['IP'])
-#        print(config_load['gigaIwaki'][x]['IP'])
-# load config file ends.
 
-# kill related programs
-KILLER = MADAPATH+"MADA_killmodules.py"
-
-
-# make new directory
-# p=0
-# while(os.path.isdir("Vthcheck"+str(p).zfill(4))):
-#      print("per",p," exixts.")
-#      p+=1
-
-# newper="Vthcheck"+str(p).zfill(4)
-#cmd="mkdir "+newper+"; cd "+newper
-# proc=subprocess.run(cmd,shell=True)
-#print("New directory ",newper,"is made.")
-
-
-# proc=subprocess.run(Enable,shell=True)
-# PIDs.append(proc.PID)
 procEnable = subprocess.Popen(Enable, stdout=subprocess.PIPE)
 procTP = subprocess.Popen(TestPulse, stdout=subprocess.PIPE, shell=True)
-# PIDs.append(proc.PID)
-# procTP=subprocess.run(TestPulse,shell=True)
-# PIDs.append(proc.PID)
-
 
 active_board_count = len(activeIP)
 print("Number of Iwaki boards: ", active_board_count)
@@ -112,7 +86,6 @@ procTP.kill()
 # directory check
 p = 0
 while (os.path.isdir("Vth_run"+str(p).zfill(4))):
-    #      print("per",p," exixts.")
     p += 1
 
 
@@ -124,7 +97,6 @@ for i in range(active_board_count):
     print("written in ", png)
     pngs += png
     p += 1
-#CMD=EXE_ANA+" -b "+newrun
 
 y = str(datetime.date.today().year)
 m = str(datetime.date.today().month)
