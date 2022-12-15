@@ -86,7 +86,7 @@ def start_daq(args, newper):
     cmd = "cp "+mada_config_path+" "+newper
     proc = subprocess.run(cmd, shell=True)
 
-    fileperdir = 1000
+    fileperdir = 10000
     fileID = 0
 
     # database setting for rate
