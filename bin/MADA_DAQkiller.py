@@ -103,10 +103,12 @@ for i in range(len(activeIP)):
     realtime = endtime-starttime
 
 # FIXME range(4)は明らかにボード4枚を想定している
+# やっつけ修理20221214身内
 f = open(ofile, 'a')
-rate = []
-for ii in range(4):
-    rate.append(float(size[ii])/realtime)
-f.write(t+"\t"+str(starttime)+"\t"+str(endtime)+"\t"+str(size[0])+"\t"+str(size[1])+"\t"+str(size[2])+"\t"+str(size[3])+"\t"+str(
-    float(size[0])/realtime)+"\t"+str(float(size[1])/realtime)+"\t"+str(float(size[2])/realtime)+"\t"+str(float(size[3])/realtime)+"\n")
+#rate = []
+#for ii in range(4):
+#for ii in range(6):
+#    rate.append(float(size[ii])/realtime)
+#f.write(t+"\t"+str(starttime)+"\t"+str(endtime)+"\t"+str(size[0])+"\t"+str(size[1])+"\t"+str(size[2])+"\t"+str(size[3])+"\t"+str(float(size[0])/realtime)+"\t"+str(float(size[1])/realtime)+"\t"+str(float(size[2])/realtime)+"\t"+str(float(size[3])/realtime)+"\n")
+f.write(t+"\t"+str(int(starttime))+"\t"+str(int(endtime))+"\t"+str(int(size[0]))+"\t"+str(int(size[1]))+"\t"+str(int(size[2]))+"\t"+str(int(size[3]))+"\t"+str(int(size[4]))+"\t"+str(int(size[5]))+"\t"+str(int(size[0])/realtime)+"\t"+str(int(size[1])/realtime)+"\t"+str(int(size[2])/realtime)+"\t"+str(int(size[3])/realtime)+"\t"+str(int(size[4])/realtime)+"\t"+str(int(size[5])/realtime)+"\n")
 f.close()
