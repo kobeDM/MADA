@@ -34,6 +34,15 @@ sql_dbname = "rate6ch"
 
 FILE_SIZE = 1000  # data size in Mbyte
 MAX_FILE_SIZE = 1000  # max size
+MAX_BOARDS = 6
+ALL_BOARDS = [
+    'GBKB-00',
+    'GBKB-01',
+    'GBKB-03',
+    'GBKB-10',
+    'GBKB-11',
+    'GBKB-13',
+]
 run_control = 0  # option for run control only
 
 print("**MADA.py**")
@@ -80,7 +89,7 @@ def start_daq(args, newper):
             print(config_load['gigaIwaki'][x]['IP'])
     # load config file ends.
 
-    print("Number of Iwaki boards: ", len(activeIP))
+    print(f"Number of Iwaki boards: {len(activeIP)}/{MAX_BOARDS}")
     # print(activeIP.len)
 
     cmd = "cp "+mada_config_path+" "+newper
@@ -179,7 +188,7 @@ def start_daq(args, newper):
         print("file ", fileID, " finished at ", str(endtime))
         realtime = endtime-starttime
         print("real time=", str(realtime))
-        size = []
+        size = {bid: 0 for bid in ALL_BOARDS}
         for i in range(len(activeIP)):
             filename_head = newper+"/"+boardID[i]+"_"+str(fileID).zfill(4)
             filename_info = filename_head+".info"
@@ -193,7 +202,8 @@ def start_daq(args, newper):
             dmes = {}
             dmes['end'] = endtime
             dmes['size'] = sizel[4]
-            size.append(sizel[4])
+            # size.append(sizel[4])
+            size[boardID[i]] = sizel[4]
             ddmes = {"runinfo": dmes}
             info_open = open(filename_info, 'r')
             info_load = json.load(info_open)
@@ -220,16 +230,23 @@ def start_daq(args, newper):
         # write out event rate into DB and tsb
         # starttime, endtime, mada size, , , mada size / realtime, , ,
         with open(ofile, 'a') as f:
-            rate = []
+            rate = {bid: 0 for bid in ALL_BOARDS}
             for ii in range(len(activeIP)):
-                rate.append(float(size[ii])/realtime)
-                out_list = [t, starttime, endtime] + size + [float(s) / realtime for s in size]
-                out_str = "\t".join(map(str, out_list)) + "\n"
-                f.write(out_str)
+                rate[boardID[ii]] = float(size[boardID[ii]]) / realtime
+                # out_list = [t, starttime, endtime] + size + [float(s) / realtime for s in size]
+                # out_str = "\t".join(map(str, out_list)) + "\n"
+                # f.write(out_str)
 
         # PENDING: how many boards
-        cursor.execute("insert into MADA_rate(start,end,ch0_size,ch1_size,ch2_size,ch3_size,ch4_size,ch5_size,ch0_rate,ch1_rate,ch2_rate,ch3_rate,ch4_rate,ch5_rate) values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (str(
-            starttime), str(endtime), str(size[0]), str(size[1]), str(size[2]), str(size[3]), str(size[4]), str(size[5]), str(rate[0]), str(rate[1]), str(rate[2]), str(rate[3]), str(rate[4]), str(rate[5])))
+        cursor.execute(
+            "insert into MADA_rate(start,end,ch0_size,ch1_size,ch2_size,ch3_size,ch4_size,ch5_size,ch0_rate,ch1_rate,ch2_rate,ch3_rate,ch4_rate,ch5_rate) values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (
+                str(starttime), str(endtime),
+                str(size['GBKB-00']), str(size['GBKB-01']), str(size['GBKB-03']),
+                str(size['GBKB-10']), str(size['GBKB-11']), str(size['GBKB-13']),
+                str(rate['GBKB-00']), str(rate['GBKB-01']), str(rate['GBKB-03']),
+                str(rate['GBKB-10']), str(rate['GBKB-11']), str(rate['GBKB-13']),
+            ))
         fileID += 1
 
 
