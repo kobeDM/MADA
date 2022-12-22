@@ -237,16 +237,20 @@ def start_daq(args, newper):
                 # out_str = "\t".join(map(str, out_list)) + "\n"
                 # f.write(out_str)
 
-        # PENDING: how many boards
-        cursor.execute(
-            "insert into MADA_rate(start,end,ch0_size,ch1_size,ch2_size,ch3_size,ch4_size,ch5_size,ch0_rate,ch1_rate,ch2_rate,ch3_rate,ch4_rate,ch5_rate) values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (
-                str(starttime), str(endtime),
-                str(size['GBKB-00']), str(size['GBKB-01']), str(size['GBKB-03']),
-                str(size['GBKB-10']), str(size['GBKB-11']), str(size['GBKB-13']),
-                str(rate['GBKB-00']), str(rate['GBKB-01']), str(rate['GBKB-03']),
-                str(rate['GBKB-10']), str(rate['GBKB-11']), str(rate['GBKB-13']),
-            ))
+        try:
+            cursor.execute(
+                "insert into MADA_rate(start,end,ch0_size,ch1_size,ch2_size,ch3_size,ch4_size,ch5_size,ch0_rate,ch1_rate,ch2_rate,ch3_rate,ch4_rate,ch5_rate) values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (
+                    str(starttime), str(endtime),
+                    str(size['GBKB-00']), str(size['GBKB-01']), str(size['GBKB-03']),
+                    str(size['GBKB-10']), str(size['GBKB-11']), str(size['GBKB-13']),
+                    str(rate['GBKB-00']), str(rate['GBKB-01']), str(rate['GBKB-03']),
+                    str(rate['GBKB-10']), str(rate['GBKB-11']), str(rate['GBKB-13']),
+                ))
+        except:
+            import sys
+            print("mysql insert error", file=sys.stderr)
+
         fileID += 1
 
 
