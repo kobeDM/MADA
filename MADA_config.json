@@ -6,15 +6,15 @@
       "connection": "a1-0",
       "pitch": "800",
       "IP": "192.168.100.16",
-      "Vth": 500,
-      "DACfile": "/home/msgc/miraclue/MADA/config/GBKB-00/20220405/base_correct_run0001.dac"
+      "Vth": 7550,
+      "DACfile": "/home/msgc/miraclue/MADA/DAC_run0008/base_correct.dac"
     },
     "GBKB-01": {
       "active": 1,
       "connection": "a1-1",
       "pitch": "800",
       "IP": "192.168.100.17",
-      "Vth": 500,
+      "Vth": 9000,
       "DACfile": "/home/msgc/miraclue/MADA/config/GBKB-00/20220405/base_correct_run0001.dac"
     },
     "GBKB-03": {
@@ -22,16 +22,16 @@
       "connection": "a1-2",
       "pitch": "800",
       "IP": "192.168.100.19",
-      "Vth": 500,
-      "DACfile": "/home/msgc/miraclue/MADA/config/GBKB-00/20220405/base_correct_run0001.dac"
+      "Vth": 8400,
+      "DACfile": "/home/msgc/miraclue/MADA/DAC_run0010/base_correct.dac"
     },
     "GBKB-10": {
       "active": 1,
       "connection": "c1-0",
       "pitch": "800",
       "IP": "192.168.100.24",
-      "Vth": 10000,
-      "DACfile": "/home/msgc/miraclue/MADA/config/GBKB-11/20220405/base_correct_run0010.dac"
+      "Vth": 8000,
+      "DACfile": "/home/msgc/miraclue/MADA/DAC_run0012/base_correct.dac"
     },
     "GBKB-11": {
       "active": 1,
@@ -46,7 +46,7 @@
       "connection": "c1-2",
       "pitch": "800",
       "IP": "192.168.100.27",
-      "Vth": 10000,
+      "Vth": 8000,
       "DACfile": "/home/msgc/miraclue/MADA/config/GBKB-11/20220405/base_correct_run0010.dac"
     }
   },
