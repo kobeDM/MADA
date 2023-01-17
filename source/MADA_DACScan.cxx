@@ -47,7 +47,9 @@ int main(int argc, char *argv[])
         cout << dec;
         // DAC Set
         for (int ch = 0; ch < 128; ch++)
+        {
             cmd[ch] = SlowCtrl.convDAC(i, 0, 0);
+        }
 
         SlowCtrl.WriteRBCP(0, cmd, 128);
         cmd[0] = 0x02;
@@ -86,14 +88,16 @@ int main(int argc, char *argv[])
                 data_size += num;
             }
 
-            if (c_data[num - 4] == 'u' && c_data[num - 3] == 'P' &&
-                c_data[num - 2] == 'I' && c_data[num - 1] == 'C')
+            if (c_data[num - 4] == 'u' && c_data[num - 3] == 'P' && c_data[num - 2] == 'I' && c_data[num - 1] == 'C')
+            {
                 e_index++;
+            }
             cout << " DAC value: " << dec << i << "/64: " << hex << "data size=0x" << data_size << " e_index=" << dec << e_index << '\r' << flush;
 
-            if (data_size > 0x80000 || e_index > 1e3 || count > max_count
-            )
+            if (data_size > 0x80000 || e_index > 1e3 || count > max_count)
+            {
                 break;
+            }
         }
         cout << endl
              << flush;
