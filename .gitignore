@@ -18,3 +18,5 @@ scan_config.out
 *.scn
 
 ShowVth.cxx
+
+.vscode
