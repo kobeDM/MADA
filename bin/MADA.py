@@ -235,7 +235,7 @@ def start_daq(args, newper):
                 rate[boardID[ii]] = float(size[boardID[ii]]) / realtime
                 # out_list = [t, starttime, endtime] + size + [float(s) / realtime for s in size]
                 # out_str = "\t".join(map(str, out_list)) + "\n"
-                # f.write(out_str)
+                f.write(f"{size}\t{rate}\n")
 
         try:
             cursor.execute(
