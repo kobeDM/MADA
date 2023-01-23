@@ -27,6 +27,7 @@ public:
   void Close();
 
   int Read(char *);
+  int Read(char *, int);
 
 private:
   struct sockaddr_in param;

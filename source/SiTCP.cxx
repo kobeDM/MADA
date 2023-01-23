@@ -39,6 +39,44 @@ int SiTCP::Read(char *data)
   return num;
 }
 
+int SiTCP::Read(char *data, int timeout_sec)
+{
+  int len = 0;
+  time_t start_time = time(NULL);
+  while (1)
+  {
+    if (time(NULL) - start_time > timeout_sec)
+    {
+      printf("Timeout\n");
+    }
+    else
+    {
+      cout << "waiting... ";
+      cout << time(NULL) - start_time;
+      cout << " seconds elapsed" << endl;
+    }
+
+    len = recv(sock, data, 4096, 0);
+    if (len < 0)
+    {
+      if (errno == EAGAIN)
+      {
+        usleep(100000);
+      }
+      else
+      {
+        perror("recv");
+        break;
+      }
+    }
+    else
+    {
+      break;
+    }
+  }
+  return len;
+}
+
 SiTCP::SiTCP()
 {
   dev_num = 0;

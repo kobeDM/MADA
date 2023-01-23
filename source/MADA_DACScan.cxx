@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
         while (1)
         {
             cout << data_size << '\t' << flush;
-            int num = EtherData.Read(c_data);
+            int num = EtherData.Read(c_data, 3);
             if (num > 0)
                 data_size += num;
             if (data_size > 0x20000)
