@@ -41,6 +41,10 @@ int SiTCP::Read(char *data)
 
 int SiTCP::Read(char *data, int timeout_sec)
 {
+  // enable non-blocking mode
+  int val = 1;
+  ioctl(sock, FIONBIO, &val);
+
   int len = 0;
   time_t start_time = time(NULL);
   while (1)
@@ -48,12 +52,11 @@ int SiTCP::Read(char *data, int timeout_sec)
     if (time(NULL) - start_time > timeout_sec)
     {
       printf("Timeout\n");
+      return len;
     }
-    else
+    else if (time(NULL) - start_time > 0)
     {
-      cout << "waiting... ";
-      cout << time(NULL) - start_time;
-      cout << " seconds elapsed" << endl;
+      cout << "waiting... " << time(NULL) - start_time << " seconds elapsed" << endl;
     }
 
     len = recv(sock, data, 4096, 0);
@@ -61,7 +64,7 @@ int SiTCP::Read(char *data, int timeout_sec)
     {
       if (errno == EAGAIN)
       {
-        usleep(100000);
+        usleep(1000000);
       }
       else
       {

@@ -7,6 +7,8 @@
 #include <unistd.h>
 using namespace std;
 
+#define TIMEOUT_SEC 1
+
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -41,6 +43,7 @@ int main(int argc, char *argv[])
     sleep(1);
     cout << " Vth set at " << Vth << endl;
 
+    cout << "DAC servey start" << endl;
     // DAC survey
     for (int i = 0; i < 64; i++)
     {
@@ -60,9 +63,15 @@ int main(int argc, char *argv[])
         while (1)
         {
             cout << data_size << '\t' << flush;
-            int num = EtherData.Read(c_data, 3);
+            int num = EtherData.Read(c_data, TIMEOUT_SEC);
             if (num > 0)
+            {
                 data_size += num;
+            }
+            else
+            {
+                break;
+            }
             if (data_size > 0x20000)
                 break;
         }
