@@ -24,16 +24,18 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-  if (argc != 3)
+  if (argc != 4)
   {
-    cerr << " USAGE> DAC_Analysis [data dir.] [Vth val.]" << endl;
+    cerr << " USAGE> DAC_Analysis [data dir.] [Vth val.] [is_batch_mode 0 or 1]" << endl;
     cerr << "  Vth: give a decimal number from 0 and 16383 " << endl;
     exit(1);
   }
   string dirname = argv[1];
   int Vth = atoi(argv[2]) & 0x3fff;
+  bool is_batch = atoi(argv[3]);
 
   TRint app("app", &argc, argv);
+  gROOT->SetBatch(is_batch);
   gStyle->SetOptStat(0);
 
   string outfile_config_name = "DAC_ana_config.out";
