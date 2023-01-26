@@ -72,6 +72,13 @@ print_and_exe(COM)
 COM = "mv base_correct.dac "+newrun
 print_and_exe(COM)
 
+# write DAC_image
+cmd = """
+echo 'auto c = new TCanvas; DAC_image->Draw("colz"); c->SaveAs("{0}/DAC_image.png");' | root -b {0}/DAC.root 
+""".strip().format(newrun)
+print_and_exe(cmd)
+
+
 # concat png
 target_file_format = '{}/Ch_{}.png'
 for i in range(8):
