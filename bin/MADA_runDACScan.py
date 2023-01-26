@@ -16,6 +16,7 @@ def parser():
     argparser = argparse.ArgumentParser()
     argparser.add_argument("IP", type=str, nargs='?', const=None, help='[IP]')
     argparser.add_argument("Vth", type=str, nargs='?', const=None, help='[V thresholod]')
+    argparser.add_argument("--batch", "-b", action='store_true')
     opts = argparser.parse_args()
     return (opts)
 
@@ -60,6 +61,7 @@ print_and_exe(EXECOM)
 os.chdir("../")
 
 CMD = MADAPATH+"/"+ANA+" "+newrun+" "+Vth
+CMD = f'{MADAPATH}/{ANA} {newrun} {Vth} {int(args.batch)}'
 print_and_exe(CMD)
 
 
@@ -69,3 +71,17 @@ print_and_exe(COM)
 
 COM = "mv base_correct.dac "+newrun
 print_and_exe(COM)
+
+# concat png
+target_file_format = '{}/Ch_{}.png'
+for i in range(8):
+    target_indexes = [f'{16*i+j:03}' for j in range(16)]
+    target_files = [target_file_format.format(newrun, idx)
+                    for idx in target_indexes]
+    target_files_str = ' '.join(target_files)
+    cmd = f'convert +append {target_files_str} {newrun}/col{i}.jpg'
+    print_and_exe(cmd)
+
+cols = ' '.join([f'{newrun}/col{i}.jpg' for i in range(i)])
+cmd = f'convert -append {cols} {newrun}/DAC.jpg'
+print_and_exe(cmd)
