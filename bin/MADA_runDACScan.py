@@ -92,3 +92,7 @@ for i in range(8):
 cols = ' '.join([f'{newrun}/col{i}.jpg' for i in range(i)])
 cmd = f'convert -append {cols} {newrun}/DAC.jpg'
 print_and_exe(cmd)
+
+# print summary
+cmd = f'imgcat {newrun}/DAC_image.png'
+print_and_exe(cmd)
