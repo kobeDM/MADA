@@ -32,16 +32,9 @@ def find_newrun():
         return dir_header+'0'.zfill(4)
     else:
         files.sort(reverse=True)
-#        num_pos = files[0].find(dir_header)
         num_pos = files[0].find("run")
-        # print(files)
-        # print("num_pos",num_pos)
         return dir_header+str(int(files[0][num_pos+3:num_pos+3+4])+1).zfill(4)
 
-
-# if(len(sys.argv)<2):
-#    print("runDACScan IP [Vth]")
-#    sys.exit(1)
 
 args = parser()
 if (args.IP):
@@ -49,27 +42,15 @@ if (args.IP):
 else:
     print("runDACScan.py IP [Vth]")
     sys.exit(1)
-#    IP="192.168.100.25"
 
 if (args.Vth):
     Vth = args.Vth
 else:
     Vth = "8800"
 
-
-# IP="192.168.100.25"
-# VthLow="0"
-# Vth="8800"
-# VthLow="6000"
-# VthHigh="8900"
-# VthHigh="16383" #for full-range scan
-# VthStep="1000"
-# VthStep="64"
-
 newrun = find_newrun()
 CMD = "mkdir "+newrun
 print_and_exe(CMD)
-# subprocess.run(CMD,shell=True)
 os.chdir(newrun)
 CMD = "mkdir png"
 print_and_exe(CMD)
@@ -77,14 +58,7 @@ print_and_exe(CMD)
 EXECOM = MADAPATH+"/"+EXE+" "+IP+" "+Vth
 print_and_exe(EXECOM)
 os.chdir("../")
-# print("execute:",EXECOM)
-# subprocess.run(EXECOM,shell=True)
 
-#CMD="mv *.png png"
-# print_and_exe(CMD)
-
-# print(ANAPATH)
-# print(ANA)
 CMD = MADAPATH+"/"+ANA+" "+newrun+" "+Vth
 print_and_exe(CMD)
 
