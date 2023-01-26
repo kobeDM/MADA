@@ -87,8 +87,16 @@ int main(int argc, char *argv[])
 
     int e_index = 0;
     data_size = 0;
+    time_t data_reading_start_at = time(NULL);
     while (1)
     {
+      time_t current_time = time(NULL);
+      if (current_time - data_reading_start_at > 2)
+      {
+        cout << endl
+             << "data timeout" << endl;
+        break;
+      }
       cout << hex;
       cout << " data reading...   " << data_size << '\r' << flush;
 
