@@ -145,8 +145,8 @@ int main(int argc, char *argv[])
 
   ofstream DacOut("base_correct.dac", ios::out);
   TH1F *proj = new TH1F("proj", "", 64, -0.5, 63.5);
-  //  TF1 *erf = new TF1("erf", "[0] * TMath::Erf((x-[1])/[2])+0.5");
   TF1 *erf = new TF1("erf", "[0] * TMath::Erf((x-[1])/[2])+[3]");
+  erf->SetParLimits(1, 0, 64);
   TCanvas *ViewWin = new TCanvas("ViewWin", "", 0, 0, 800, 600);
   ViewWin->SetGridx();
   ViewWin->SetGridy();
@@ -154,25 +154,21 @@ int main(int argc, char *argv[])
   for (int strip = 0; strip < 128; strip++)
   {
     for (int dac = 0; dac < 64; dac++)
-      proj->SetBinContent(dac + 1,
-                          DAC_image->GetBinContent(strip + 2, dac + 1));
+      proj->SetBinContent(dac + 1, DAC_image->GetBinContent(strip + 2, dac + 1));
 
     char histname[50];
     sprintf(histname, "%s/Ch %03d", dirname.c_str(), strip);
     proj->SetTitle(histname);
-
-    // double pol = 0.5 - proj->GetBinContent(1);
-    // double avr = proj->GetMean();
-
-    //    erf->SetParameters(pol, avr, 5,0.5);
-    if (proj->GetBinContent(4) > 0.5)
-      erf->SetParameters(-0.5, 31, 5, 0.5);
+    if (proj->Integral(0, 32) > proj->Integral(32, 64))
+    {
+      erf->SetParameters(-0.5, 32, 5, 0.7);
+    }
     else
-      erf->SetParameters(0.5, 31, 5, 0.5);
+    {
+      erf->SetParameters(0.5, 32, 5, 0.7);
+    }
 
-    //    proj->Fit("erf", "", "", 0, 64);
     proj->Fit("erf", "", "", 4, 60);
-
     proj->Draw();
     ViewWin->Update();
     int DACval = TMath::FloorNint(proj->GetFunction("erf")->GetParameter(1) + 0.5);
@@ -181,11 +177,9 @@ int main(int argc, char *argv[])
     if (DACval > 63)
       DACval = 63;
     DacOut << strip << '\t'
-           //	   << TMath::FloorNint(proj->GetFunction("erf")->GetParameter(1) + 0.5)
            << DACval
            << endl;
     sprintf(histname, "%s/Ch_%03d.png", dirname.c_str(), strip);
     ViewWin->Print(histname);
-    //    sleep(1);
   }
 }
