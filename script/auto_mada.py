@@ -5,13 +5,11 @@ import time
 import signal
 from typing import Optional
 import libm2k
-import numpy as np
 
 # aout channel 0 -> self trigger veto
 # aout channel 1 -> muon trigger veto
 MADA = "/home/msgc/miraclue/MADA/bin/MADA.py"
 FIND_ADALM = "/home/msgc/miraclue/MADA/bin/findADALM2000.py"
-AD_OUT = "/home/msgc/adalm/adalm_out/bin/ad_out"
 MADALM2_SERIAL_NUMBER = "104473961406000b03003800c90049e980"
 NIM_HIGH = [-1] * 1024
 NIM_LOW = [0] * 1024
@@ -60,8 +58,6 @@ while True:
         aout.push(1, NIM_LOW)
         proc = subprocess.Popen([MADA, "-n1"])
 
-    time.sleep(30)
-    print("👺 sleeped 10 sec")
-    # time.sleep(RUN_DIRATION)
+    time.sleep(RUN_DIRATION)
     proc.send_signal(signal.SIGINT)
     counter += 1
