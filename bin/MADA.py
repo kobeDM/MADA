@@ -26,6 +26,7 @@ COUNTERRESET = MADAPATH+"MADA_counterreset.py"
 DAQKILLER = MADAPATH+"MADA_DAQkiller.py"
 KILLER = MADAPATH+"MADA_killmodules.py"
 ADKILLER = MADAPATH+"MADA_killads.py"
+DACSET = MADAPATH+"MADA_SetAllDAC.py"
 
 # configs
 CONFIG = "MADA_config.json"
@@ -100,7 +101,7 @@ def start_daq(args, newper):
 
     # database setting for rate
     import pymysql.cursors
-    conn = pymysql.connect(host='10.37.0.214', port=3306, user='rubis', passwd='password', autocommit='true')
+    conn = pymysql.connect(host='10.37.0.212', port=3306, user='rubis', passwd='password', autocommit='true')
     cursor = conn.cursor()
     cursor.execute("CREATE DATABASE IF NOT EXISTS " + sql_dbname)
     cursor.execute("USE " + sql_dbname)
@@ -113,6 +114,8 @@ def start_daq(args, newper):
         print(fileID, "/", fileperdir)
         subprocess.run(ADKILLER, shell=True)
         subprocess.run(DISABLE, shell=True)
+        #DAC reset in case LV was dropped in the last file 
+        subprocess.run(DACSET, shell=True)
         pids = []
         for i in range(len(activeIP)):
             IP = activeIP[i]
@@ -236,6 +239,12 @@ def start_daq(args, newper):
                 # out_list = [t, starttime, endtime] + size + [float(s) / realtime for s in size]
                 # out_str = "\t".join(map(str, out_list)) + "\n"
                 f.write(f"{size}\t{rate}\n")
+
+        # boardが6枚未満の時にrateとsizeのdictを補完する
+        inactive_board = list(set(ALL_BOARDS) - set(boardID))
+        for bid in inactive_board:
+            size[bid] = 0
+            rate[bid] = 0
 
         try:
             cursor.execute(

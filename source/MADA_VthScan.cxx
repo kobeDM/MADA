@@ -43,10 +43,14 @@ int main(int argc, char *argv[])
   outfile_config << "Vth(delta): " << delta << endl;
   outfile_config.close();
 
+  std::cout << "before SiTCP socekt open" << std::endl;
+
   RBCP SlowCtrl;
   SiTCP EtherData;
   SlowCtrl.Open(IPaddr);
   EtherData.Open(IPaddr);
+
+  std::cout << "after SiTCP socekt open" << std::endl;
 
   for (int Vth = s_Vth; Vth <= e_Vth; Vth += delta)
   {
@@ -56,47 +60,41 @@ int main(int argc, char *argv[])
     char cmd[256];
     cmd[0] = (Vth >> 8) & 0x3f;
     cmd[1] = Vth & 0xff;
+
     SlowCtrl.WriteRBCP(0x80, cmd, 2);
 
     cmd[0] = 0x01;
     SlowCtrl.WriteRBCP(0xf0, cmd, 1);
     sleep(1);
     cout << dec;
-    //    cout << " Vth : " << Vth << endl;
     cout << " Vth : " << Vth;
+
     int data_size = 0;
     char c_data[4096];
+
     cout << " refreshing buffer..." << flush;
     while (1)
     {
-      //      cout << "."  << flush;
-
       int num = EtherData.Read(c_data);
-      // cout << num<<" "  << flush;
       if (num > 0)
+      {
         data_size += num;
+      }
 
       if (data_size > 0x20000)
         break;
     }
     cout << " done" << '\n'
          << flush;
+
     char filename[100];
     sprintf(filename, "Vth_%04x.scn", Vth);
     ofstream OutData(filename, ios::out);
 
     int e_index = 0;
     data_size = 0;
-    time_t data_reading_start_at = time(NULL);
     while (1)
     {
-      time_t current_time = time(NULL);
-      if (current_time - data_reading_start_at > 2)
-      {
-        cout << endl
-             << "data timeout" << endl;
-        break;
-      }
       cout << hex;
       cout << " data reading...   " << data_size << '\r' << flush;
 

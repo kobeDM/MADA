@@ -7,7 +7,7 @@
 #include <unistd.h>
 using namespace std;
 
-#define TIMEOUT_SEC 1
+#define TIMEOUT_SEC 100000
 
 int main(int argc, char *argv[])
 {

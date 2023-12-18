@@ -89,7 +89,7 @@ for i in range(8):
     cmd = f'convert +append {target_files_str} {newrun}/col{i}.jpg'
     print_and_exe(cmd)
 
-cols = ' '.join([f'{newrun}/col{i}.jpg' for i in range(i)])
+cols = ' '.join([f'{newrun}/col{i}.jpg' for i in range(8)])
 cmd = f'convert -append {cols} {newrun}/DAC.jpg'
 print_and_exe(cmd)
 
