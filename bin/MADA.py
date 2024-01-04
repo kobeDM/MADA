@@ -101,7 +101,7 @@ def start_daq(args, newper):
 
     # database setting for rate
     import pymysql.cursors
-    conn = pymysql.connect(host='10.37.0.212', port=3306, user='rubis', passwd='password', autocommit='true')
+    conn = pymysql.connect(host='10.37.0.214', port=3306, user='rubis', passwd='password', autocommit='true')
     cursor = conn.cursor()
     cursor.execute("CREATE DATABASE IF NOT EXISTS " + sql_dbname)
     cursor.execute("USE " + sql_dbname)
@@ -245,8 +245,8 @@ def start_daq(args, newper):
         for bid in inactive_board:
             size[bid] = 0
             rate[bid] = 0
-
         try:
+            date_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             cursor.execute(
                 "insert into MADA_rate(start,end,ch0_size,ch1_size,ch2_size,ch3_size,ch4_size,ch5_size,ch0_rate,ch1_rate,ch2_rate,ch3_rate,ch4_rate,ch5_rate) values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (

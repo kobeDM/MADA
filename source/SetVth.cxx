@@ -20,16 +20,17 @@ int main(int argc, char *argv[]){
   cout<<"IP:"<<IPaddr<<endl;
   cout<<"Vth:"<<val<<endl;
   
-    SlowCtrl.Open(IPaddr);
-
+  SlowCtrl.Open(IPaddr);
+  //sleep(5);
   char cmd[256];
   cmd[0] = (val >> 8) & 0x3f;
   cmd[1] = val & 0xff;
   SlowCtrl.WriteRBCP(0x80, cmd, 2);
+  //sleep(5);
 
   cmd[0] = 0x01;
   SlowCtrl.WriteRBCP(0xf0, cmd, 1);
-  sleep(1);
+  //sleep(5);
 
-  SlowCtrl.ReadRBCP();
+  //SlowCtrl.ReadRBCP();
 }

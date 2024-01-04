@@ -25,6 +25,9 @@ def print_and_exe(cmd):
     print("execute:"+cmd)
     subprocess.run(cmd, shell=True)
 
+def exe(cmd):
+    subprocess.run(cmd, shell=True)
+
 
 def find_newrun():
     dir_header = 'DAC_run'
@@ -50,6 +53,8 @@ else:
     Vth = "8800"
 
 newrun = find_newrun()
+
+
 CMD = "mkdir "+newrun
 print_and_exe(CMD)
 os.chdir(newrun)
@@ -60,8 +65,9 @@ EXECOM = MADAPATH+"/"+EXE+" "+IP+" "+Vth
 print_and_exe(EXECOM)
 os.chdir("../")
 
-CMD = MADAPATH+"/"+ANA+" "+newrun+" "+Vth
-CMD = f'{MADAPATH}/{ANA} {newrun} {Vth} {int(args.batch)}'
+#CMD = MADAPATH+"/"+ANA+" "+newrun+" "+Vth
+#CMD = f'{MADAPATH}/{ANA} {newrun} {Vth} {IP.split[3]} {int(args.batch)}'
+CMD = f'{MADAPATH}/{ANA} {newrun} {Vth} {(IP.split("."))[3]} {int(args.batch)}'
 print_and_exe(CMD)
 
 
@@ -87,12 +93,19 @@ for i in range(8):
                     for idx in target_indexes]
     target_files_str = ' '.join(target_files)
     cmd = f'convert +append {target_files_str} {newrun}/col{i}.jpg'
-    print_and_exe(cmd)
+    #print_and_exe(cmd)
+    exe(cmd)
 
 cols = ' '.join([f'{newrun}/col{i}.jpg' for i in range(8)])
 cmd = f'convert -append {cols} {newrun}/DAC.jpg'
-print_and_exe(cmd)
+#print_and_exe(cmd)
+exe(cmd)
 
 # print summary
 cmd = f'imgcat {newrun}/DAC_image.png'
-print_and_exe(cmd)
+exe(cmd)
+#print_and_exe(cmd)
+
+#cleanup
+cmd = f'mv  {newrun}/*png.jpg {newrun}/png'
+print_and_exe(COM)

@@ -42,12 +42,11 @@ int main(int argc, char *argv[])
     SlowCtrl.WriteRBCP(0xf0, cmd, 1);
     sleep(1);
     cout << " Vth set at " << Vth << endl;
-
-    cout << "DAC servey start" << endl;
+    cout << "DAC survey start" << endl;
     // DAC survey
     for (int i = 0; i < 64; i++)
     {
-        cout << dec;
+      //cout << dec;
         // DAC Set
         for (int ch = 0; ch < 128; ch++)
         {
@@ -62,7 +61,7 @@ int main(int argc, char *argv[])
         char c_data[4096];
         while (1)
         {
-            cout << data_size << '\t' << flush;
+	  //cout << data_size << '\t' << flush;
             int num = EtherData.Read(c_data, TIMEOUT_SEC);
             if (num > 0)
             {
@@ -88,7 +87,7 @@ int main(int argc, char *argv[])
         while (1)
         {
             count++;
-            cout << count << flush;
+            //cout << count << flush;
 
             int num = EtherData.Read(c_data);
             if (num > 0)
@@ -101,15 +100,16 @@ int main(int argc, char *argv[])
             {
                 e_index++;
             }
-            cout << " DAC value: " << dec << i << "/64: " << hex << "data size=0x" << data_size << " e_index=" << dec << e_index << '\r' << flush;
+            //cout << " DAC value: " << dec << i << "/64: " << hex << "data size=0x" << data_size << " e_index=" << dec << e_index << '\r' << flush;
+	    cout << " DAC value: " << dec << i << "/64: \r" << flush;
 
             if (data_size > 0x80000 || e_index > 1e3 || count > max_count)
             {
                 break;
             }
         }
-        cout << endl
-             << flush;
+        //cout << endl
+	//   << flush;
         OutData.close();
     }
 }
