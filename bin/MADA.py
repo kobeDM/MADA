@@ -14,6 +14,7 @@ HOME = os.environ["HOME"]
 MADAPATH = HOME+"/miraclue/MADA/bin/"
 RATEPATH = HOME+"/rate/"
 MADACONFIGPATH = HOME+"/miraclue/MADA/config/"
+ITPATH = HOME+"/SCSM/ITECH/"
 
 # binary
 MADAIWAKI = "MADA_iwaki"
@@ -27,6 +28,8 @@ DAQKILLER = MADAPATH+"MADA_DAQkiller.py"
 KILLER = MADAPATH+"MADA_killmodules.py"
 ADKILLER = MADAPATH+"MADA_killads.py"
 DACSET = MADAPATH+"MADA_SetAllDAC.py"
+IT6332A_MON=ITPATH+"IT6332_mon.py -o"
+IT6332A_OUT=ITPATH+"IT6332_out_chs.py" 
 
 # configs
 CONFIG = "MADA_config.json"
@@ -44,6 +47,8 @@ ALL_BOARDS = [
     'GBKB-11',
     'GBKB-13',
 ]
+LV_SETVALUES=[0,0,0]
+LV_THREHOLDSS=[0,0,0]
 run_control = 0  # option for run control only
 
 print("**MADA.py**")
@@ -79,8 +84,9 @@ def start_daq(args, newper):
     proc = subprocess.run(FETCHCON, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False)
 
     # load config file
-    config_open = open(mada_config_path, 'r')
-    config_load = json.load(config_open)
+    #config_open = open(mada_config_path, 'r')
+    with open(mada_config_path, 'r') as config_open :
+        config_load = json.load(config_open)
     activeIP = []
     boardID = []
     for x in config_load['gigaIwaki']:
@@ -88,6 +94,8 @@ def start_daq(args, newper):
             activeIP.append(config_load['gigaIwaki'][x]['IP'])
             boardID.append(x)
             print(config_load['gigaIwaki'][x]['IP'])
+
+    
     # load config file ends.
 
     print(f"Number of Iwaki boards: {len(activeIP)}/{MAX_BOARDS}")
@@ -108,14 +116,39 @@ def start_daq(args, newper):
     cursor.execute("CREATE TABLE IF NOT EXISTS  MADA_rate(time TIMESTAMP not null default CURRENT_TIMESTAMP,start FLOAT,end FLOAT,ch0_size FLOAT,ch1_size FLOAT,ch2_size FLOAT,ch3_size FLOAT,ch4_size FLOAT,ch5_size FLOAT,ch0_rate FLOAT,ch1_rate FLOAT,ch2_rate FLOAT,ch3_rate FLOAT,ch4_rate FLOAT,ch5_rate FLOAT)")
 
     subprocess.run(KILLER, shell=True)
-
+    com=IT6332A_OUT+" "+str(config_load['LV']["SET_VALUES"]["ch1"])+" "+ str(config_load['LV']["SET_VALUES"]["ch2"])+" "+str(config_load['LV']["SET_VALUES"]["ch3"])
+    proc=subprocess.run(com, shell=True, stdout=subprocess.PIPE)
     # DAQ run
     while fileID < fileperdir:
         print(fileID, "/", fileperdir)
         subprocess.run(ADKILLER, shell=True)
         subprocess.run(DISABLE, shell=True)
-        #DAC reset in case LV was dropped in the last file 
-        subprocess.run(DACSET, shell=True)
+        #LV check
+        print("LV check")
+        with open(mada_config_path, 'r') as config_open :
+            config_load = json.load(config_open)
+        
+        #print(config_load['LV'])
+        proc=subprocess.run(IT6332A_MON, shell=True, stdout=subprocess.PIPE)
+        LVvalues=proc.stdout.split()
+        print(LVvalues)
+        if float(LVvalues[2]) > config_load['LV']["TH_VALUES"]["ch1"] or float(LVvalues[4]) > config_load['LV']["TH_VALUES"]["ch2"] or float(LVvalues[6]) > config_load['LV']["TH_VALUES"]["ch3"]:
+            #threshold over
+            print("threhold over")
+            com=IT6332A_OUT+" "+str(config_load['LV']["SET_VALUES"]["ch1"])+" 0 0"
+            #print(com)
+            proc=subprocess.run(com, shell=True, stdout=subprocess.PIPE)
+            com=IT6332A_OUT+" "+str(config_load['LV']["SET_VALUES"]["ch1"])+" "+ str(config_load['LV']["SET_VALUES"]["ch2"])+" "+str(config_load['LV']["SET_VALUES"]["ch3"])
+            proc=subprocess.run(com, shell=True, stdout=subprocess.PIPE)
+            #print(com)
+            #proc=subprocess.run(com, shell=True, stdout=subprocess.PIPE)
+            #DAC reset 
+            #subprocess.run(DACSET, shell=True)
+
+        #exit(0)
+        
+
+        
         pids = []
         for i in range(len(activeIP)):
             IP = activeIP[i]
