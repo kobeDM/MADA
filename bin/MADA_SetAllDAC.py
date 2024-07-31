@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 import argparse
 import json
 import datetime
@@ -11,21 +10,24 @@ from subprocess import PIPE
 
 print('### MADA_SetAllDAC.py start ###')
 
+MADAHOME = os.environ['MADAHOME']
+MADABIN  = MADAHOME + '/bin'
+
 #scripts
-FETCHCON  = "MADA_fetch_config.py"
-findADALM = "findADALM2000.py"
-SETDAC    = "MADA_SetAllDACs.py"
+FETCHCON  = "/MADA_fetch_config.py"
+# findADALM = "findADALM2000.py"
+SETDAC    = "/MADA_SetAllDACs.py"
 
 #configs
-CONFIG      = "MADA_config.json"
-CONFIG_SKEL = "MADA_config_SKEL.json"
+CONFIG      = "/MADA_config.json"
+CONFIG_SKEL = "/MADA_config_SKEL.json"
 
-MADAPATH = "/home/msgc/miraclue/MADA/bin/"
-DACPATH  = "/home/msgc/miraclue/MADA/bin/"
-LOGPATH  = "/home/msgc/miraclue/MADA/config/DAClog/"
-SETVth_EXE  = MADAPATH + "SetVth"
-SETDAC_EXE  = MADAPATH + "SetDAC"
-READMEM_EXE = MADAPATH + "read_CtrlMem"
+# MADAPATH = "/home/msgc/miraclue/MADA/bin/"
+# DACPATH  = "/home/msgc/miraclue/MADA/bin/"
+LOGPATH     = MADAHOME + "/config/DAClog"
+SETVth_EXE  = MADABIN + "/SetVth"
+SETDAC_EXE  = MADABIN + "/SetDAC"
+READMEM_EXE = MADABIN + "/read_CtrlMem"
 
 # Check arguments
 argparser = argparse.ArgumentParser()
@@ -36,7 +38,7 @@ if args.config_file:
     CONFIG = args.config_file
 
 # Fetch config file
-cmd = MADAPATH + FETCHCON
+cmd = MADABIN + FETCHCON
 print('Execute:', cmd)
 ret = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False)
 print(ret.stdout)
@@ -67,7 +69,7 @@ for x in config_load['gigaIwaki']:
         subprocess.run(cmd, shell=True)
 
         dt   = datetime.datetime.now()
-        flog = LOGPATH + str(dt.year) + str(dt.month).zfill(2) + str(dt.day).zfill(2) + "-" + str(dt.hour).zfill(2) + str(dt.minute).zfill(2) + str(dt.second).zfill(2) + "-" + name
+        flog = LOGPATH + '/' + str(dt.year) + str(dt.month).zfill(2) + str(dt.day).zfill(2) + "-" + str(dt.hour).zfill(2) + str(dt.minute).zfill(2) + str(dt.second).zfill(2) + "-" + name
         with open(flog, 'w') as log_out:
             cmd = READMEM_EXE + " " + IP
             subprocess.run(cmd, shell=True, stdout=log_out)

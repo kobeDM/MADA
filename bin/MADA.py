@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
 
-import os, sys
+import os
 import subprocess
-import numpy
-import glob
-import time,datetime
+import time
+import datetime
 import argparse
 import json
-import glob
 from subprocess import PIPE
-from time import sleep
 
 # import MADA_utils
 HOME = os.environ['HOME']
+MADAHOME = os.environ['MADAHOME']
 
 # PATH
-MADAPATH       = HOME + '/miraclue/MADA/bin/'
-ITPATH         = HOME + '/ITECH/'
+MADABIN       = MADAHOME + '/bin/'
+# ITPATH         = HOME + '/ITECH/'
 RATEPATH       = HOME + '/rate/'
 # MADACONFIGPATH = HOME + '/miraclue/MADA/config/'
 
@@ -28,13 +26,13 @@ MADAIWAKI = 'MADA_iwaki'
 # scripts
 # FETCHCON      = MADAPATH + 'MADA_fetch_config.py'
 # findADALM     = MADAPATH + 'findADALM2000.py'
-SETDAC        = MADAPATH + 'MADA_SetAllDAC.py'
-ENABLE        = MADAPATH + 'MADA_DAQenable.py'
-DISABLE       = MADAPATH + 'MADA_DAQenable.py -d'
-COUNTERRESET  = MADAPATH + 'MADA_counterreset.py'
-DAQKILLER     = MADAPATH + 'MADA_DAQkiller.py'
-KILLER        = MADAPATH + 'MADA_killmodules.py'
-ADKILLER      = MADAPATH + 'MADA_killads.py'
+SETDAC        = MADABIN + 'MADA_SetAllDAC.py'
+ENABLE        = MADABIN + 'MADA_DAQenable.py'
+DISABLE       = MADABIN + 'MADA_DAQenable.py -d'
+COUNTERRESET  = MADABIN + 'MADA_counterreset.py'
+DAQKILLER     = MADABIN + 'MADA_DAQkiller.py'
+KILLER        = MADABIN + 'MADA_killmodules.py'
+ADKILLER      = MADABIN + 'MADA_killads.py'
 
 #configs
 CONFIG      = 'MADA_config.json'
@@ -86,8 +84,8 @@ print(ret.stdout)
 # load config file
 # config_open = open(CONFIG,'r')
 # config_load = json.load(config_open)
-activeIP    = []
-boardID     = []
+activeIP = []
+boardID  = []
 with open(CONFIG, 'r') as config_open:
     config_load = json.load(config_open)
 for x in config_load['gigaIwaki']:
