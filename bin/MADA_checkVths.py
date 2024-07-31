@@ -12,7 +12,7 @@ HOME=os.environ["HOME"]
 
 #scripts
 MADAPATH="/home/msgc/miraclue/MADA/bin/"
-ADAPATH="/home/msgc/adalm/adalm_out"
+ADAPATH="/home/msgc/cn_tc/adalm/adalm_out"
 FETCHCON=MADAPATH+"MADA_fetch_config.py"
 Enable=MADAPATH+"MADA_DAQenable.py"
 TestPulse=MADAPATH+"MADA_testout.py -f 1000"

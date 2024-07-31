@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.1.3)
 set (CMAKE_CXX_STANDARD 11)
 project(MADA LANGUAGES CXX)
 
-set(Targets MADA_iwaki MADA_con readIwaki SetVth read_CtrlMem SetDAC MADA_VthScan MADA_DACScan MADA_DAQenable)
+#set(Targets MADA_iwaki MADA_con readIwaki SetVth read_CtrlMem SetDAC MADA_VthScan MADA_DACScan MADA_DAQenable)
+set(Targets MADA_iwaki MADA_con readIwaki SetVth read_CtrlMem SetDAC MADA_VthScan MADA_DACScan MADA_DACAna MADA_DAQenable)#ofuji
 
 
 if (NOT WIN32)
@@ -33,9 +34,9 @@ file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc)
 
      
 #add_executable(MADA MADA_ad.cpp MADA_iwaki.cpp SiTCP.cxx TCPclient.cxx RBCP.cxx)
-#add_executable(MADA_DACAna MADA_DACAna.cxx )
 add_executable(MADA_DAQenable MADA_DAQenable.cpp MADA_ad.cpp)
 add_executable(MADA_DACScan MADA_DACScan.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
+add_executable(MADA_DACAna MADA_DACAna.cxx )#ofuji
 add_executable(MADA_VthScan MADA_VthScan.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
 add_executable(MADA_con MADA_con.cpp MADA_ad.cpp)
 #add_executable(MADA_VthAna MADA_VthAna.cxx)

@@ -16,7 +16,8 @@ CONFIG="MADA_config.json"
 CONFIG_SKEL="MADA_config_SKEL.json"
 
 #URI="usb:1.7.5"
-SN="104473961406000712000e0056e64887db"
+#SN="104473961406000712000e0056e64887db"
+SN="10447372c6040013f9ff360057ecd401ea"
 
 cmd=MADAPATH+findADALM+" "+SN
 proc=subprocess.run(cmd,shell=True,stdout=PIPE,stderr=None,check=False,capture_output=False)

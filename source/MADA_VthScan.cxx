@@ -61,10 +61,13 @@ int main(int argc, char *argv[]){
     char c_data[4096];
     cout << " refreshing buffer..."  << flush;
     while(1){
-      //      cout << "."  << flush;
+            cout << "."  << flush;
+cout << "test" <<endl;
+cout << c_data <<endl;
+cout << "test_end" <<endl;
 
       int num = EtherData.Read(c_data);
-      //cout << num<<" "  << flush;
+      cout << num<<" "  << flush;
       if(num>0)
         data_size += num;
 

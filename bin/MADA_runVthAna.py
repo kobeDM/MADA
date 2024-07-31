@@ -6,7 +6,8 @@ from subprocess import PIPE
 import json
 from csv import reader
 
-EXEPATH="/home/msgc/miraclue/gigaiwaki_ana/bin"
+#EXEPATH="/home/msgc/miraclue/gigaiwaki_ana/bin"
+EXEPATH="/home/msgc/miraclue/gigaiwaki_ana/src"
 MADAPATH="/home/msgc/miraclue/MADA/bin/"
 EXE="Vth_Analysis"
 SKEL="ShowVth_skel.cxx"

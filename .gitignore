@@ -1,13 +1,16 @@
-# bin以下の拡張子付きファイル以外を除外
 /bin/*
 !bin/*.*
 
-/build
-/test
 **/*.o
 **/\#*\#
 **/*~
-**/*.mada
-/per*
+
+/bench
+/build
+/config/DAClog
+/config/*.dac
+/config/GBKB*
 /Vth_run*
 /DAC_run*
+
+/source/CMakeFiles

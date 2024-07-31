@@ -52,9 +52,11 @@ else:
 #    IP="192.168.100.25"
 
 #write null DAC velues
-#DACfile=CONFIGPATH+"base_correct_null.dac"
-#cmd=EXE_SETDAC+" "+IP+" "+DACfile
-#print_and_exe(cmd)
+DACfile=CONFIGPATH+"192.168.100.19_13.dac"
+# DACfile=CONFIGPATH+"192.168.100.25_8.dac"
+# DACfile=CONFIGPATH+"192.168.100.27_3.dac"
+cmd=EXE_SETDAC+" "+IP+" "+DACfile
+print_and_exe(cmd)
 
 
 if(args.VthLow):
@@ -95,7 +97,6 @@ if batch_mode:
 
 cmd="pwd".split('/')
 subprocess.run(cmd,shell=True)
-
     
 newrun=find_newrun()
 CMD="mkdir "+newrun
@@ -109,6 +110,7 @@ os.chdir(newrun)
 
 #EXECOM=EXEPATH+"/"+EXE+" "+IP+" "+srt(VthLow)+" "+srt(VthHigh)+" "+srt(VthStep)
 CMD=EXE_DAQ+" "+IP+" "+str(VthLow)+" "+str(VthHigh)+" "+str(VthStep)
+
 print_and_exe(CMD)
 
 
@@ -116,7 +118,6 @@ print_and_exe(CMD)
 #procTP.kill()
 
 os.chdir("../")
-
 
 if batch_mode:
     print("batch mode")
