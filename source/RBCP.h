@@ -16,27 +16,28 @@
 
 using namespace std;
 
-class RBCP {
- public:
+class RBCP
+{
+public:
   RBCP();
   RBCP(const string);
   ~RBCP();
 
-  bool   Open(const string);
-  void   Close();
-  int    ReadRBCP();
-  int    WriteRBCP(int, char*, int);
+  bool Open(const string);
+  void Close();
+  int ReadRBCP();
+  int WriteRBCP(int, char *, int);
 
-  char   convDAC(int, bool, bool);
-  int    CheckReply(int);
+  char convDAC(int, bool, bool);
+  int CheckReply(int);
 
- private:
-  struct sockaddr_in    param;
-  int                   sock;
-  int                   dev_num;
-  unsigned              pack_id;
-  char                  command[512];
-  char                  reply[512];
+private:
+  struct sockaddr_in param;
+  int sock;
+  int dev_num;
+  unsigned pack_id;
+  char command[512];
+  char reply[512];
 };
 
 #endif

@@ -1,41 +1,52 @@
-# MADA
-MiraclueArgonDAQ  
+# MADA (MiraclueArgonDAQ)
+# Usage
 - DAQ  
-$MADA.py [-n num of events per file] [-m num of files per fir]   
--- config file を準備  (MADA.pyから呼ばれる)  
-$MADA_fetch_config.py 
-必要に応じて MADA_config.json  を作成
+    ```
+    $ MADA.py [-n file size (Mbyte)]
+    ```
 
-- Vth調整関係  
--- DAC、Vth設定  
---- 全ボードのDAC、Vthを設定、確認  
-$MADA_SetAllDAC.py [-c configfile]   
-$MADA_checkVths.py  
+- Fetch config file
+    ```
+    $ MADA_fetch_config.py 
+    ```
 
---- 個々のボードのDACを設定  
-$SetDAC IP DACfile  
-例 $SetDAC 192.168.100.24 DAC_run0006/base_correct.dac  
---- 個々のボードのVthを設定 
-$SetVth IP Vth  
-例 $SetDAC 192.168.100.24 8000 
--- DAC, Vth scan  
-$MADA_runVthScan.py IP Vth下限 Vth上限 Vth_step  
-例　$MADA_runVthScan.py 192.168.100.16 8500 10000 1000  
-$MADA_VthScan  
--- DAC値scan
-MADA_runDACScan.py  Vth
+- DAC、Vth setting  
+    - Set All DAC files
+       ```
+       $ MADA_SetAllDAC.py [-c configfile]   
+       $ MADA_checkVths.py  
+       ```
 
-- その他  
--- $MADA_clockout.py [-f rate(Hz)] [-u URI]  
--- $MADA_DAQenable.py [-d] : DAQ enable出す。 -d optionでenable下げる。　
--- $MADA_counterreset.py : counter reset出す。  
+    - Set each DAC file
+       ```
+       $ SetDAC [IP] [DACfile]
+       # e.g $ SetDAC 192.168.100.24 DAC_run0006/base_correct.dac
+       ```
+    - Set each Vth value
+       ```
+       $ SetVth [IP] [Vth]  
+       # e.g. $ SetDAC 192.168.100.24 8000 
+       ```
+- Vth scan  
+    ```
+    $ MADA_runVthScan.py [IP] [Vth lowwer] [Vth upper] [Vth step]  
+    # e.g. $ MADA_runVthScan.py 192.168.100.16 8500 10000 1000  
+    ```
+- DAC scan  
+    ```
+    $ MADA_runDACScan.py  [Vth]
+    ```
 
-
-
-
-MADA_VthAna          
-MADA_runVthAna.py
-MADA.py~                      MADA_runVthScan.py
-MADA_DACAna          MADA_con             MADA_runVthScan.py~
-MADA_DACScan         MADA_iwaki           
-       MADA_runDACScan.py   
+- Others
+    - Output clock
+       ```
+       $MADA_clockout.py [-f rate(Hz)] [-u URI]  
+       ```
+    - Output DAQ enable
+       ```
+       $ MADA_DAQenable.py [-d down]
+       ```
+    - Output counter reset
+       ```
+       $MADA_counterreset.py
+       ```

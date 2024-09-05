@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
 
-import os, sys
+import os
 import subprocess
-import numpy
-import glob
-import time
-import argparse
 import json
 from subprocess import PIPE
 
 print('### MADA_fetch_config.py start ###')
 
-MADAPATH   = '/home/msgc/miraclue/MADA'
-BINPATH    = MADAPATH + '/bin'
-CONFIGPATH = MADAPATH + '/config'
+MADAHOME   = os.environ['MADAHOME']
+BINPATH    = MADAHOME + '/bin'
+CONFIGPATH = MADAHOME + '/config'
 
 findADALM   = 'findADALM2000.py'
 CONFIG      = 'MADA_config.json'

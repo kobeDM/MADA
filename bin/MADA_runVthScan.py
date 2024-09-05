@@ -1,8 +1,10 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import subprocess, os,sys
 import argparse
 import glob
 from subprocess import PIPE
+
+print('### MADA_runVthScan.py start ###')
 
 def parser():
     argparser=argparse.ArgumentParser()
@@ -14,12 +16,9 @@ def parser():
     opts=argparser.parse_args()
     return(opts)
 
-
 def print_and_exe(cmd):
     print("execute:"+cmd)
     subprocess.run(cmd,shell=True)
-
-
 
 def find_newrun():
     dir_header = 'Vth_run'
@@ -31,107 +30,88 @@ def find_newrun():
         num_pos = files[0].find("run")
         return dir_header+str(int(files[0][num_pos+3:num_pos+3+4])+1).zfill(4)
 
-MADAPATH="/home/msgc/miraclue/MADA/bin/"
-CONFIGPATH="/home/msgc/miraclue/MADA/config/"
 
-VTHSCAN="MADA_VthScan"
-EXE_SETDAC=MADAPATH+"SetDAC"
-EXE_DAQ=MADAPATH+"MADA_VthScan"
-EXE_ANA=MADAPATH+"MADA_runVthAna.py"
-Enable=MADAPATH+"MADA_DAQenable.py"
-TestPulse=MADAPATH+"MADA_testout.py -f 1000"
+MADAHOME    = os.environ["MADAHOME"]
+MADABIN     = MADAHOME + '/bin/'
+CONFIGPATH  = MADAHOME + "/config/"
+DACFILEPATH = "/home/msgc/namai/VthScan/archive/DACfile/"
 
+FETCHCON   = MADABIN + "MADA_fetch_config.py"
+EXE_SETDAC = MADABIN + "SetDAC"
+EXE_DAQ    = MADABIN + "MADA_VthScan"
+EXE_ANA    = MADABIN + "MADA_runVthAna.py"
 
+DACfile = DACFILEPATH + "192.168.100.19_20.dac"
+# DACfile = DACFILEPATH + "192.168.100.25_9.dac"
+# DACfile = "/home/msgc/namai/VthScan/DAC_run0037/base_correct.dac"
+
+# default setting
+VthLow     = "0"
+VthHigh    = "16384"
+VthStep    = "32"
+batch_mode = 0
 
 args=parser()
-if(args.IP):
+if args.IP:
     IP=args.IP
 else:
-    print("runDACScan IP [Vth lower] [Vth upper] [Vth step]")
+    print("runDACScan [IP] [Vth lower] [Vth upper] [Vth step]")
     sys.exit(1)
-#    IP="192.168.100.25"
 
-#write null DAC velues
-DACfile=CONFIGPATH+"192.168.100.19_13.dac"
-# DACfile=CONFIGPATH+"192.168.100.25_8.dac"
-# DACfile=CONFIGPATH+"192.168.100.27_3.dac"
-cmd=EXE_SETDAC+" "+IP+" "+DACfile
+cmd = FETCHCON
+ret = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False)
+print(ret.stdout)        
+
+# write null DAC velues
+cmd = EXE_SETDAC + " " + IP + " " + DACfile
 print_and_exe(cmd)
 
 
-if(args.VthLow):
-    VthLow=args.VthLow
+if args.VthLow:
+    VthLow = args.VthLow
 else:
-    #VthLow="8500"
-    VthLow="0"
+    print('Used default VthLow:', VthLow)
 
-if(args.VthHigh):
+if args.VthHigh:
     VthHigh=args.VthHigh
 else:
-#    VthHigh="8900"
-    VthHigh="16384"
+    print('Used default VthHigh:', VthHigh)
 
-if(args.VthStep):
+if args.VthStep:
     VthStep=args.VthStep
 else:
-    #VthStep="1000"
-    #VthStep="64"
-    VthStep="32"
+    print('Used default VthStep:', VthStep)
 
 if args.batch:
-    #switch for batch mode
-    print("batch mode")
-    batch_mode=1
-else:
-    batch_mode=0
+    print("Batch mode")
+    batch_mode = 1
 
-#procEnable.kill()
-#procTP.kill()
 
-print("IP:",IP)
-print("Vth low:",VthLow)
-print("Vth high:",VthHigh)
-print("Vth Step:",VthStep)
-if batch_mode:
-    print("batch mode")
+print("IP      :", IP     )
+print("Vth Low :", VthLow )
+print("Vth High:", VthHigh)
+print("Vth Step:", VthStep)
 
-cmd="pwd".split('/')
-subprocess.run(cmd,shell=True)
+
+# cmd="pwd".split('/')
+# subprocess.run(cmd,shell=True)
     
-newrun=find_newrun()
-CMD="mkdir "+newrun
-print_and_exe(CMD)
-#subprocess.run(CMD,shell=True)
+newrun = find_newrun()
+cmd = "mkdir " + newrun
+print_and_exe(cmd)
+
 os.chdir(newrun)
-
-#procEnable = subprocess.Popen(Enable,stdout=subprocess.PIPE)
-#procTP = subprocess.Popen(TestPulse,stdout=subprocess.PIPE,shell=True)
-
-
-#EXECOM=EXEPATH+"/"+EXE+" "+IP+" "+srt(VthLow)+" "+srt(VthHigh)+" "+srt(VthStep)
-CMD=EXE_DAQ+" "+IP+" "+str(VthLow)+" "+str(VthHigh)+" "+str(VthStep)
-
-print_and_exe(CMD)
-
-
-#procEnable.kill()
-#procTP.kill()
-
+cmd = EXE_DAQ + " " + IP + " " + str(VthLow) + " "+str(VthHigh) + " "+str(VthStep)
+print_and_exe(cmd)
 os.chdir("../")
 
 if batch_mode:
-    print("batch mode")
-    CMD=EXE_ANA+" -b "+newrun
+    cmd = EXE_ANA + " -b " + newrun
 else:
-    CMD=EXE_ANA+" "+newrun
+    cmd = EXE_ANA + " " + newrun
+print_and_exe(cmd)
 
-print_and_exe(CMD)
+cmd = "mv Vthcheck.png " + newrun
+print_and_exe(cmd)
 
-CMD="mv Vthcheck.png "+newrun
-print_and_exe(CMD)
-
-#CMD="mv scan_config.out Vth.root"+
-#print("execute:",EXECOM)
-#subprocess.run(EXECOM,shell=True)
-
-
+print('### MADA_runVthScan.py end ###')

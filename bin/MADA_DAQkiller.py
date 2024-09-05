@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import os, sys
 import subprocess
@@ -9,7 +9,7 @@ import glob
 import time,datetime
 
 #configs
-CONFIG="MADA_config.json"
+CONFIG = "MADA_config.json"
 
 HOME=os.environ["HOME"]
 RATEPATH=HOME+"/rate/"

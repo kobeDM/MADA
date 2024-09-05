@@ -16,21 +16,22 @@
 
 using namespace std;
 
-class SiTCP {
- public:
+class SiTCP
+{
+public:
   SiTCP();
   SiTCP(const string);
   ~SiTCP();
 
-  bool   Open(const string);
-  void   Close();
+  bool Open(const string);
+  void Close();
 
-  int    Read(char*);
+  int Read(char *);
 
- private:
-  struct sockaddr_in    param;
-  int                   sock;
-  int                   dev_num;
+private:
+  struct sockaddr_in param;
+  int sock;
+  int dev_num;
 };
 
 #endif

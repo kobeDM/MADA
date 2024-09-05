@@ -14,24 +14,18 @@ MADAHOME = os.environ['MADAHOME']
 
 # PATH
 MADABIN       = MADAHOME + '/bin/'
-# ITPATH         = HOME + '/ITECH/'
-RATEPATH       = HOME + '/rate/'
-# MADACONFIGPATH = HOME + '/miraclue/MADA/config/'
+RATEPATH      = HOME + '/rate/'
 
 # binary
-# MADA      ='MADA'
-# MADACON   ='MADA_con'
-MADAIWAKI = 'MADA_iwaki'
+MADAIWAKI     = 'MADA_iwaki'
 
 # scripts
-# FETCHCON      = MADAPATH + 'MADA_fetch_config.py'
-# findADALM     = MADAPATH + 'findADALM2000.py'
 SETDAC        = MADABIN + 'MADA_SetAllDAC.py'
 ENABLE        = MADABIN + 'MADA_DAQenable.py'
 DISABLE       = MADABIN + 'MADA_DAQenable.py -d'
 COUNTERRESET  = MADABIN + 'MADA_counterreset.py'
 DAQKILLER     = MADABIN + 'MADA_DAQkiller.py'
-KILLER        = MADABIN + 'MADA_killmodules.py'
+MODULEKILLER  = MADABIN + 'MADA_killmodules.py'
 ADKILLER      = MADABIN + 'MADA_killads.py'
 
 #configs
@@ -47,19 +41,16 @@ print('*** Author      : K. Miuchi (2021 Sep)                ***')
 print('*** Last update : R. Namai  (2024 Jul)                ***')
 print('*********************************************************')
 
-num         = 1000 # data size in Mbyte 
-num_max     = 1000 # max size
-# run_control = 0    # option for run control only
+num         = 10  # data size in Mbyte 
+num_max     = 100 # max size
 
 # read option parameters
 parser = argparse.ArgumentParser()
-parser.add_argument('-c', help='config file name',default=CONFIG               )
-# parser.add_argument('-s', help='silent mode (control only)',action='store_true')
-parser.add_argument('-n', help='file size in MB',default=num                   )
+parser.add_argument('-c', help='config file path' ,default=CONFIG)
+parser.add_argument('-n', help='file size in MB', default=num    )
 args = parser.parse_args()
 CONFIG     = args.c
 num        = args.n
-# run_control= args.s
 
 if int(num) > num_max:
     print('File size is too large. Apllied', num_max, 'Mbyte automatically.')
@@ -75,15 +66,12 @@ print()
 # print(ret.stdout)
 
 # Set DAC file
-# if run_control == 0:
 cmd = SETDAC
 print('execute:', cmd)
-ret = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False, text=True)
-print(ret.stdout)
+ret = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False, text=True).stdout
+print(ret)
     
 # load config file
-# config_open = open(CONFIG,'r')
-# config_load = json.load(config_open)
 activeIP = []
 boardID  = []
 with open(CONFIG, 'r') as config_open:
@@ -94,7 +82,8 @@ for x in config_load['gigaIwaki']:
         boardID.append(x)
         print('Board IP:', config_load['gigaIwaki'][x]['IP'])
             
-print('Number of Iwaki boards: ',len(activeIP))
+print('Number of Iwaki boards: ', len(activeIP))
+print()
 
 # make new period
 p = 0
@@ -106,19 +95,23 @@ proc   = subprocess.run(cmd, shell=True)
 cmd    = 'cp ' + CONFIG + ' ' + newper
 proc   = subprocess.run(cmd, shell=True)
 print('New directory', newper, 'is made.')
+print()
 
 fileperdir = 1000
 fileID     = 0
 
 # kill modules
-subprocess.run(KILLER, shell=True)
-# kill running DAQ
+subprocess.run(MODULEKILLER, shell=True)
+print()
+
+# make kill terminal
 cmd        = 'xterm -geometry 50x5+50+850 -title \'MADA killer\' -background black -foreground green -e ' + DAQKILLER + ' -p ' + str(newper)
 prockiller = subprocess.Popen(cmd, shell=True)
 
 # run DAQ
 while fileID < fileperdir:
     print(fileID, '/', fileperdir)
+    print()
 
     # kill running processes on ADALM
     cmd = ADKILLER
@@ -130,7 +123,7 @@ while fileID < fileperdir:
     pids = []
     for i in range(len(activeIP)):
         IP = activeIP[i]
-        filename_head = newper+'/'+boardID[i]+'_'+str(fileID).zfill(4)
+        filename_head = newper + '/'+boardID[i] + '_' + str(fileID).zfill(4)
         filename_info = filename_head + '.info'
         filename_mada = filename_head + '.mada'
         print('board ' + IP + ' info was written in ' + filename_info)
@@ -164,7 +157,7 @@ while fileID < fileperdir:
     enablepid = proc.pid
     subprocess.run(COUNTERRESET,shell=True)
     print('cmd              :', COUNTERRESET)
-    print('GIGAiwaki pids   :', pids)    
+    print('GIGAiwaki pids   :', pids)
     print('enable pid       :', enablepid)    
     print('working directory:', newper)
     print('started at        ', starttime)

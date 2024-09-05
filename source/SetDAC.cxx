@@ -7,8 +7,10 @@
 
 using namespace std;
 
-int main(int argc, char *argv[]){
-  if(argc!=3){
+int main(int argc, char *argv[])
+{
+  if (argc != 3)
+  {
     cerr << " USAGE> SetDAC [IP address] [DAC data file] " << endl;
     exit(1);
   }
@@ -20,11 +22,13 @@ int main(int argc, char *argv[]){
 
   char cmd[256];
   ifstream DAC_data(filename.c_str());
-  if(!DAC_data){
+  if (!DAC_data)
+  {
     cerr << " ERROR: file not exist " << endl;
     exit(1);
   }
-  for(int i=0; i<128; i++){
+  for (int i = 0; i < 128; i++)
+  {
     int ch, dac;
     DAC_data >> ch >> dac;
     cmd[ch] = SlowCtrl.convDAC(dac, 0, 0);

@@ -21,20 +21,21 @@
 
 using namespace std;
 
-class TCPclient {
- public:
-  TCPclient(const char*, int);
+class TCPclient
+{
+public:
+  TCPclient(const char *, int);
   ~TCPclient() {};
 
-  int    SendMessage(void*, int);
-  int    RecieveMsg(void*, int);
-  bool   isAlive();
-  void   Close();
+  int SendMessage(void *, int);
+  int RecieveMsg(void *, int);
+  bool isAlive();
+  void Close();
 
- private:
-  int    ClntSock;
-  bool   alive_flag;
-  struct sockaddr_in  addr;
+private:
+  int ClntSock;
+  bool alive_flag;
+  struct sockaddr_in addr;
 };
 
 #endif

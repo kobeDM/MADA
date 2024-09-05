@@ -10,24 +10,20 @@ from subprocess import PIPE
 
 print('### MADA_SetAllDAC.py start ###')
 
-MADAHOME = os.environ['MADAHOME']
-MADABIN  = MADAHOME + '/bin'
+MADAHOME    = os.environ['MADAHOME']
+MADABIN     = MADAHOME + '/bin'
 
 #scripts
-FETCHCON  = "/MADA_fetch_config.py"
-# findADALM = "findADALM2000.py"
-SETDAC    = "/MADA_SetAllDACs.py"
+FETCHCON    = "MADA_fetch_config.py"
 
 #configs
-CONFIG      = "/MADA_config.json"
-CONFIG_SKEL = "/MADA_config_SKEL.json"
+CONFIG      = "MADA_config.json"
 
-# MADAPATH = "/home/msgc/miraclue/MADA/bin/"
-# DACPATH  = "/home/msgc/miraclue/MADA/bin/"
+# binary
 LOGPATH     = MADAHOME + "/config/DAClog"
-SETVth_EXE  = MADABIN + "/SetVth"
-SETDAC_EXE  = MADABIN + "/SetDAC"
-READMEM_EXE = MADABIN + "/read_CtrlMem"
+SETVTH_EXE  = MADABIN  + "/SetVth"
+SETDAC_EXE  = MADABIN  + "/SetDAC"
+READMEM_EXE = MADABIN  + "/read_CtrlMem"
 
 # Check arguments
 argparser = argparse.ArgumentParser()
@@ -38,14 +34,12 @@ if args.config_file:
     CONFIG = args.config_file
 
 # Fetch config file
-cmd = MADABIN + FETCHCON
+cmd = MADABIN + '/' + FETCHCON
 print('Execute:', cmd)
 ret = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False)
 print(ret.stdout)
         
 #load config file
-# config_open = open(CONFIG, 'r')
-# config_load = json.load(config_open)
 activeIP = []
 with open(CONFIG, 'r') as config_open:
     config_load = json.load(config_open)
@@ -64,15 +58,15 @@ for x in config_load['gigaIwaki']:
         subprocess.run(cmd, shell=True)
 
         # Apply Vth
-        cmd = SETVth_EXE + " " + IP + " " + str(Vth)
+        cmd = SETVTH_EXE + " " + IP + " " + str(Vth)
         print('Execute:', cmd)
         subprocess.run(cmd, shell=True)
 
         dt   = datetime.datetime.now()
-        flog = LOGPATH + '/' + str(dt.year) + str(dt.month).zfill(2) + str(dt.day).zfill(2) + "-" + str(dt.hour).zfill(2) + str(dt.minute).zfill(2) + str(dt.second).zfill(2) + "-" + name
-        with open(flog, 'w') as log_out:
+        flog_name = LOGPATH + '/' + str(dt.year) + str(dt.month).zfill(2) + str(dt.day).zfill(2) + "-" + str(dt.hour).zfill(2) + str(dt.minute).zfill(2) + str(dt.second).zfill(2) + "-" + name
+        with open(flog_name, 'w') as log_out:
             cmd = READMEM_EXE + " " + IP
             subprocess.run(cmd, shell=True, stdout=log_out)
-            print("Memory check log:", flog)
+            print("Memory check log:", flog_name)
 
 print('### MADA_SetAllDAC.py end ###')

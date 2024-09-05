@@ -6,8 +6,10 @@
 #include <unistd.h>
 using namespace std;
 
-int main(int argc, char *argv[]){
-  if(argc!=3){
+int main(int argc, char *argv[])
+{
+  if (argc != 3)
+  {
     cerr << " USAGE> SetVth [IP address] [Vth val.] " << endl;
     cerr << "   Vth: give a decimal number from 0 and 16383 " << endl;
     exit(1);
@@ -17,10 +19,10 @@ int main(int argc, char *argv[]){
   val = val & 0x3fff;
 
   RBCP SlowCtrl;
-  cout<<"IP:"<<IPaddr<<endl;
-  cout<<"Vth:"<<val<<endl;
-  
-    SlowCtrl.Open(IPaddr);
+  cout << "IP:" << IPaddr << endl;
+  cout << "Vth:" << val << endl;
+
+  SlowCtrl.Open(IPaddr);
 
   char cmd[256];
   cmd[0] = (val >> 8) & 0x3f;
