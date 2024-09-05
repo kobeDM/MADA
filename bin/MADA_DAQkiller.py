@@ -22,6 +22,7 @@ MADApy="MADA.py"
 parser = argparse.ArgumentParser()
 parser.add_argument("-c",help="config file name",default=CONFIG)
 parser.add_argument("-p",help="pername",default=-1)
+parser.add_argument("-d",help="kill process without pressing the enter key",action="store_true")
 args = parser.parse_args( )
 config=args.c
 per=args.p
@@ -44,8 +45,8 @@ for x in config_load['gigaIwaki']:
 #        print(config_load['gigaIwaki'][x]['IP'])
 #load config file ends.
 
-
-s=input('return to kill MADA>')
+if not args.d:
+    s=input('return to kill MADA>')
 endtime=time.time()#.now().timestamp()
 
 # find the latest info file
@@ -59,7 +60,9 @@ file=per+"/*_"+str(fileID).zfill(4)+".info"
 print(" target file: "+file)
 
 size=[]
+
 for i in range(len(activeIP)):
+    
     filename_head=per+"/"+boardID[i]+"_"+str(fileID).zfill(4)
     filename_info=filename_head+".info"
     filename_mada=filename_head+".mada"
@@ -68,12 +71,14 @@ for i in range(len(activeIP)):
                             shell=True).communicate()[0].decode('utf-8')
 #    print(proc)
     sizel=str(proc).split()
+    
 #    print("size= ",str(sizel[4]),"byte")
     dmes={}
  #   dmes['start']=starttime
     dmes['end']=endtime
     dmes['size']=sizel[4]
 #    print(str(i)+" ")
+    
     size.append(sizel[4])
     ddmes={"runinfo":dmes}
     info_open= open(filename_info,'r')
@@ -107,12 +112,15 @@ f = open(ofile, 'a')
 #print("active"+str(len(activeIP)))
 #print("size"+str(len(size)))
 rate=[]
-for ii in range(4):
-    rate.append(float(size[ii])/realtime);
-f.write(t+"\t"+str(starttime)+"\t"+str(endtime)+"\t"+str(size[0])+"\t"+str(size[1])+"\t"+str(size[2])+"\t"+str(size[3])+"\t"+str(float(size[0])/realtime)+"\t"+str(float(size[1])/realtime)+"\t"+str(float(size[2])/realtime)+"\t"+str(float(size[3])/realtime)+"\n")
+
+# for ii in range(4):
+for ii in range(2):
+    rate.append(float(size[ii])/realtime)
+# f.write(t+"\t"+str(starttime)+"\t"+str(endtime)+"\t"+str(size[0])+"\t"+str(size[1])+"\t"+str(size[2])+"\t"+str(size[3])+"\t"+str(float(size[0])/realtime)+"\t"+str(float(size[1])/realtime)+"\t"+str(float(size[2])/realtime)+"\t"+str(float(size[3])/realtime)+"\n")
+f.write(t+"\t"+str(starttime)+"\t"+str(endtime)+"\t"+str(size[0])+"\t"+str(size[1])+"\t"+str(float(size[0])/realtime)+"\t"+str(float(size[1])/realtime)+"\n")
 f.close()
 
-exes=[ MADApy, MADAIWAKI]
+exes=[MADApy, MADAIWAKI]
 for exe in exes:
     cmd="ps -aux | grep "+exe+" | grep -v 'ps -aux' |awk '{print $2}'"
     print(cmd)
