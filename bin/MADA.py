@@ -41,16 +41,19 @@ print('*** Author      : K. Miuchi (2021 Sep)                ***')
 print('*** Last update : R. Namai  (2024 Jul)                ***')
 print('*********************************************************')
 
-num         = 10  # data size in Mbyte 
-num_max     = 100 # max size
+num         = 10   # data size in Mbyte 
+num_max     = 100  # max size
+fileperdir  = 1000
 
 # read option parameters
 parser = argparse.ArgumentParser()
-parser.add_argument('-c', help='config file path' ,default=CONFIG)
-parser.add_argument('-n', help='file size in MB', default=num    )
+parser.add_argument('-c', help='config file path',    default=CONFIG     )
+parser.add_argument('-n', help='file size in MB',     default=num        )
+parser.add_argument('-f', help='maximum file number', default=fileperdir )
 args = parser.parse_args()
 CONFIG     = args.c
 num        = args.n
+fileperdir = args.f
 
 if int(num) > num_max:
     print('File size is too large. Apllied', num_max, 'Mbyte automatically.')
@@ -97,7 +100,7 @@ proc   = subprocess.run(cmd, shell=True)
 print('New directory', newper, 'is made.')
 print()
 
-fileperdir = 1000
+# fileperdir = 1000
 fileID     = 0
 
 # kill modules
@@ -108,8 +111,9 @@ print()
 cmd        = 'xterm -geometry 50x5+50+850 -title \'MADA killer\' -background black -foreground green -e ' + DAQKILLER + ' -p ' + str(newper)
 prockiller = subprocess.Popen(cmd, shell=True)
 
+# print("file per dir: "+str(fileperdir))
 # run DAQ
-while fileID < fileperdir:
+while fileID < int(fileperdir):
     print(fileID, '/', fileperdir)
     print()
 
@@ -119,6 +123,9 @@ while fileID < fileperdir:
     # latch down DAQ enable
     cmd = DISABLE
     subprocess.run(cmd, shell=True)
+    #DAC reset in case LV was dropped in the last file
+    cmd = SETDAC 
+    subprocess.run(SETDAC, shell=True)
 
     pids = []
     for i in range(len(activeIP)):
@@ -233,11 +240,11 @@ while fileID < fileperdir:
     t     = y + '/' + m.zfill(2) + '/' + d.zfill(2) + '/' + hh.zfill(2) + ':'+mm.zfill(2) + ':' + ss.zfill(2)
 
     # write out event rate into DB and tsb
-    # starttime, endtime, mada size, , , mada size / realtime, , , 
+    # starttime, endtime, mada size, , , mada size / realtime, , ,
     with open(ofile, 'a') as f:
         rate = []
         for ii in range(len(activeIP)):
-            rate.append(float(size[ii])/realtime);
+            rate.append(float(size[ii])/realtime)
         out_list = [t, starttime, endtime] + size + [float(s) / realtime for s in size]
         out_str = '\t'.join(map(str, out_list)) + '\n'
         f.write(out_str)
