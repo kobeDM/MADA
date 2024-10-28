@@ -41,9 +41,10 @@ EXE_SETDAC = MADABIN + "SetDAC"
 EXE_DAQ    = MADABIN + "MADA_VthScan"
 EXE_ANA    = MADABIN + "MADA_runVthAna.py"
 
-DACfile = DACFILEPATH + "192.168.100.19_20.dac"
+# DACfile = DACFILEPATH + "192.168.100.19_20.dac"
 # DACfile = DACFILEPATH + "192.168.100.25_9.dac"
 # DACfile = "/home/msgc/namai/VthScan/DAC_run0037/base_correct.dac"
+DACfile = "/home/msgc/namai/VthScan/v3.1/No00_base_v3.1.dac"
 
 # default setting
 VthLow     = "0"
@@ -111,7 +112,7 @@ else:
     cmd = EXE_ANA + " " + newrun
 print_and_exe(cmd)
 
-cmd = "mv Vthcheck.png " + newrun
+cmd = "mv Vthcheck.png Vth.root " + newrun
 print_and_exe(cmd)
 
 print('### MADA_runVthScan.py end ###')

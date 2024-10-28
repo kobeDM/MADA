@@ -32,7 +32,7 @@
 int ShowVth(){
   TString s_infile;
   TCanvas *c1 = new TCanvas("c1", "c1", 800, 600);
-  s_infile="RUNID/Vth.root";
+  s_infile="Vth.root";
   TFile *file_in;
   file_in = new TFile(s_infile);
   //  file_in->ls();

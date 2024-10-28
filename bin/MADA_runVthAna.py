@@ -13,7 +13,7 @@ IWAKIANAHOME = os.environ['IWAKIANAHOME']
 
 MADABIN   = MADAHOME     + '/bin/'
 MADAROOT  = MADAHOME     + '/rootmacro'
-EXEPATH   = IWAKIANAHOME + '/src'
+EXEPATH   = IWAKIANAHOME + '/bin'
 EXE       = "Vth_Analysis"
 SKEL      = "ShowVth_skel.cxx"
 SHOW_CODE = "ShowVth.cxx"
@@ -80,7 +80,7 @@ else:
     print('Used default Vth:', Vth)
 
 
-EXECOM = EXEPATH + "/" + EXE + " " + run + " " + VthLow + " " + VthHigh + " " + VthStep
+EXECOM = EXEPATH + "/" + EXE + " " + run + "/ " + VthLow + " " + VthHigh + " " + VthStep
 print("execute:",EXECOM)
 subprocess.run(EXECOM,shell=True)
 
