@@ -5,9 +5,14 @@ import glob
 from subprocess import PIPE
 
 MADAHOME  = os.environ['MADAHOME']
+IWAKIANAHOME = os.environ['IWAKIANAHOME']
+
 MADABIN = MADAHOME + '/bin'
-SCAN = "MADA_DACScan"
-ANA = "MADA_DACAna"
+IWAKIANABIN = IWAKIANAHOME + '/bin'
+# SCAN = "MADA_DACScan"
+SCAN = "DAC_Survey"
+# ANA = "MADA_DACAna"
+ANA = "DAC_Analysis"
 
 def parser():
     argparser=argparse.ArgumentParser()
@@ -49,14 +54,20 @@ cmd = "mkdir " + newrun
 print_and_exe(cmd)
 
 os.chdir(newrun)
+
 cmd = "mkdir png"
 print_and_exe(cmd)
 
-cmd = MADABIN + "/" + SCAN + " " + IP + " " + Vth
+# cmd = MADABIN + "/" + SCAN + " " + IP + " " + Vth
+# cmd = "/home/msgc/miraclue/Analysis_program/bin/DAC_Survey" + " " + IP + " " + Vth
+cmd = IWAKIANABIN + "/" + SCAN + " " + IP + " " + Vth
 print_and_exe(cmd)
+
 os.chdir("../")
 
-cmd = MADABIN + "/" + ANA + " " + newrun + " " + Vth
+# cmd = MADABIN + "/" + ANA + " " + newrun + " " + Vth
+# cmd = "/home/msgc/miraclue/Analysis_program/bin/DAC_Analysis" + " " + newrun + "/ " + Vth
+cmd = IWAKIANABIN + "/" + ANA + " " + newrun + " " + Vth
 print_and_exe(cmd)
   
 cmd = "mv DAC.root " + newrun 

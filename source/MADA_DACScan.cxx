@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 
   // Set Vth
   char cmd[256];
-  cmd[0] = (Vth >> 8) & 0x3f;
+  cmd[0] = (Vth >> 8) & 0x3f; 
   cmd[1] = Vth & 0xff;
   SlowCtrl.WriteRBCP(0x80, cmd, 2);
   //  cout << " Vth value write " << endl;
