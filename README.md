@@ -1,4 +1,5 @@
 # MADA (MiraclueArgonDAQ)
+This branch is optimized for GigaIwaki v3.1
 # Usage
 - DAQ  
     ```
