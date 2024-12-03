@@ -5,17 +5,19 @@
 		"active": 1,
 		"connection": "c0-0",
 		"pitch": "800",
-		"IP": "192.168.100.25",
-		"Vth": 9500,
-		"DACfile": "/home/msgc/namai/VthScan/archive/DACfile/192.168.100.25_8.dac"
+		"IP": "192.168.100.96",
+		"Vth": 10190,
+		"bias": 10300,
+		"DACfile": "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.96_2.dac"
 	  },
 	  "GBKB-03": {
 		"active": 1,
 		"connection": "a2-0",
 		"pitch": "800",
-		"IP": "192.168.100.19",
-		"Vth": 8500,
-		"DACfile": "/home/msgc/namai/VthScan/archive/DACfile/192.168.100.19_13.dac"
+		"IP": "192.168.100.64",
+		"Vth": 9220,
+		"bias": 9150,
+		"DACfile": "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.64_5.dac"
 	  }
 	},
 	"ADALM": {
