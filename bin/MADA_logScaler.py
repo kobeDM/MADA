@@ -46,28 +46,24 @@ class ScalerLoggingEventHandler( LoggingEventHandler ):
             ]
             result = client.write_points( json_data )    
 
-def main():
-    client = InfluxDBClient( host = "10.37.0.216",
-                             port = "8086",
-                             username = "root",
-                             password = "root",
-                             database = "cn1")
+client = InfluxDBClient( host = "10.37.0.216",
+                            port = "8086",
+                            username = "root",
+                            password = "root",
+                            database = "cn1")
 
-    logging.basicConfig( level = logging.INFO,
-                         format = '%(asctime)s - %(message)s',
-                         datefmt = '%Y-%m-%d %H:%M:%S' )
-    path = RATEPATH
-    event_handler = ScalerLoggingEventHandler( )
-    observer = Observer( )
-    observer.schedule( event_handler, path, recursive = True )
-    observer.start( )
-    try:
-        while True:
-            time.sleep( 1 )
-    except KeyboardInterrupt:
-        observer.stop( )
-        
-    observer.join( )
-        
-if __name__ == "__main__":
-    main()
+logging.basicConfig( level = logging.INFO,
+                        format = '%(asctime)s - %(message)s',
+                        datefmt = '%Y-%m-%d %H:%M:%S' )
+path = RATEPATH
+event_handler = ScalerLoggingEventHandler( )
+observer = Observer( )
+observer.schedule( event_handler, path, recursive = True )
+observer.start( )
+try:
+    while True:
+        time.sleep( 1 )
+except KeyboardInterrupt:
+    observer.stop( )
+    
+observer.join( )

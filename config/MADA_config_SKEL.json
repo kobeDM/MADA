@@ -3,7 +3,7 @@
 	"gigaIwaki": {
 	  "GBKB-11": {
 		"active": 1,
-		"connection": "c0-0",
+		"connection": "c1",
 		"pitch": "800",
 		"IP": "192.168.100.96",
 		"Vth": 10190,
@@ -12,7 +12,7 @@
 	  },
 	  "GBKB-03": {
 		"active": 1,
-		"connection": "a2-0",
+		"connection": "a1",
 		"pitch": "800",
 		"IP": "192.168.100.64",
 		"Vth": 9220,

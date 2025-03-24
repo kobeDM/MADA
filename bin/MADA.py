@@ -36,6 +36,7 @@ def parser():
     parser.add_argument('-c', help='config file path',    default=CONFIG     )
     parser.add_argument('-n', help='file size in MB',     default=num        )
     parser.add_argument('-f', help='maximum file number', default=fileperdir )
+    parser.add_argument('-r', '--remote', help='Start DAQ in remote', action='store_true')
     args = parser.parse_args()
 
     return args
@@ -105,7 +106,10 @@ subprocess.run(MODULEKILLER, shell=True)
 print('---')
 
 # make kill terminal
-cmd = 'xterm -geometry 50x5+50+850 -title \'MADA killer\' -background black -foreground green -e ' + DAQKILLER + ' -p ' + str(newper)
+if (args.remote):
+    cmd = DAQKILLER + ' -p ' + str(newper)
+else:
+    cmd = 'xterm -geometry 50x5+50+850 -title \'MADA killer\' -background black -foreground green -e ' + DAQKILLER + ' -p ' + str(newper)
 prockiller = subprocess.Popen(cmd, shell=True)
 
 # run DAQ
@@ -134,12 +138,18 @@ while fileID < int(fileperdir):
         filename_mada = filename_head + '.mada'
         print('Board ' + IP + ' info was written in ' + filename_info)
         print('IP:', IP)
-        cmd = 'xterm -geometry 50x10+50+'+str(i*200)+' -e '+MADAIWAKI+' -n '+str(num)+' -f '+str(filename_mada)+' -i '+IP 
+        if args.remote:
+            cmd = MADAIWAKI + ' -n ' + str(num) + ' -f ' + str(filename_mada) + ' -i ' + IP 
+        else:
+            cmd = 'xterm -geometry 50x10+50+' + str(i*200) + ' -e '+ MADAIWAKI + ' -n ' + str(num) + ' -f ' + str(filename_mada) + ' -i ' + IP 
         print('Execute : ' + cmd)
         proc = subprocess.Popen(cmd,shell=True,stdout=PIPE,stderr=None)
         pids.append(proc.pid)
         
-    cmd = 'xterm -geometry 50x10+400+0 -e ' + ENABLE
+    if args.remote:
+        cmd = ENABLE
+    else:
+        cmd = 'xterm -geometry 50x10+400+0 -e ' + ENABLE
     print('Exectue: ' + cmd)
     proc = subprocess.Popen(cmd,shell=True)
     enablepid = proc.pid
