@@ -98,7 +98,7 @@ int ShowVth()
     float center_rate = 0;
     for (int step = 0; step < vth_step; step++)
     {
-      float rate = DAC_image->GetBinContent(ch + 1, step + 1);
+      float rate = DAC_image->GetBinContent(ch + 2, step + 1);
       v_rate.push_back(rate);
       v_vth.push_back(vth);
       if (std::fabs(rate - 0.5) < std::fabs(center_rate - 0.5))

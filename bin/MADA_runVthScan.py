@@ -12,8 +12,9 @@ def parser():
     argparser.add_argument("VthLow", type=int, nargs='?', const=None, help='[V thresholod lower bound]')
     argparser.add_argument("VthHigh", type=int, nargs='?', const=None, help='[V thresholod upper bound]')
     argparser.add_argument("VthStep", type=int, nargs='?', const=None, help='[V thresholod step]')
-    argparser.add_argument("-b", "--batch", help="batch mode", dest='batch', action="store_true")
+    argparser.add_argument("-b", "--batch", help="batch mode", action="store_true")
     argparser.add_argument("-d", "--dac", help="dac file path")
+    argparser.add_argument("-c", "--correct", help="correct dac value", action="store_true")
     args = argparser.parse_args()
     
     return args
@@ -37,25 +38,28 @@ def find_newrun():
 
 MADAHOME     = os.environ["MADAHOME"]
 IWAKIANAHOME = os.environ['IWAKIANAHOME']
-MADABIN      = MADAHOME + '/bin/'
-IWAKIANABIN  = IWAKIANAHOME + '/bin/'
-CONFIGPATH   = MADAHOME + "/config/"
+MADABIN      = MADAHOME + '/bin'
+MADAROOT     = MADAHOME + '/rootmacro' 
+IWAKIANABIN  = IWAKIANAHOME + '/bin'
 
-FETCHCONFIG   = MADABIN + "MADA_fetch_config.py"
-EXE_SETDAC = MADABIN + "SetDAC"
-EXE_DAQ    = IWAKIANABIN + "ScanVth"
-EXE_ANA    = MADABIN + "MADA_runVthAna.py"
+FETCHCONFIG   = MADABIN + "/MADA_fetch_config.py"
+EXE_SETDAC = MADABIN + "/SetDAC"
+EXE_DAQ    = IWAKIANABIN + "/ScanVth"
+EXE_ANA    = MADABIN + "/MADA_runVthAna.py"
+EXE_CORR   = MADAROOT + "/DACValueCorrection.cxx"
 
-# Default values
-VthLow     = "0"
-VthHigh    = "16384"
-VthStep    = "32"
-batch_mode = 0
-DACfile = "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.64_4.dac"
-# DACfile = "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.96_1.dac"
-# DACfile = "/home/msgc/namai/VthScan/v3.1/DAC_run0022/base_correct.dac"
+
 
 def main():
+    # Default values
+    VthLow     = "0"
+    VthHigh    = "16384"
+    VthStep    = "32"
+    batch_mode = 0
+    DACfile = "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.64_4.dac"
+    # DACfile = "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.96_1.dac"
+    # DACfile = "/home/msgc/namai/VthScan/v3.1/DAC_run0022/base_correct.dac"
+    
     args = parser()
     if args.IP:
         IP=args.IP
@@ -86,6 +90,7 @@ def main():
         DACfile = args.dac
     else:
         print('Used default DACfile:', DACfile)
+        
 
     cmd = FETCHCONFIG
     ret = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False)
@@ -123,6 +128,15 @@ def main():
 
     cmd = "cp " + DACfile + " " + newrun
     print_and_exe(cmd)
+
+    if args.correct:
+        print("Correct DAC values automatically.")
+        rootfile = newrun + "/Vth_val.root"
+        dacfile = glob.glob(newrun + "/*.dac")[0]
+        print("Corrected DAC file: " + dacfile)
+        outputfile = dacfile.replace('.dac', '') + "_correct.dac"
+        cmd = "root -l -b -q \'" + EXE_CORR + "(\"" + rootfile + "\", " + "\"" + dacfile + "\", " + "\"" + outputfile + "\")\'"
+        print_and_exe(cmd) # Correct branch date is not filled to rootfile currently.
 
     print('### MADA_runVthScan.py end ###')
 
