@@ -1,5 +1,16 @@
 # MADA
-MiraclueArgonDAQ  
+MiraclueArgonDAQ
+
+## Preparation
+
+NetworkUtil should be cloned in MADA repository
+
+```
+$ git clone git@github.com:kobeDM/MADA.git
+$ cd MADA
+$ git clone git@github.com:kobeDM/NetworkUtil.git
+```
+
 - DAQ  
 $MADA.py [-n num of events per file] [-m num of files per fir]   
 -- config file を準備  (MADA.pyから呼ばれる)  
