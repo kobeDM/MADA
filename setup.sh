@@ -1,0 +1,6 @@
+DIR=`pwd -P`
+export MADAPATH=${DIR}
+export NETWORKUTILPATH=${DIR}/NetworkUtil
+export PATH=${MADAPATH}/bin:${PATH}
+# export PYTHONPATH=${NETWORKUTILPATH}/udp:${PYTHONPATH}
+export PYTHONPATH=${MADAPATH}/pythonlib:${NETWORKUTILPATH}/udp:${PYTHONPATH}
