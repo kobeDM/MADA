@@ -1,8 +1,8 @@
 #!/usr/bin/python3
-
 import argparse
 from udp_util import UDPGenericSocket
 import MADA_defs as MADADef
+
 
 def main( ):
     
@@ -21,11 +21,13 @@ def main( ):
     udpsock = UDPGenericSocket( True, 1024 )
     udpsock.initialize( ip_address, udp_port )
 
-    if udpsock.receive( ) == MADADef.MADA_PACKET_DAQSTART:
+    data = udpsock.receive( )
+    if data == MADADef.PACKET_DAQSTART:
         print( "DAQ: start" )
     else:
         print( "DAQ start failed..." )
-        
+        print( data )
+        print( MADADef.PACKET_DAQSTART )
     
     return
 

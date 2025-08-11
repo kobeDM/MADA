@@ -7,6 +7,14 @@ Environmental  variables
 MADA_ENV_PATH    = os.environ["MADAPATH"]
 NETUTIL_ENV_PATH = os.environ["NETWORKUTILPATH"]
 PYLIB_ENV_PATH   = os.environ["PYTHONPATH"]
+HOME_ENV_PATH    = os.environ["HOME"]
+
+'''
+C++ binary
+'''
+
+CPP_MADA_IWAKI = "MADA_iwaki"
+
 
 '''
 Definition of MADA constants.
@@ -15,6 +23,7 @@ Definition of MADA constants.
 DEF_FILESIZE         = 1000  # data size in Mbyte
 DEF_CONFIGFILE       = "MADA_config.json"
 DEF_CONFIG_SKEL_FILE = "MADA_config_SKEL.json"
+DEF_RATEPATH         = f"{HOME_ENV_PATH}/rate/"
 
 MAX_BOARDS = 10
 ALL_BOARDS = [
@@ -24,12 +33,11 @@ ALL_BOARDS = [
     "GBKB-04",
     "GBKB-05",
     "GBKB-11",
-    "GBKB-13",
+v    "GBKB-13",
     "GBKB-14",
     "GBKB-15",
     "GBKB-16",
 ]
-
 
 '''
 MADA Control words for UDP data transfer
