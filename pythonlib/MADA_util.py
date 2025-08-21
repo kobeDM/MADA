@@ -2,8 +2,28 @@ import os
 import time
 import json
 import subprocess
+import datetime
 from subprocess import PIPE
 import MADA_defs as MADADef
+
+def get_current_period() -> str:
+    per_number = 0
+    while os.path.isdir( "per"+str( per_number ).zfill( 4 ) ):
+        per_number += 1
+
+    current_per = "per" + str( per_number - 1 ).zfill( 4 )
+    return current_per
+
+def make_new_period() -> str:
+    per_number = 0
+    while os.path.isdir( "per"+str( per_number ).zfill( 4 ) ):
+        per_number += 1
+
+    newper = "per" + str( per_number ).zfill( 4 )
+    cmd = "mkdir " + newper
+    subprocess.run( cmd, shell = True )
+
+    return newper
 
 
 def get_config( ):
@@ -20,30 +40,25 @@ def get_config( ):
     return
         
 
-def kill_process( ):
-    modules = [ 'MADA_iwaki' ]
+def kill_process( procname ):
     killpids = []
-    for i in range( len( modules ) ):
-        print( modules[i] )
-        ps = f"ps -aux  | grep -v \' grep \' | grep {modules[i]}"
-        process = ( subprocess.Popen( ps, stdout = subprocess.PIPE, shell = True ).communicate( )[0] ).decode( 'utf-8' )
-        pl = process.split( "\n" )
-        for j in range( len( pl ) - 1 ):
-            pll = pl[j].split( )
-            killpids.append( pll[1] )
+    ps = f"ps -aux  | grep -v \' grep \' | grep {procname}"
+    process = ( subprocess.Popen( ps, stdout = subprocess.PIPE, shell = True ).communicate( )[0] ).decode( 'utf-8' )
+    pl = process.split( "\n" )
+    for j in range( len( pl ) - 1 ): # range( len( ) - 1 ) is necessary to avoid "grep" process itself
+        pll = pl[j].split( )
+        killpids.append( pll[1] )
+        print( f"listing {pl[j]}" )
 
-    for i in range( len( killpids ) - 1 ):
+    for i in range( len( killpids ) ):
         kill = f"kill -KILL {killpids[i]}"
         subprocess.run( kill, shell = True )
+        print( f"process: {killpids[i]} killed." )
     
     return
 
-
 def kill_DAQ( config, pername ):
-    if per[0] != "p":
-        pername = "per"+str(per).zfill(4)
 
-    print( "**MADAkiller.py**" )
     print( f"target dir: {pername}" )
 
     # load config file
@@ -58,13 +73,10 @@ def kill_DAQ( config, pername ):
 
     endtime = time.time()
 
+    kill_process( 'MADA_iwaki' )
+    
     fileID = 0
     target_file = pername + "/*_" + str( fileID ).zfill( 4 ) + ".info"
-    while len( glob.glob( target_file ) ):
-        fileID = fileID + 1
-        target_file = per + "/*_" + str( fileID ).zfill( 4 ) + ".info"
-    fileID = fileID - 1
-    target_file = per + "/*_" + str( fileID ).zfill( 4 ) + ".info"
     print( f"target file: {target_file}" )
 
     size = { bid: 0 for bid in MADADef.ALL_BOARDS }

@@ -10,18 +10,6 @@ import MADA_defs as MADADef
 import MADA_util as MADAUtil
 
 
-def make_new_period() -> str:
-    per_number = 0
-    while os.path.isdir( "per"+str( per_number ).zfill( 4 ) ):
-        per_number += 1
-
-    newper = "per" + str( per_number ).zfill( 4 )
-    cmd = "mkdir " + newper
-    subprocess.run( cmd, shell = True )
-
-    return newper
-
-
 def start_daq(args, newper):
     mada_config_path = args.c
     file_size = args.n
@@ -48,7 +36,7 @@ def start_daq(args, newper):
     cmd = f"cp {mada_config_path} {newper}"
     proc = subprocess.run( cmd, shell = True )
 
-    MADAUtil.kill_process( )
+    MADAUtil.kill_process( 'MADA_iwaki' )
 
     # DAQ run
     fileperdir = 10000
@@ -106,7 +94,7 @@ def start_daq(args, newper):
                 running = 0
                 print( "file terminate" )
                 endtime = time.time( )
-                MADAUtil.kill_process( )
+                MADAUtil.kill_process( 'MADA_iwaki' )
                 break
 
         # send message to stop DAQ here
@@ -177,7 +165,7 @@ def main():
     parser.add_argument( "-n", help = "file size in MB", default = MADADef.DEF_FILESIZE )
 
     args = parser.parse_args()
-    current_period = make_new_period()
+    current_period = MADAUtil.make_new_period()
     
     try:
         start_daq(args, current_period)
