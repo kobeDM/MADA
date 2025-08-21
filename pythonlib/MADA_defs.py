@@ -33,7 +33,7 @@ ALL_BOARDS = [
     "GBKB-04",
     "GBKB-05",
     "GBKB-11",
-v    "GBKB-13",
+    "GBKB-13",
     "GBKB-14",
     "GBKB-15",
     "GBKB-16",

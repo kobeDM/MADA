@@ -27,8 +27,8 @@ def start_daq(args, newper):
     file_size = args.n
     run_control = args.s
 
-    if int( file_size ) > MADADef.MADA_DEF_FILESIZE:
-v        file_size = MADADef.MADA_DEF_FILESIZE
+    if int( file_size ) > MADADef.DEF_FILESIZE:
+        file_size = MADADef.DEF_FILESIZE
     print( f"data size per file: {file_size} Mbyte")
 
     # load config file

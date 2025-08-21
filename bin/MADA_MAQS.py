@@ -27,7 +27,6 @@ def main( ):
     else:
         print( "DAQ start failed..." )
         print( data )
-        print( MADADef.PACKET_DAQSTART )
     
     return
 
