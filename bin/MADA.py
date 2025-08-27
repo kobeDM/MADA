@@ -41,7 +41,7 @@ def daq_run( ):
         submit_to_maqs( MADADef.PACKET_DAQSTART )
         while True:
             submit_to_maqs( MADADef.PACKET_CHECKDAQ )
-            time.sleep( 10 )
+            time.sleep( 5 )
         
     return
 
@@ -55,7 +55,7 @@ def daq_abort( ):
     
     return
 
-def main():
+def main( ):
     print("** MADA start from MAQS client **")
     print("** Miraclue Argon DAQ (http://github.com/kobeDM/MADA) **")
     print("** 2025 Aug by S. Higashino **")
