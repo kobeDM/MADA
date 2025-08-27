@@ -1,8 +1,36 @@
 #!/usr/bin/python3
 import argparse
+import subprocess
+from subprocess import PIPE
 from udp_util import UDPGenericSocket
 import MADA_defs as MADADef
+import MADA_util as MADAUtil
 
+def start_maqs_daq( ):
+
+    cmd = f"{MADADef.PY_MAQS_RUNDAQ}"
+    proc = subprocess.Popen(cmd, shell=True, stdout=PIPE, stderr=None)
+    
+    return
+
+def abort_maqs_daq( ):
+
+    MADAUtil.kill_process( f"{MADADef.PY_MAQS_RUNDAQ}" ) # runDAQ should be killed before MADA_iwaki process
+    current_per = MADAUtil.get_current_period( )
+    MADAUtil.kill_DAQ( MADADef.DEF_CONFIGFILE, current_per )
+    
+    return
+
+def check_maqs_status( ):
+
+    return
+
+def config_set_vth_dac( ):
+    
+    cmd = f"{MADADef.PY_MAQS_SETVTHDAC}"
+    proc = subprocess.Popen(cmd, shell=True, stdout=PIPE, stderr=None)
+    
+    return
 
 def main( ):
     
@@ -21,13 +49,23 @@ def main( ):
     udpsock = UDPGenericSocket( True, 1024 )
     udpsock.initialize( ip_address, udp_port )
 
-    data = udpsock.receive( )
-    if data == MADADef.PACKET_DAQSTART:
-        print( "DAQ: start" )
-    else:
-        print( "DAQ start failed..." )
-        print( data )
-    
+    while True:
+        data = udpsock.receive( )
+
+        if data == MADADef.PACKET_DAQSTART:
+            print( "DAQ: start" )
+            start_maqs_daq( )
+        elif data == MADADef.PACKET_DAQSTOP:
+            print( "DAQ: stop" )
+            abort_maqs_daq( )
+        elif data == MADADef.PACKET_CHECKDAQ:
+            print( "DAQ: status check" )
+        elif data == MADADef.PACKET_SETVTHDAC:
+            print( "Config: set Vth and DAC" )
+        else:
+            print( "Unknown message..." )
+
+            
     return
 
 
