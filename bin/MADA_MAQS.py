@@ -25,6 +25,13 @@ def check_maqs_status( ):
 
     return
 
+def config_set_vth_dac( ):
+    
+    cmd = f"{MADADef.PY_MAQS_SETVTHDAC}"
+    proc = subprocess.Popen(cmd, shell=True, stdout=PIPE, stderr=None)
+    
+    return
+
 def main( ):
     
     print("** MADA MAQS Server starting... **")
@@ -53,6 +60,8 @@ def main( ):
             abort_maqs_daq( )
         elif data == MADADef.PACKET_CHECKDAQ:
             print( "DAQ: status check" )
+        elif data == MADADef.PACKET_SETVTHDAC:
+            print( "Config: set Vth and DAC" )
         else:
             print( "Unknown message..." )
 

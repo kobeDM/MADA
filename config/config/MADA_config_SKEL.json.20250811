@@ -1,17 +1,37 @@
 {
     "general":{},
     "GBKB":{
-	"GBKB-00":{"active":1,      "connection": "a1-0",  "pitch": "400",
-"IP":"192.168.100.16","Vth":8400,
-		   "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-00/20210928/base_correct.dac"},
-	"GBKB-01":{"active":1,      "connection": "a1-1", "pitch": "400",
-"IP":"192.168.100.17","Vth":8600,
-		   "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-01/20210928/base_correct3.dac"},
-	"GBKB-10":{"active":1,      "connection": "c1-0", "pitch": "400",
-"IP":"192.168.100.24","Vth":9600,
-		   "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-10/20210928/base_correct2.dac"},
-	"GBKB-11":{"active":1,      "connection": "c1-1", "pitch": "400",
-"IP":"192.168.100.25","Vth":9700,
-		   "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-11/20210928/base_correct2.dac"}
+	    "GBKB-00":{
+            "active":1,
+            "connection": "a1-0",
+            "pitch": "400",
+            "IP":"192.168.100.16",
+            "Vth":8400,
+		    "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-00/20210928/base_correct.dac"
+        },
+	    "GBKB-01":{
+            "active":1,
+            "connection": "a1-1",
+            "pitch": "400",
+            "IP":"192.168.100.17",
+            "Vth":8600,
+		    "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-01/20210928/base_correct3.dac"
+        },
+	    "GBKB-10":{
+            "active":1,
+            "connection": "c1-0",
+            "pitch": "400",
+            "IP":"192.168.100.24",
+            "Vth":9600,
+		    "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-10/20210928/base_correct2.dac"
+        },
+	    "GBKB-11":{
+            "active":1,
+            "connection": "c1-1",
+            "pitch": "400",
+            "IP":"192.168.100.25",
+            "Vth":9700,
+		    "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-11/20210928/base_correct2.dac"
+        }
     },
- }
+}
