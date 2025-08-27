@@ -62,6 +62,7 @@ def main( ):
             print( "DAQ: status check" )
         elif data == MADADef.PACKET_SETVTHDAC:
             print( "Config: set Vth and DAC" )
+            config_set_vth_dac( )
         else:
             print( "Unknown message..." )
 
