@@ -8,14 +8,14 @@ import MADA_util as MADAUtil
 
 def start_maqs_daq( ):
 
-    cmd = f"MADA_runDAQ.py"
+    cmd = f"{MADADef.PY_MAQS_RUNDAQ}"
     proc = subprocess.Popen(cmd, shell=True, stdout=PIPE, stderr=None)
     
     return
 
 def abort_maqs_daq( ):
 
-    MADAUtil.kill_process( 'MADA_runDAQ.py' ) # runDAQ should be killed before MADA_iwaki process
+    MADAUtil.kill_process( f"{MADADef.PY_MAQS_RUNDAQ}" ) # runDAQ should be killed before MADA_iwaki process
     current_per = MADAUtil.get_current_period( )
     MADAUtil.kill_DAQ( MADADef.DEF_CONFIGFILE, current_per )
     

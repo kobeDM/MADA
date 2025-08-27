@@ -10,10 +10,16 @@ PYLIB_ENV_PATH   = os.environ["PYTHONPATH"]
 HOME_ENV_PATH    = os.environ["HOME"]
 
 '''
-C++ binary
+C++ exe. binary name
 '''
 
 CPP_MADA_IWAKI = "MADA_iwaki"
+
+'''
+Python script name
+'''
+
+PY_MAQS_RUNDAQ = "MAQS_runDAQ.py"
 
 
 '''
