@@ -6,6 +6,7 @@ import datetime
 from subprocess import PIPE
 import MADA_defs as MADADef
 
+
 def get_current_period() -> str:
     per_number = 0
     while os.path.isdir( "per"+str( per_number ).zfill( 4 ) ):
@@ -14,7 +15,8 @@ def get_current_period() -> str:
     current_per = "per" + str( per_number - 1 ).zfill( 4 )
     return current_per
 
-def make_new_period() -> str:
+
+def make_new_period( ) -> str:
     per_number = 0
     while os.path.isdir( "per"+str( per_number ).zfill( 4 ) ):
         per_number += 1
@@ -25,6 +27,19 @@ def make_new_period() -> str:
 
     return newper
 
+
+def make_new_scan_run( scan_header ) -> str:
+    new_scan_run = ""
+    files = glob.glob( scan_header + "*" )
+    if len( files ) == 0:
+        new_scan_run = scan_header + "0".zfill( 4 )
+    else:
+        files.sort( reverse = True )
+        num_pos = files[0].find( "run" )
+        new_scan_run = scan_header + str( int( files[0][num_pos+3:num_pos+3+4] ) + 1 ).zfill( 4 )
+
+    return new_scan_run
+    
 
 def get_config( ):
     if os.path.isfile( MADADef.DEF_CONFIGFILE ):

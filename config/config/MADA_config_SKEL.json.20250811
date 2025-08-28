@@ -7,6 +7,8 @@
             "pitch": "400",
             "IP":"192.168.100.16",
             "Vth":8400,
+            "VthScanWidth":1000,
+            "VthScanStep":100,
 		    "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-00/20210928/base_correct.dac"
         },
 	    "GBKB-01":{
@@ -15,6 +17,8 @@
             "pitch": "400",
             "IP":"192.168.100.17",
             "Vth":8600,
+            "VthScanWidth":1000,
+            "VthScanStep":100,
 		    "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-01/20210928/base_correct3.dac"
         },
 	    "GBKB-10":{
@@ -23,6 +27,8 @@
             "pitch": "400",
             "IP":"192.168.100.24",
             "Vth":9600,
+            "VthScanWidth":1000,
+            "VthScanStep":100,
 		    "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-10/20210928/base_correct2.dac"
         },
 	    "GBKB-11":{
@@ -31,6 +37,8 @@
             "pitch": "400",
             "IP":"192.168.100.25",
             "Vth":9700,
+            "VthScanWidth":1000,
+            "VthScanStep":100,
 		    "DACfile":"/home/msgc/miraclue/MADA/config/GBKB-11/20210928/base_correct2.dac"
         }
     },
