@@ -16,6 +16,7 @@ C++ exe. binary name
 CPP_MADA_IWAKI   = "MADA_iwaki"
 CPP_MADA_VTHSCAN = "MADA_VthScan"
 CPP_MADA_VTHANA  = "MADA_VthAna"
+CPP_MADA_DACSCAN = "MADA_DACScan"
 
 '''
 Python script name
@@ -34,6 +35,7 @@ DEF_FILESIZE         = 1000  # data size in Mbyte
 DEF_CONFIGFILE       = "MADA_config.json"
 DEF_CONFIG_SKEL_FILE = "MADA_config_SKEL.json"
 DEF_RATEPATH         = f"{HOME_ENV_PATH}/rate/"
+DEF_SCAN_DIR         = f"Scan"
 DEF_VTHSCAN_HEADER   = f"Vth_run"
 DEF_DACSCAN_HEADER   = f"DAC_run"
 
