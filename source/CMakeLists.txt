@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1.3)
 set (CMAKE_CXX_STANDARD 11)
 project(MADA LANGUAGES CXX)
 
-set(Targets MADA_iwaki readIwaki SetVth read_CtrlMem SetDAC MADA_VthScan MADA_DACScan MADA_DACAna)
+set(Targets MADA_iwaki SetVth read_CtrlMem SetDAC MADA_VthScan MADA_VthAna MADA_DACScan MADA_DACAna)
 
 if (NOT WIN32)
 	find_library(PTHREAD_LIBRARIES pthread)
@@ -20,7 +20,6 @@ add_executable(MADA_VthAna MADA_VthAna.cxx)
 target_link_libraries(MADA_DACAna ROOT::Core ROOT::Gpad ROOT::Hist ROOT::Rint)
 target_link_libraries(MADA_VthAna ROOT::Core ROOT::Gpad ROOT::Hist ROOT::Rint)
 
-add_executable(readIwaki readIwaki.cpp SiTCP.cxx TCPclient.cxx RBCP.cxx)
 add_executable(MADA_iwaki MADA_iwaki.cpp SiTCP.cxx TCPclient.cxx RBCP.cxx)
 add_executable(SetVth SetVth.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
 add_executable(SetDAC SetDAC.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
