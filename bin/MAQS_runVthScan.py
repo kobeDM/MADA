@@ -19,6 +19,12 @@ def main( ):
     with open( mada_config_path, "r" ) as config_open :
         config_load = json.load( config_open )
         
+    # prepare and change scan working directory
+    scan_work_dir = MADADef.DEF_SCAN_DIR
+    if os.path.isdir( scan_work_dir ) == False:
+        os.mkdir( scan_work_dir )
+    os.chdir( scan_work_dir )
+    
     gbkb_info_arr = []
     for gbkb_name in config_load[ "GBKB" ]:
         if config_load["GBKB"][gbkb_name]["active"] == 0: continue
@@ -37,7 +43,7 @@ def main( ):
         newrun = MADAUtil.make_new_scan_run( MADADef.DEF_VTHSCAN_HEADER )
         os.mkdir( newrun )
         os.chdir( newrun )
-        print( "Making and changing directory to {newrun}" )
+        print( f"Making and changing directory to {newrun}" )
 
         # Vth scan
         cmd = f"{MADADef.CPP_MADA_VTHSCAN} {activeIP} {VthMin} {VthMax} {VthStep}"
@@ -49,7 +55,10 @@ def main( ):
         cmd = f"{MADADef.CPP_MADA_VTHANA} {newrun} {activeIP} {VthMin} {VthMax} {VthStep}"
         print( f"Execute: {cmd}" )
         subprocess.run( cmd, shell = True )
-    
+
+    os.chdir("../")
+    return
+
 if __name__ == "__main__":
     main( )
 

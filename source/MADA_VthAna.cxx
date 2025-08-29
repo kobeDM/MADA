@@ -69,11 +69,9 @@ int main( int argc, char* argv[] ){
                         data_file.read( &data, 1 );
                         if( ( data & 0xff ) == 0x64 ) { // header read end
                             double count[128] = { 0.0 };
-	      
                             int i_data;
                             data_file.read( (char*)&i_data, sizeof( int ) ); // skip Event counter
                             data_file.read( (char*)&i_data, sizeof( int ) ); // skip clock counter
-
                             data_file.read( (char*)&i_data, sizeof( int ) ); // skip input ch2 counter
                             if( htonl( i_data ) != 0x75504943 ) { // check if packet trailer (seems to be redundant)
                                 for( int i=0; i < 2*511; i++ ) data_file.read( (char*)&i_data, sizeof( int ) ); // skip ADC
@@ -82,7 +80,7 @@ int main( int argc, char* argv[] ){
                                 data_file.read( (char*)&i_data, sizeof( int ) ); // skip encode clock
 
                                 // Hit data
-                                for(;;) {
+                                for( ;; ) {
                                     data_file.read( (char*)&i_data, sizeof( int ) ); // hit header
                                     if( htonl( i_data ) == 0x75504943 || data_file.eof( ) ) break;
 
@@ -91,7 +89,7 @@ int main( int argc, char* argv[] ){
                                         i_data = htonl( i_data );
 
                                         for( int strip = 0; strip < 32; strip++ )
-                                            if( ( i_data >> strip ) & 0x1 ) count[32*(3-i) + strip] += 1;
+                                            if( ( i_data >> strip ) & 0x1 ) count[32 * (3 - i) + strip] += 1;
                                     }
                                 }
 
@@ -108,7 +106,7 @@ int main( int argc, char* argv[] ){
 
         if( event_num != 0 ) {
             for( int st = 0; st < 128; st++ )
-                DAC_image->Fill( st, fi, static_cast< double >( total[st] )/static_cast< double >( event_num ) );
+                DAC_image->Fill( st, fi, total[st]/static_cast< double >( event_num ) );
         }
     }
 
@@ -118,6 +116,7 @@ int main( int argc, char* argv[] ){
     DAC_image->Write( );
 
     TCanvas cvs( "cvs", "cvs", 800, 600 );
+    gStyle->SetOptStat( 0 );
     DAC_image->GetZaxis( )->SetRangeUser( 0.0, 1.2 );
     DAC_image->SetTitle( Form( "Vth scan ( %s, %s)", dirname.c_str( ), ip_address.c_str( ) ) );
     DAC_image->Draw( "colz" );

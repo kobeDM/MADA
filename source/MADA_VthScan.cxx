@@ -18,7 +18,6 @@ int main( int argc, char* argv[] )
         exit( 1 );
     }
 
-    std::string outfile_config_name = "scan_config.out";
     std::string ip_address = argv[1];
     int Vth_min = atoi( argv[2] );
     if( Vth_min > 0x3fff ) Vth_min = 0x3fff;
@@ -32,6 +31,7 @@ int main( int argc, char* argv[] )
         if( step > 0x3fff ) step = 0x3fff;
     }
 
+    std::string outfile_config_name = "scan_config.out";
     std::ofstream outfile_config;
     outfile_config.open( outfile_config_name.c_str( ), std::ios::out );
     outfile_config << "IP: " << ip_address << std::endl;
