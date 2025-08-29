@@ -11,7 +11,7 @@
 /per*
 /Vth_run*
 /DAC_run*
-
+**/__pycache__/**
 *.png
 
 scan_config.out

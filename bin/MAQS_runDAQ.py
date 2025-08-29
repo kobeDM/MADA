@@ -156,7 +156,7 @@ def start_daq(args, newper):
 def main():
 
     print( "**MADA start on MAQS servers**" )
-    print( "**Micacle Argon DAQ (http://github.com/kobeDM/MADA)**" )
+    print( "**Miraclue Argon DAQ (http://github.com/kobeDM/MADA)**" )
     print( "**2025 Aug by S. Higashino**" )
 
     parser = argparse.ArgumentParser( )
@@ -172,7 +172,7 @@ def main():
     except KeyboardInterrupt:
         print()
         print("===========================")
-        print("aborted DAQ")
+        print("DAQ aborting...")
         print("===========================")
 
         # send message to stop DAQ (DAQ enable control) here
