@@ -3,6 +3,7 @@ import os
 import subprocess
 import argparse
 import glob
+import json
 from subprocess import PIPE
 import MADA_defs as MADADef
 import MADA_util as MADAUtil
@@ -15,6 +16,7 @@ def main( ):
     print( "**2025 Aug by S. Higashino**" )
 
     # load config file
+    mada_config_path = MADADef.DEF_CONFIGFILE
     MADAUtil.get_config( )
     with open( mada_config_path, "r" ) as config_open :
         config_load = json.load( config_open )
@@ -46,13 +48,13 @@ def main( ):
         print( f"Making and changing directory to {newrun}" )
 
         # Vth scan
-        cmd = f"{MADADef.CPP_MADA_VTHSCAN} {activeIP} {VthMin} {VthMax} {VthStep}"
+        cmd = f"{MADADef.CPP_MADA_VTHSCAN} {activeIP} {VthMin} {VthMax} {VthScanStep}"
         print( f"Execute: {cmd}" )
         subprocess.run( cmd, shell = True )
         os.chdir("../")
 
         # Vth analysis
-        cmd = f"{MADADef.CPP_MADA_VTHANA} {newrun} {activeIP} {VthMin} {VthMax} {VthStep}"
+        cmd = f"{MADADef.CPP_MADA_VTHANA} {newrun} {activeIP} {VthMin} {VthMax} {VthScanStep}"
         print( f"Execute: {cmd}" )
         subprocess.run( cmd, shell = True )
 
