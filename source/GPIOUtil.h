@@ -1,6 +1,8 @@
 #ifndef GPIO_UTIL_h
 #define GPIO_UTIL_h
 
+#include <string>
+
 const unsigned int WIDTH_CNT_STORE       = 32;
 const unsigned int WIDTH_TRG_CNT         = 32;
 const unsigned int WIDTH_TRG_CNT_STORE   = 32;
