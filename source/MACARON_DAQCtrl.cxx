@@ -1,12 +1,11 @@
 #include <iostream>
-
-
 #include "GPIOUtil.h"
 
 int main( int argc, char* argv[] )
 {
     if( argc != 2 ) {
-        std::cerr << " USAGE> MACARON_DAQCtrl [1 (Enable) or 0 (Disable)]" << std::endl;
+        std::cerr << " Usage:" << std::endl;
+        std::cerr << " $ MACARON_DAQCtrl [1 (Enable) or 0 (Disable)]" << std::endl;
         std::cerr << " Counter Reset will also be sent when 1 (Enable) is selected " << std::endl;
         exit(1);
     }

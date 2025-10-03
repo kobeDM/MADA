@@ -26,7 +26,12 @@ unsigned int GPIOUtil::getFullValue( const unsigned int& chipID,
             break;
         }
 
-        gpiod_line_request_input( pLine, "" );
+        if( gpiod_line_request_input( pLine, "" ) == -1 ) {
+            std::cerr << "ERROR: failed to request that chip line is input." << std::endl;
+            gpiod_line_release( pLine );
+            gpiod_chip_close( pChip );
+            break;
+        }
 
         std::string val = std::to_string( gpiod_line_get_value( pLine ) );
         binaryStr = val + binaryStr;
@@ -54,7 +59,8 @@ bool GPIOUtil::setFullValue( const unsigned int& chipID,
     for( int bit = 0; bit < width; ++bit ) {
         // open GPIO chip
         std::string chipPath = GPIO_DEV_CHIP_PATH + std::to_string( chipID );
-
+        std::cout << "chip path :" << chipPath << std::endl;
+        
         struct gpiod_chip* pChip = gpiod_chip_open( chipPath.c_str( ) );
         if( pChip == nullptr ) {
             std::cerr << "ERROR: failed to open GPIO chip: " << chipID << "." << std::endl;
@@ -70,11 +76,26 @@ bool GPIOUtil::setFullValue( const unsigned int& chipID,
             break;
         }
 
-        gpiod_line_request_output( pLine, "", 0 );
+        if( gpiod_line_request_output( pLine, "", 0 ) == -1 ) { // success: 0 and fail: -1
+            std::cerr << "ERROR: failed to request that chip line is output." << std::endl;
+            gpiod_line_release( pLine );
+            gpiod_chip_close( pChip );
+            retVal = false;
+            break;
+        }
+
         unsigned int bitVal = inputVal & 0x1;
-        gpiod_line_set_value( pLine, bitVal );
+        std::cout << "GPIO DAQ enable set value: " << bitVal << std::endl;
+        if( gpiod_line_set_value( pLine, bitVal ) == -1 ) { // success: 0 and fail: -1
+            std::cerr << "ERROR: failed to setvalue to chip line" << std::endl;
+            gpiod_line_release( pLine );
+            gpiod_chip_close( pChip );
+            retVal = false;
+            break;
+        }
         inputVal >> 1;
-        
+
+
         gpiod_line_release( pLine );
         gpiod_chip_close( pChip );
     }
