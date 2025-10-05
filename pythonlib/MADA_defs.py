@@ -17,6 +17,7 @@ CPP_MADA_IWAKI   = "MADA_iwaki"
 CPP_MADA_VTHSCAN = "MADA_VthScan"
 CPP_MADA_VTHANA  = "MADA_VthAna"
 CPP_MADA_DACSCAN = "MADA_DACScan"
+CPP_MADA_DACANA  = "MADA_DACAna"
 
 '''
 Python script name
