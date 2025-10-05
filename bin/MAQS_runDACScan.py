@@ -3,6 +3,7 @@ import os
 import subprocess
 import argparse
 import glob
+import json
 from subprocess import PIPE
 import MADA_defs as MADADef
 import MADA_util as MADAUtil
@@ -15,6 +16,7 @@ def main( ):
     print( "**2025 Aug by S. Higashino**" )
 
     # load config file
+    mada_config_path = MADADef.DEF_CONFIGFILE
     MADAUtil.get_config( )
     with open( mada_config_path, "r" ) as config_open :
         config_load = json.load( config_open )
@@ -46,7 +48,7 @@ def main( ):
         os.chdir("../")
 
         # DAC analysis
-        cmd = f"{MADADef.CPP_MADA_DACANA} {newrun} {(activeIP.split('.'))[3]}"
+        cmd = f"{MADADef.CPP_MADA_DACANA} {newrun} {VthVal} {(activeIP.split('.'))[3]}"
         print( f"Execute: {cmd}" )
         subprocess.run( cmd, shell = True )
 
