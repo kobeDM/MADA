@@ -28,6 +28,8 @@ def send_command( dev, command, delay = 0.1, read_len=256 ):
         time.sleep( delay )
         if "?" in command:
             retVal = f.read( read_len ).decode( "ascii", errors = "ignore" )
+        else:
+            retVal = None
 
     cmd = f"rm {lock_filepath}"
     proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=None )
