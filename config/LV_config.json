@@ -1,0 +1,24 @@
+{
+    "devices":{
+	"serialnumber":["FN001549", "FN001541", "FN001602"],
+	"voltage":[3.6, 2.6, 2.65],
+	"currentlimit":[7.5, 2.5, 3.5]
+    },
+    "influxdb":{
+	"host":"10.37.0.214",
+	"port":8086,
+	"username":"root",
+	"password":"root",
+	"database":"miraclue",
+	"measurement":"LV",
+	"tags":{
+	    "host":"na14",
+	    "device":"PWR401L"
+	}
+    },
+    "interval":{
+	"monitor":1,
+	"reboot":1,
+	"database":5
+    }
+}
