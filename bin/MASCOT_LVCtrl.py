@@ -3,14 +3,15 @@ import os
 import time
 import json
 import glob
-from subprocess import PIPE
+#from subprocess import PIPE
+import subprocess
 from datetime import datetime, timedelta, timezone
 from influxdb import InfluxDBClient
 import MADA_defs as MADADef
 
    
 def send_command( dev, command, delay = 0.1, read_len=256 ):
-    lock_file = os.path.baseename( dev )
+    lock_file = os.path.basename( dev )
     lock_filepath = f"{MADADef.LOCK_TMP_PATH}/{MADADef.LOCK_FILENAME_ACCESS_PREFIX}_{lock_file}"
     while True:
         if os.path.isfile( lock_filepath ) == True:
@@ -20,7 +21,7 @@ def send_command( dev, command, delay = 0.1, read_len=256 ):
             break
 
     cmd = f"touch {lock_filepath}"
-    proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=None )
     proc.communicate( )
     with open( dev, "r+b", buffering = 0 ) as f:
         f.write( command.encode( "ascii" ) )
@@ -29,7 +30,7 @@ def send_command( dev, command, delay = 0.1, read_len=256 ):
             retVal = f.read( read_len ).decode( "ascii", errors = "ignore" )
 
     cmd = f"rm {lock_filepath}"
-    proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=None )
     proc.communicate( )
             
     return retVal
@@ -76,7 +77,7 @@ def output_on( dev_list, config ):
     time.sleep( 1 )
 
 
- def monitor_value( dev_list, config ):
+def monitor_value( dev_list, config ):
     print( "Monitoring Start." )
     curr_lim = config["devices"]["currentlimit"]
     measurement = config["influxdb"]["measurement"]
@@ -108,12 +109,12 @@ def output_on( dev_list, config ):
                 if curr_meas[1] > curr_lim[1] or curr_meas[2] > curr_lim[2]:
                     print( "+/- 2.5 V reset." )
                     send_command( dev_list[1], MADADef.LV_QUERY_OUTPUT_OFF )
-                    send_comnnmand( dev_list[2], MADADef.LV_QUERY_OUTPUT_OFF )
+                    send_command( dev_list[2], MADADef.LV_QUERY_OUTPUT_OFF )
                     time.sleep( itv_rbt )
                     send_command( dev_list[1], MADADef.LV_QUERY_OUTPUT_ON )
                     send_command( dev_list[2], MADADef.LV_QUERY_OUTPUT_ON )
                 if curr_meas[0] > curr_lim[0]:
-                    print( "+3.3 V resetn." )
+                    print( "+3.3 V reset." )
                     send_command( dev_list[0], MADADef.LV_QUERY_OUTPUT_OFF )
                     time.sleep( itv_rbt )
                     send_command( dev_list[0], MADADef.LV_QUERY_OUTPUT_ON )
@@ -157,13 +158,13 @@ def output_on( dev_list, config ):
 def main( ):
 
     if os.path.isfile( MADADef.DEF_LV_CONFIGFILE ) == False:
-        cmd = f"cp {MADA_ENV_PATH}/config/{DEF_LV_CONFIGFILE}"
-        proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+        cmd = f"cp {MADADef.MADA_ENV_PATH}/config/{MADADef.DEF_LV_CONFIGFILE} ."
+        proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=None )
         proc.communicate( )
         if proc.returncode == 0:
-            print( f"{DEF_LV_CONFIGFILE} copied from MADA repository" )
+            print( f"{MADADef.DEF_LV_CONFIGFILE} copied from MADA repository" )
         else:
-            print( f"Failed to copy {DEF_LV_CONFIGFILE} from MADA repository" )
+            print( f"Failed to copy {MADADef.DEF_LV_CONFIGFILE} from MADA repository" )
             return
         
     config = load_json( MADADef.DEF_LV_CONFIGFILE )
