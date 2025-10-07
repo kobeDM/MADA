@@ -14,6 +14,13 @@ def daq_enable( is_enable ):
     return
 
 
+def counter_reset( ):
+    cmd = f"{MADADef.CPP_MACARON_CNTRESET}"
+    proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+    proc.communicate( )
+    return
+
+
 def check_macaron_status( ):
     return
 
@@ -43,6 +50,9 @@ def main( ):
         elif data == MADADef.PACKET_DAQDISABLE:
             print( "Control: DAQ disable" )
             daq_enable( False )
+        elif data == MADADef.PACKET_CNTRESET:
+            print( "Control: Counter reset" )
+            counter_reset( )
         elif data == MADADef.PACKET_CHECKCTRL:
             print( "Control: Check controller status" )
             check_macaron_status( )
