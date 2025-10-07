@@ -20,6 +20,12 @@ def counter_reset( ):
     proc.communicate( )
     return
 
+def testpulse_mode( is_tpmode )
+    cmd = f"{MADADef.CPP_MACARON_TPMODE} {is_tpmode}"
+    proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+    proc.communicate( )
+    return
+
 
 def check_macaron_status( ):
     return
@@ -53,12 +59,17 @@ def main( ):
         elif data == MADADef.PACKET_CNTRESET:
             print( "Control: Counter reset" )
             counter_reset( )
+        elif data == MADADef.PACKET_TPMODE_ON:
+            print( "Control: Test pluse mode: ON" )
+            testpulse_mode( True )
+        elif data == MADADef.PACKET_TPMODE_OFF:
+            print( "Control: Test pluse mode: OFF" )
+            testpulse_mode( False )
         elif data == MADADef.PACKET_CHECKCTRL:
             print( "Control: Check controller status" )
             check_macaron_status( )
         else:
             print( "Unknown message..." )
-
 
     return
 
