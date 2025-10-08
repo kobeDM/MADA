@@ -20,6 +20,7 @@ def counter_reset( ):
     proc.communicate( )
     return
 
+
 def testpulse_mode( is_tpmode )
     cmd = f"{MADADef.CPP_MACARON_TPMODE} {is_tpmode}"
     proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
@@ -28,7 +29,28 @@ def testpulse_mode( is_tpmode )
 
 
 def check_macaron_status( ):
-    return
+    status = MADADef.CTRL_MACARON_STATE_UNKNOWN
+
+    cmd = f"{MADADef.CPP_MACARON_CHKSTATUS}"
+    proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+    proc.communicate( )
+    daq_enable_status = proc.returncode
+
+    cmd = f"{MADADef.CPP_MACARON_CHKSTATUS} -tp"
+    proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+    proc.communicate( )
+    tpmode_status = proc.returncode
+
+    if daq_enable_status == 0 and tpmode_status == 0:
+        status = MADADef.CTRL_MACARON_STATE_IDLE
+    elif daq_enable_status == 1 and tpmode_status == 0:
+        status = MADADef.CTRL_MACARON_STATE_EN
+    elif daq_enable_status == 0 and tpmode_status == 1:
+        status = MADADef.CTRL_MACARON_STATE_TP
+    elif daq_enable_status == 1 and tpmode_status == 1:
+        status = MADADef.CTRL_MACARON_STATE_EN_TP
+        
+    return status
 
 
 def main( ):
@@ -67,7 +89,9 @@ def main( ):
             testpulse_mode( False )
         elif data == MADADef.PACKET_CHECKCTRL:
             print( "Control: Check controller status" )
-            check_macaron_status( )
+            macaron_status = check_macaron_status( )
+            return_data = MADADef.CTRL_SYS_MIRACLUE + MADADef.CTRL_ROLE_SERVER + MADADef.CTRL_CMD_CHECKCTRL + macaron_status
+            udpsock.send( return_data )
         else:
             print( "Unknown message..." )
 
