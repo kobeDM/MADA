@@ -14,7 +14,7 @@ const unsigned int WIDTH_SW_READ_ENABLE  = 1;
 const unsigned int WIDTH_DAQ_ENABLE      = 1;
 const unsigned int WIDTH_DAQ_TPMODE      = 1;
 const unsigned int WIDTH_DAQ_STATUS      = 32;
-const unsigned int WIDTH_DAQ_KILL        = 1;
+const unsigned int WIDTH_DAQ_SWVETO      = 1;
 const unsigned int WIDTH_DAQ_COUNT_RESET = 1;
 
 const std::string GPIO_DEV_PATH       = "/dev";
@@ -32,7 +32,7 @@ const unsigned int CHIP_ID_SW_READ_ENABLE  = 18; // 0x4127_0000
 const unsigned int CHIP_ID_DAQ_ENABLE      = 4;  // 0x4128_0000
 const unsigned int CHIP_ID_DAQ_TPMODE      = 3;  // 0x4129_0000
 const unsigned int CHIP_ID_DAQ_STATUS      = 6;  // 0x412a_0000
-const unsigned int CHIP_ID_DAQ_KILL        = 5;  // 0x412b_0000
+const unsigned int CHIP_ID_DAQ_SWVETO      = 5;  // 0x412b_0000
 const unsigned int CHIP_ID_DAQ_COUNT_RESET = 2;  // 0x412c_0000
 
 
