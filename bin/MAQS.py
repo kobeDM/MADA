@@ -19,7 +19,10 @@ def abort_maqs_daq( ):
     MADAUtil.kill_DAQ( MADADef.DEF_CONFIGFILE, current_per )
     return
 
+
 def check_maqs_status( ):
+    
+
     return
 
 
@@ -61,6 +64,7 @@ def main( ):
             abort_maqs_daq( )
         elif data == MADADef.PACKET_CHECKDAQ:
             print( "DAQ: status check" )
+            check_maqs_status( )
         elif data == MADADef.PACKET_SETVTHDAC:
             print( "Config: set Vth and DAC" )
             config_set_vth_dac( )

@@ -56,12 +56,20 @@ def get_config( ):
     return
         
 
+def process_running( procname ):
+    ps = f"ps -aux  | grep -v \' grep \' | grep {procname}"
+    process = ( subprocess.Popen( ps, stdout = subprocess.PIPE, shell = True ).communicate( )[0] ).decode( 'utf-8' )
+    pl = process.split( "\n" )
+    retVal = True if len( pl ) > 1 else False
+    return retVal
+    
+
 def kill_process( procname ):
     killpids = []
     ps = f"ps -aux  | grep -v \' grep \' | grep {procname}"
     process = ( subprocess.Popen( ps, stdout = subprocess.PIPE, shell = True ).communicate( )[0] ).decode( 'utf-8' )
     pl = process.split( "\n" )
-    for j in range( len( pl ) - 1 ): # range( len( ) - 1 ) is necessary to avoid "grep" process itself
+    for j in range( len( pl ) - 1 ):
         pll = pl[j].split( )
         killpids.append( pll[1] )
         print( f"listing {pl[j]}" )
