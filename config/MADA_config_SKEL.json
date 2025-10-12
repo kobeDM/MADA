@@ -1,1 +1,177 @@
-config/MADA_config_SKEL.json.20250811
+{
+    "general":{
+        "datadir":"/home/msgc/miraclue/data",
+        "detector":"30LAuPIC_2",
+        "sleepLVReset":3,
+        "sleepMAQSDAQBoot":5,
+    },
+
+    "MACARON":{
+        "IP":"10.37.0.178",
+        "port":"9100",
+    },
+
+    "MASCOT":{
+        "IP":"10.37.0.214",
+        "port":"9200",
+    },
+
+    "MAQS1":{
+        "IP":"10.37.0.181",
+        "port":"9001",
+        "GBKB":{
+	        "GBKB-00":{
+                "active":1,
+                "connection": "a1-0",
+                "pitch": "400",
+                "IP":"192.168.100.16",
+                "Vth":8400,
+                "VthScanWidth":1000,
+                "VthScanStep":100,
+		        "DACfile":"/home/msgc/miraclue/MADA/config/base_correct_null.dac"
+            },
+	        "GBKB-01":{
+                "active":1,
+                "connection": "a1-1",
+                "pitch": "400",
+                "IP":"192.168.100.17",
+                "Vth":8600,
+                "VthScanWidth":1000,
+                "VthScanStep":100,
+		        "DACfile":"/home/msgc/miraclue/MADA/config/base_correct_null.dac"
+            },
+        },
+    },
+    "MAQS2":{
+        "IP":"10.37.0.182",
+        "port":"9002",
+        "GBKB":{
+	        "GBKB-03":{
+                "active":1,
+                "connection": "a2-0",
+                "pitch": "400",
+                "IP":"192.168.100.19",
+                "Vth":8600,
+                "VthScanWidth":1000,
+                "VthScanStep":100,
+		        "DACfile":"/home/msgc/miraclue/MADA/config/base_correct_null.dac"
+            },
+	        "GBKB-04":{
+                "active":1,
+                "connection": "a2-1",
+                "pitch": "400",
+                "IP":"192.168.100.20",
+                "Vth":8600,
+                "VthScanWidth":1000,
+                "VthScanStep":100,
+		        "DACfile":"/home/msgc/miraclue/MADA/config/base_correct_null.dac"
+            },
+        },
+    },
+    "MAQS3":{
+        "IP":"10.37.0.183",
+        "port":"9003",
+        "GBKB":{
+
+	        "GBKB-05":{
+                "active":1,
+                "connection": "a3-0",
+                "pitch": "400",
+                "IP":"192.168.100.21",
+                "Vth":8600,
+                "VthScanWidth":1000,
+                "VthScanStep":100,
+		        "DACfile":"/home/msgc/miraclue/MADA/config/base_correct_null.dac"
+            },
+	        "GBKB-06":{
+                "active":1,
+                "connection": "a3-1",
+                "pitch": "400",
+                "IP":"192.168.100.22",
+                "Vth":8600,
+                "VthScanWidth":1000,
+                "VthScanStep":100,
+		        "DACfile":"/home/msgc/miraclue/MADA/config/base_correct_null.dac"
+            },
+        },
+    },
+    "MAQS4":{
+        "IP":"10.37.0.184",
+        "port":"9004",
+        "GBKB":{
+	        "GBKB-11":{
+                "active":1,
+                "connection": "c1-0",
+                "pitch": "400",
+                "IP":"192.168.100.25",
+                "Vth":9600,
+                "VthScanWidth":1000,
+                "VthScanStep":100,
+		        "DACfile":"/home/msgc/miraclue/MADA/config/base_correct_null.dac"
+            },
+	        "GBKB-13":{
+                "active":1,
+                "connection": "c1-1",
+                "pitch": "400",
+                "IP":"192.168.100.27",
+                "Vth":9700,
+                "VthScanWidth":1000,
+                "VthScanStep":100,
+		        "DACfile":"/home/msgc/miraclue/MADA/config/base_correct_null.dac"
+            },
+        },
+    },
+    "MAQS5":{
+        "IP":"10.37.0.185",
+        "port":"9005",
+        "GBKB":{
+            
+	        "GBKB-14":{
+                "active":1,
+                "connection": "c2-0",
+                "pitch": "400",
+                "IP":"192.168.100.28",
+                "Vth":9700,
+                "VthScanWidth":1000,
+                "VthScanStep":100,
+		        "DACfile":"/home/msgc/miraclue/MADA/config/base_correct_null.dac"
+            },
+	        "GBKB-15":{
+                "active":1,
+                "connection": "c2-1",
+                "pitch": "400",
+                "IP":"192.168.100.29",
+                "Vth":9700,
+                "VthScanWidth":1000,
+                "VthScanStep":100,
+		        "DACfile":"/home/msgc/miraclue/MADA/config/base_correct_null.dac"
+            },
+        },
+    },
+    "MAQS6":{
+        "IP":"10.37.0.186",
+        "port":"9006",
+        "GBKB":{
+	        "GBKB-16":{
+                "active":1,
+                "connection": "c3-0",
+                "pitch": "400",
+                "IP":"192.168.100.30",
+                "Vth":9700,
+                "VthScanWidth":1000,
+                "VthScanStep":100,
+		        "DACfile":"/home/msgc/miraclue/MADA/config/base_correct_null.dac"
+            },
+	        "GBKB-17":{
+                "active":1,
+                "connection": "c3-1",
+                "pitch": "400",
+                "IP":"192.168.100.31",
+                "Vth":9700,
+                "VthScanWidth":1000,
+                "VthScanStep":100,
+		        "DACfile":"/home/msgc/miraclue/MADA/config/base_correct_null.dac"
+            },
+        },
+    },
+}

@@ -163,9 +163,8 @@ def main():
     parser.add_argument( "-c", help = "config file name", default = MADADef.DEF_CONFIGFILE )
     parser.add_argument( "-s", help = "silent mode (control only)", action = 'store_true' )
     parser.add_argument( "-n", help = "file size in MB", default = MADADef.DEF_FILESIZE )
-
-    args = parser.parse_args()
-    current_period = MADAUtil.make_new_period()
+    args = parser.parse_args( )
+    current_period = MADAUtil.get_current_period( )
     
     try:
         start_daq(args, current_period)
