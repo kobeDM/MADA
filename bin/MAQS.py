@@ -21,8 +21,28 @@ def abort_maqs_daq( ):
 
 
 def check_maqs_status( ):
-    
+    process_exist = False
+    status = CTRL_MAQS_STATE_UNKNOWN
+    if MADAUtil.process_running( PY_MAQS_RUNDAQ ) == True:
+        status = CTRL_MAQS_STATE_DAQRUN
+        process_exist = True
+    if MADAUtil.process_running( PY_MAQS_SETVTHDAC ) == True:
+        status = CTRL_MAQS_STATE_SETVTHDAC if process_running == False else CTRL_MAQS_STATE_OVERTASK
+    if MADAUtil.process_running( PY_MAQS_VTHSCAN ) == True:
+        status = CTRL_MAQS_STATE_VTHSCAN if process_running == False else CTRL_MAQS_STATE_OVERTASK
+    if MADAUtil.process_running( PY_MAQS_DACSCAN ) == True:
+        status = CTRL_MAQS_STATE_DACSCAN if process_running == False else CTRL_MAQS_STATE_OVERTASK
 
+    if process_exist == False:
+        status = CTRL_MAQS_STATE_IDLE
+    return status
+
+
+def kill_all_process( ):
+    MADAUtil.kill_process( PY_MAQS_RUNDAQ )
+    MADAUtil.kill_process( PY_MAQS_SETVTHDAC )
+    MADAUtil.kill_process( PY_MAQS_VTHSCAN )
+    MADAUtil.kill_process( PY_MAQS_DACSCAN )
     return
 
 
@@ -65,6 +85,9 @@ def main( ):
         elif data == MADADef.PACKET_CHECKDAQ:
             print( "DAQ: status check" )
             check_maqs_status( )
+        elif data == MADADef.PACKET_KILLALL:
+            print( "DAQ: kill all processes" )
+            kill_all_process( )
         elif data == MADADef.PACKET_SETVTHDAC:
             print( "Config: set Vth and DAC" )
             config_set_vth_dac( )

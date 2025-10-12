@@ -4,6 +4,7 @@
         "detector":"30LAuPIC_2",
         "sleepLVReset":3,
         "sleepMAQSDAQBoot":5,
+        "sleepStatusCheck":2,
     },
 
     "MACARON":{
