@@ -28,6 +28,13 @@ def testpulse_mode( is_tpmode )
     return
 
 
+def software_veto( is_swveto )
+    cmd = f"{MADADef.CPP_MACARON_SWVETO} {is_swveto}"
+    proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+    proc.communicate( )
+    return
+
+
 def check_macaron_status( ):
     status = MADADef.CTRL_MACARON_STATE_UNKNOWN
 
@@ -41,14 +48,27 @@ def check_macaron_status( ):
     proc.communicate( )
     tpmode_status = proc.returncode
 
-    if daq_enable_status == 0 and tpmode_status == 0:
+    cmd = f"{MADADef.CPP_MACARON_CHKSTATUS} -sv"
+    proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+    proc.communicate( )
+    swveto_status = proc.returncode
+    
+    if daq_enable_status == 0 and tpmode_status == 0 and swveto_status == 0:
         status = MADADef.CTRL_MACARON_STATE_IDLE
-    elif daq_enable_status == 1 and tpmode_status == 0:
+    elif daq_enable_status == 1 and tpmode_status == 0 and swveto_status == 0:
         status = MADADef.CTRL_MACARON_STATE_EN
-    elif daq_enable_status == 0 and tpmode_status == 1:
+    elif daq_enable_status == 0 and tpmode_status == 1 and swveto_status == 0:
         status = MADADef.CTRL_MACARON_STATE_TP
-    elif daq_enable_status == 1 and tpmode_status == 1:
+    elif daq_enable_status == 1 and tpmode_status == 1 and swveto_status == 0:
         status = MADADef.CTRL_MACARON_STATE_EN_TP
+    elif daq_enable_status == 0 and tpmode_status == 0 and swveto_status == 1:
+        status = MADADef.CTRL_MACARON_STATE_SV
+    elif daq_enable_status == 1 and tpmode_status == 0 and swveto_status == 1:
+        status = MADADef.CTRL_MACARON_STATE_SV_EN
+    elif daq_enable_status == 0 and tpmode_status == 1 and swveto_status == 1:
+        status = MADADef.CTRL_MACARON_STATE_SV_TP
+    elif daq_enable_status == 1 and tpmode_status == 1 and swveto_status == 1:
+        status = MADADef.CTRL_MACARON_STATE_SV_EN_TP
         
     return status
 
@@ -87,6 +107,12 @@ def main( ):
         elif data == MADADef.PACKET_TPMODE_OFF:
             print( "Control: Test pluse mode: OFF" )
             testpulse_mode( False )
+        elif data == MADADef.PACKET_SWVETO_ON:
+            print( "Control: Software veto: ON" )
+            software_veto( True )
+        elif data == MADADef.PACKET_SWVETO_OFF:
+            print( "Control: Software veto: OFF" )
+            software_veto( False )
         elif data == MADADef.PACKET_CHECKCTRL:
             print( "Control: Check controller status" )
             macaron_status = check_macaron_status( )

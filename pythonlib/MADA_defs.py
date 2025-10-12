@@ -24,6 +24,7 @@ CPP_MACARON_DAQCTRL   = "MACARON_DAQCtrl"
 CPP_MACARON_CNTRESET  = "MACARON_CntReset"
 CPP_MACARON_TPMODE    = "MACARON_TPMode"
 CPP_MACARON_CHKSTATUS = "MACARON_CheckStatus"
+CPP_MACARON_SWVETO    = "MACARON_SWVeto"
 
 
 '''
@@ -123,17 +124,21 @@ CTRL_CMD_LVSTATUS   = 0b00010001.to_bytes( 1, "little" )
 CTRL_VAL_TRUE       = 0b00000001.to_bytes( 1, "little" )
 CTRL_VAL_FALSE      = 0b00000010.to_bytes( 1, "little" )
 
-CTRL_MAQS_STATE_UNKNOWN    = 0b10000000.to_bytes( 1, "little" )
-CTRL_MAQS_STATE_IDLE       = 0b10000001.to_bytes( 1, "little" )
-CTRL_MAQS_STATE_RUN        = 0b10000010.to_bytes( 1, "little" )
-CTRL_MACARON_STATE_UNKNOWN = 0b01000000.to_bytes( 1, "little" )
-CTRL_MACARON_STATE_IDLE    = 0b01000001.to_bytes( 1, "little" )
-CTRL_MACARON_STATE_EN      = 0b01000010.to_bytes( 1, "little" )
-CTRL_MACARON_STATE_TP      = 0b01000100.to_bytes( 1, "little" )
-CTRL_MACARON_STATE_EN_TP   = 0b01000110.to_bytes( 1, "little" )
-CTRL_MASCOT_STATE_UNKNOWN  = 0b00100000.to_bytes( 1, "little" )
-CTRL_MASCOT_STATE_IDLE     = 0b00100001.to_bytes( 1, "little" )
-CTRL_MASCOT_STATE_DAQRUN   = 0b00100010.to_bytes( 1, "little" )
+CTRL_MAQS_STATE_UNKNOWN     = 0b10000000.to_bytes( 1, "little" )
+CTRL_MAQS_STATE_IDLE        = 0b10000001.to_bytes( 1, "little" )
+CTRL_MAQS_STATE_RUN         = 0b10000010.to_bytes( 1, "little" )
+CTRL_MACARON_STATE_UNKNOWN  = 0b01000000.to_bytes( 1, "little" )
+CTRL_MACARON_STATE_IDLE     = 0b01000001.to_bytes( 1, "little" )
+CTRL_MACARON_STATE_EN       = 0b01000010.to_bytes( 1, "little" )
+CTRL_MACARON_STATE_TP       = 0b01000100.to_bytes( 1, "little" )
+CTRL_MACARON_STATE_EN_TP    = 0b01000110.to_bytes( 1, "little" )
+CTRL_MACARON_STATE_SV       = 0b01001000.to_bytes( 1, "little" )
+CTRL_MACARON_STATE_SV_EN    = 0b01001010.to_bytes( 1, "little" )
+CTRL_MACARON_STATE_SV_TP    = 0b01001100.to_bytes( 1, "little" )
+CTRL_MACARON_STATE_SV_EN_TP = 0b01001110.to_bytes( 1, "little" )
+CTRL_MASCOT_STATE_UNKNOWN   = 0b00100000.to_bytes( 1, "little" )
+CTRL_MASCOT_STATE_IDLE      = 0b00100001.to_bytes( 1, "little" )
+CTRL_MASCOT_STATE_DAQRUN    = 0b00100010.to_bytes( 1, "little" )
 
 
 '''
