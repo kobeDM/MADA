@@ -78,6 +78,7 @@ def lv_reset( ):
     config = load_json( MADADef.DEF_LV_CONFIGFILE )
     dev_file = MADADef.DEF_LV_USBDEVFILE
     dev_list = LVCtrl.sort_devices( dev_file, config )
+    itv_rbt = config["interval"]["reboot"]
     print( "+/- 2.5 V reset." )
     send_command( dev_list[1], MADADef.LV_QUERY_OUTPUT_OFF )
     send_command( dev_list[2], MADADef.LV_QUERY_OUTPUT_OFF )

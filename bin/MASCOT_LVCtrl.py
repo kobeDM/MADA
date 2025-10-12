@@ -3,7 +3,6 @@ import os
 import time
 import json
 import glob
-#from subprocess import PIPE
 import subprocess
 from datetime import datetime, timedelta, timezone
 from influxdb import InfluxDBClient
