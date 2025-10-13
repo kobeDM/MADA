@@ -7,8 +7,8 @@ import MADA_defs as MADADef
 import MADA_util as MADAUtil
 
 
-def start_maqs_daq( ):
-    cmd = f"{MADADef.PY_MAQS_RUNDAQ}"
+def start_maqs_daq( fileID ):
+    cmd = f"{MADADef.PY_MAQS_RUNDAQ} -i {fileID}"
     proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
     return
 
@@ -75,10 +75,11 @@ def main( ):
 
     while True:
         data = udpsock.receive( )
-
-        if data == MADADef.PACKET_DAQSTART:
+        
+        if int.from_bytes( data, "little" ) & 0xffffff00).to_bytes( 4, "little" )  == MADADef.PACKET_DAQSTART:
             print( "DAQ: start" )
-            start_maqs_daq( )
+            fileID = ( int.from_bytes( data, "little" ) & 0xff )
+            start_maqs_daq( fileID )
         elif data == MADADef.PACKET_DAQSTOP:
             print( "DAQ: stop" )
             abort_maqs_daq( )

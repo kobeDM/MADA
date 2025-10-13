@@ -138,10 +138,10 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
     print( f" period : {per_name}" )
     print( f"===========================" )
 
-    max_files = 10000
+    max_files = 255
     fileID = 0
     while fileID < max_files:
-        print( fileID, "/", fileperdir )
+        print( f"{fileID} / {max_files}" )
 
         # send software veto
         submit_to_macaron( MADADef.PACKET_SWVETO_ON )
@@ -153,7 +153,6 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
             if check_maqs_status( maqs_sock ) != MADADef.CTRL_MAQS_STATE_IDLE:
                 kill_maqs_process( maqs_sock )
 
-        
         # send DAQ start flag to mascot
         submit_to_mascot( MADADef.PACKET_DAQSTART )
         print( f"LV auto-reset from SCSM is locked: command submitted to MASCOT" )
@@ -184,7 +183,9 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
         # submit_to_maqs( MADADef.PACKET_DAQSTART )
         while True:
             for maqs_sock in maqs_sock_arr:
-                submit_to_maqs( MADADef.PACKET_DAQSTART )
+                fileID_command = fileID.to_bytes( 1, "little" )
+                daq_start_command = MADADef.CTRL_SYS_MIRACLUE + MADADef.CTRL_ROLE_MASTER + MADADef.CTRL_CMD_DAQSTART + fileID_command
+                submit_to_maqs( daq_start_command )
                 timeout_itv = 0
                 while True:
                     if check_maqs_status( maqs_sock ) == MADADef.CTRL_MAQS_STATE_DAQRUN:
@@ -224,7 +225,7 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
         submit_to_macaron( MADADef.PACKET_DAQDISABLE )
         print( f"...DAQ END, file changing..." )
         print( )
-        fileID
+        fileID += 1
         
     return
 
