@@ -34,12 +34,13 @@ def start_daq( args, current_period ):
     MADAUtil.kill_process( "MADA_iwaki" )
 
     # run MADA_iwaki
+    num_trigger = config_load["general"]["numTrigger"]
     pids = []
     for i in range( len( activeIP ) ):
         IP = activeIP[i]
         filename_head = f"{current_period}/{boardID[i]}_{str( fileID ).zfill( 4 )}"
         filename_mada = f"{filename_head}.mada"
-        cmd = f"{MADADef.CPP_MADA_IWAKI} -n {file_size} -f {filename_mada} -i {IP}"
+        cmd = f"{MADADef.CPP_MADA_IWAKI} -n {num_trigger} -f {filename_mada} -i {IP}"
         print( cmd )
         proc = subprocess.Popen( cmd, shell = True, stdout = PIPE, stderr = None )
         pids.append( proc.pid )

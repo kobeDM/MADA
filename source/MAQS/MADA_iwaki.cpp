@@ -64,20 +64,36 @@ int main(int argc, char* argv[]){
 
     char c_data[4096];
     int num;
-    int maxnum=numperfile;
+    int max_trig = numperfile;
+    int trig_count
     while(!end_flag){
         num = EtherDAQ.Read(c_data);
         if(num>0){      
             OutData.write(c_data, num);
         }
-        cout<< fixed<<setw(4)<<setprecision(1)<<OutData.tellp()/1.e6<<"/"<< setw(4)<<setprecision(1)<<maxnum/1.e6<<" Mbytes stored\r";
-        if(OutData.tellp() > maxnum){
-            cout<<"\t"<<scientific << setprecision(2) <<double(OutData.tellp())<<" bytes stored in "<<filename<<endl;
-      
 
+        if( num > 4095 ) { // will not enter this nest in principle
+            cout << "warning: data overflow..." << endl;
+            continue;
+        }
+
+        for( int i=0; i < num-1; ++i )
+            if( c_data[i] == 'I' && c_data[i+1] == 'C' ) trig_count += 1;
+
+        cout << fixed << setw(4) << trig_count << "/" << setw(4) << max_trig << " count stored\r";
+        if( trig_count >= max_trig )  {
             OutData.close();
             end_flag=1;
         }
+        
+        // cout<< fixed<<setw(4)<<setprecision(1)<<OutData.tellp()/1.e6<<"/"<< setw(4)<<setprecision(1)<<maxnum/1.e6<<" Mbytes stored\r";
+        // if(OutData.tellp() > max){
+        //     cout<<"\t"<<scientific << setprecision(2) <<double(OutData.tellp())<<" bytes stored in "<<filename<<endl;
+      
+
+        //     OutData.close();
+        //     end_flag=1;
+        // }
     }
 
     return 0;

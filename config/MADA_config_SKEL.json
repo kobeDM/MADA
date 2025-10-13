@@ -5,6 +5,7 @@
         "sleepLVReset":3,
         "sleepMAQSDAQBoot":5,
         "sleepStatusCheck":2,
+        "numTrigger":1000,
     },
 
     "MACARON":{

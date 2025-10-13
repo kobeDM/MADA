@@ -11,12 +11,12 @@ bool SiTCP::Open(const string ip)
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0)
     {
-      cerr << " ERROR(SiTCP): Can't open socket" << endl;
+      cerr << " ERROR(SiTCP): Cannot open socket" << endl;
       return 1;
     }
     if (connect(sock, (struct sockaddr *)&param, sizeof(param)))
     {
-      cerr << " ERROR(SiTCP): Can't connet" << endl;
+      cerr << " ERROR(SiTCP): Cannot connect" << endl;
       return 1;
     }
 
