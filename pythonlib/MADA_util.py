@@ -188,3 +188,28 @@ def kill_DAQ( config, pername ):
     for bid in inactive_board:
         size[bid] = 0
         rate[bid] = 0
+
+
+def divide_config( config_load ):
+    
+    datadir_name = config_load["general"]["datadir"]
+    detector_name = config_load["general"]["detector"]
+    current_dir_name = os.path.basename( os.getcwd( ) )
+    for i in range( 6 ):
+        maqs_name = f"MAQS{i+1}"
+        config_filepath = f"{datadir_name}/{maqs_name}/{detector_name}/{current_dir_name}/{MADADef.DEF_CONFIGFILE}"
+        print( f"config file {MADADef.DEF_CONFIGFILE} distributing to {config_filepath}" )
+        dict = { }
+        for index in config_load:
+            if index == "general":
+                d_gen = { "general" : config_load["general"] }
+                dict.update( d_gen )
+            elif index == maqs_name:
+                d_gbkb = { "GBKB" : config_load[maqs_name]["GBKB"] }
+                dict.update( d_gbkb )
+        with open( config_filepath, mode = "wt", encoding = "utf-8" ) as file:
+            json.dump( dict, file, ensure_ascii = False, indent = 2 )
+
+        print( f"{maqs_name} config file successfully distributed" )
+
+    return

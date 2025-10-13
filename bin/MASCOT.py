@@ -4,6 +4,7 @@ import argparse
 import subprocess
 from subprocess import PIPE
 from udp_util import UDPGenericSocket
+import json
 import MADA_defs as MADADef
 import MADA_util as MADAUtil
 import MASCOT_LVCtrl as LVCtrl
