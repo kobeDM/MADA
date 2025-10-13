@@ -8,6 +8,46 @@ from subprocess import PIPE
 import MADA_defs as MADADef
 
 
+def submit_to_maqs( maqs_sock, message ):
+    submit_success = True
+    print( f"message submitting to {maqs_sock[3]}...")
+    if maqs_sock[0].send( message ) == False:
+        print( "Connection error: failed to send message to " + maqs_sock[3] + ", aborting..." )
+        submit_success = False
+
+    return submit_success
+
+
+def submit_to_all_maqs( maqs_sock_arr, message ):
+    submit_success = True
+    print("message submitting to all maqs servers...")
+    for maqs_sock in maqs_sock_arr:
+        if submit_to_maqs( maqs_sock, message ) == False:
+            submit_success = False
+            
+    return submit_success
+
+
+def submit_to_macaron( macaron_sock, message ):
+    submit_success = True
+    print("message submitting...")
+    if macaron_sock[0].send( message ) == False:
+        print( "Connection error: failed to send message to " + macaron_sock[3] + ", aborting..." )
+        submit_success = False
+
+    return submit_success
+
+
+def submit_to_mascot( mascot_sock, message ):
+    submit_success = True
+    print("message submitting...")
+    if mascot_sock[0].send( message ) == False:
+        print( "Connection error: failed to send message to " + mascot_sock[3] + ", aborting..." )
+        submit_success = False
+
+    return submit_success
+
+
 def get_current_period() -> str:
     per_number = 0
     while os.path.isdir( "per"+str( per_number ).zfill( 4 ) ):

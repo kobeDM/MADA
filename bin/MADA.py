@@ -7,50 +7,10 @@ import MADA_defs as MADADef
 import MADA_util as MADAUtil
 
 
-def submit_to_maqs( maqs_sock, message ):
-    submit_success = True
-    print( f"message submitting to {maqs_sock[3]}...")
-    if maqs_sock[0].send( message ) == False:
-        print( "Connection error: failed to send message to " + maqs_sock[3] + ", aborting..." )
-        submit_success = False
-
-    return submit_success
-
-
-def submit_to_all_maqs( maqs_sock_arr, message ):
-    submit_success = True
-    print("message submitting to all maqs servers...")
-    for maqs_sock in maqs_sock_arr:
-        if submit_to_maqs( maqs_sock, message ) == False:
-            submit_success = False
-            
-    return submit_success
-
-
-def submit_to_macaron( macaron_sock, message ):
-    submit_success = True
-    print("message submitting...")
-    if macaron_sock[0].send( message ) == False:
-        print( "Connection error: failed to send message to " + macaron_sock[3] + ", aborting..." )
-        submit_success = False
-
-    return submit_success
-
-
-def submit_to_mascot( mascot_sock, message ):
-    submit_success = True
-    print("message submitting...")
-    if mascot_sock[0].send( message ) == False:
-        print( "Connection error: failed to send message to " + mascot_sock[3] + ", aborting..." )
-        submit_success = False
-
-    return submit_success
-
-
 def check_maqs_status( maqs_sock ):
 
     print("Checking MAQS's status...")
-    if submit_to_maqs( maqs_sock, MADADef.PACKET_CHECKDAQ ) == False:
+    if MADAUtil.submit_to_maqs( maqs_sock, MADADef.PACKET_CHECKDAQ ) == False:
         print( "Status check for " + maqs_sock[3] + " failed, aborting..." )
         return 
     reply_data = maqs_sock[0].receive( )
@@ -62,7 +22,7 @@ def check_maqs_status( maqs_sock ):
 def check_macaron_status( macaron_sock ):
 
     print("Check MACARON status...")
-    if submit_to_macaron( macaron_sock, MADADef.PACKET_CHECKCTRL ) == False:
+    if MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_CHECKCTRL ) == False:
         print( "Status check for " + macaron_sock[3] + " failed, aborting..." )
         return
 
@@ -73,7 +33,7 @@ def check_macaron_status( macaron_sock ):
 
 
 def check_mascot_status( mascot_sock ):
-    submit_to_mascot( mascot_sock, MADADef.PACKET_LVCHECK )
+    MADAUtil.submit_to_mascot( mascot_sock, MADADef.PACKET_LVCHECK )
     data = mascot_sock[0].receive( )
     return data
 
@@ -85,14 +45,14 @@ def check_reset_lv( mascot_sock, enable_swveto ):
         print( )
         if enable_swveto == True:
             print( f"Software veto: ON" )
-            submit_to_macaron( MADADef.PACKET_SWVETO_ON )
+            MADAUtil.submit_to_macaron( MADADef.PACKET_SWVETO_ON )
             
-        submit_to_mascot( MADADef.PACKET_LVRESET )
+        MADAUtil.submit_to_mascot( MADADef.PACKET_LVRESET )
         lv_reset_sleep = config_load["general"]["sleepLVReset"]
         print( f"LV resetting... (sleep time: {lv_reset_sleep} sec.)" )
         time.sleep( lv_reset_sleep )
         while True:
-            submit_to_mascot( MADADef.PACKET_LVCHECK )
+            MADAUtil.submit_to_mascot( MADADef.PACKET_LVCHECK )
             data = mascot_sock[0].receive( )
             if data == MADADef.PACKET_LVSTATUS_OK:
                 print( f"LV reset successfully done!" )
@@ -100,14 +60,14 @@ def check_reset_lv( mascot_sock, enable_swveto ):
 
         if enable_swveto == True:
             print( f"Software veto: OFF" )
-            submit_to_macaron( MADADef.PACKET_SWVETO_OFF )
+            MADAUtil.submit_to_macaron( MADADef.PACKET_SWVETO_OFF )
             
     print( )
     return
 
 
 def kill_maqs_process( maqs_sock ):
-    submit_to_maqs( maqs_sock, MADADef.PACKET_KILLALL )
+    MADAUtil.submit_to_maqs( maqs_sock, MADADef.PACKET_KILLALL )
     return
 
 
@@ -144,7 +104,7 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
         print( f"{fileID} / {max_files}" )
 
         # send software veto
-        submit_to_macaron( MADADef.PACKET_SWVETO_ON )
+        MADAUtil.submit_to_macaron( MADADef.PACKET_SWVETO_ON )
         print( f"Activate software veto: command submitted to MACARON" )
 
         # DAQ status check (and kill all processes)
@@ -153,7 +113,7 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
                 kill_maqs_process( maqs_sock )
 
         # send DAQ start flag to mascot
-        submit_to_mascot( MADADef.PACKET_DAQSTART )
+        MADAUtil.submit_to_mascot( MADADef.PACKET_DAQSTART )
         print( f"LV auto-reset from SCSM is locked: command submitted to MASCOT" )
         time.sleep( 1 )
         
@@ -162,7 +122,7 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
         
         # configuration
         print( f"Vth and DAC parameter setting..." )
-        submit_to_maqs( MADADef.PACKET_SETVTHDAC )
+        MADAUtil.submit_to_maqs( MADADef.PACKET_SETVTHDAC )
         while True:
             if MADAUtil.process_running( MADADef.PY_MAQS_SETVTHDAC ) == True:
                 continue
@@ -182,7 +142,7 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
             for maqs_sock in maqs_sock_arr:
                 fileID_command = fileID.to_bytes( 1, "little" )
                 daq_start_command = MADADef.CTRL_SYS_MIRACLUE + MADADef.CTRL_ROLE_MASTER + MADADef.CTRL_CMD_DAQSTART + fileID_command
-                submit_to_maqs( daq_start_command )
+                MADAUtil.submit_to_maqs( daq_start_command )
                 timeout_itv = 0
                 while True:
                     if check_maqs_status( maqs_sock ) == MADADef.CTRL_MAQS_STATE_DAQRUN:
@@ -197,9 +157,11 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
         print( f" ===========================================================" )
         print( f" DAQ enable ON" )
         print( f" ===========================================================" )
-        submit_to_macaron( MADADef.PACKET_DAQENABLE )
+        MADAUtil.submit_to_macaron( MADADef.PACKET_DAQENABLE )
+        print( f"Counter reset: command submitted to MACARON" )
+        MADAUtil.submit_to_macaron( MADADef.PACKET_CNTRESET )
         print( f"Deactivate software veto: command submitted to MACARON" )
-        submit_to_macaron( MADADef.PACKET_SWVETO_OFF )
+        MADAUtil.submit_to_macaron( MADADef.PACKET_SWVETO_OFF )
         print( )
         print( f"...DAQ RUNNING..." )
         print( )
@@ -219,7 +181,7 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
             time.sleep( config_load["general"]["sleepStatusCheck"] )
 
         # file changing (next loop)
-        submit_to_macaron( MADADef.PACKET_DAQDISABLE )
+        MADAUtil.submit_to_macaron( MADADef.PACKET_DAQDISABLE )
         print( f"...DAQ END, file changing..." )
         print( )
         fileID += 1
@@ -232,7 +194,7 @@ def daq_abort( ):
     print( "===========================" )
     print( " DAQ aborting... " )
     print( "===========================" )
-    submit_to_maqs( MADADef.PACKET_DAQSTOP )
+    MADAUtil.submit_to_maqs( MADADef.PACKET_DAQSTOP )
     
     return
 
@@ -243,13 +205,11 @@ def main( ):
 
     parser = argparse.ArgumentParser( )
     parser.add_argument( "-c", help = "config file name", default = MADADef.DEF_CONFIGFILE )
-    parser.add_argument( "-s", help = "silent mode (control only)", action = 'store_true' )
-    parser.add_argument( "-n", help = "file size in MB", default = MADADef.DEF_FILESIZE )
     args = parser.parse_args()
 
     mada_config_path = args.c
     MADAUtil.get_config( )
-    with open( mada_config_path, 'r' ) as config_open :
+    with open( mada_config_path, "r" ) as config_open :
         config_load = json.load( config_open )
 
     # network connection 
