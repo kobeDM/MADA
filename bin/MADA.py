@@ -146,7 +146,6 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
         # send software veto
         submit_to_macaron( MADADef.PACKET_SWVETO_ON )
         print( f"Activate software veto: command submitted to MACARON" )
-        time.sleep( 1 )
 
         # DAQ status check (and kill all processes)
         for maqs_sock in maqs_sock_arr:
@@ -166,7 +165,6 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
         submit_to_maqs( MADADef.PACKET_SETVTHDAC )
         while True:
             if MADAUtil.process_running( MADADef.PY_MAQS_SETVTHDAC ) == True:
-                time.sleep( 1 )
                 continue
             else:
                 break
@@ -180,7 +178,6 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
         print( f" ===========================================================" )
         print( )
 
-        # submit_to_maqs( MADADef.PACKET_DAQSTART )
         while True:
             for maqs_sock in maqs_sock_arr:
                 fileID_command = fileID.to_bytes( 1, "little" )
@@ -298,9 +295,6 @@ def main( ):
 
     try:
         daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock )
-        # submit_to_macaron( MADADef.PACKET_DAQENABLE )
-        # time.sleep( 2 )
-        # submit_to_macaron( MADADef.PACKET_DAQDISABLE )
     except KeyboardInterrupt:
         daq_abort( config_load, maqs_sock_arr, macaron_sock, mascot_sock )
 

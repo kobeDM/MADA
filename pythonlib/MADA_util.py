@@ -86,18 +86,18 @@ def kill_DAQ( config, pername ):
     print( f"target dir: {pername}" )
 
     # load config file
-    config_open = open( config, 'r' )
+    config_open = open( config, "r" )
     config_load = json.load( config_open )
     activeIP = []
     boardID = []
-    for idx in config_load['GBKB']:
-        if config_load['GBKB'][idx]['active'] == 1:
-            activeIP.append( config_load['GBKB'][idx]['IP'] )
-            boardID.append( idx )
+    for gbkb_name in config_load["GBKB"]:
+        if config_load["GBKB"][gbkb_name]["active"] == 1:
+            activeIP.append( config_load["GBKB"][gbkb_name]["IP"] )
+            boardID.append( gbkb_name )
 
     endtime = time.time()
 
-    kill_process( 'MADA_iwaki' )
+    kill_process( "MADA_iwaki" )
     
     fileID = 0
     target_file = pername + "/*_" + str( fileID ).zfill( 4 ) + ".info"
@@ -105,29 +105,29 @@ def kill_DAQ( config, pername ):
 
     size = { bid: 0 for bid in MADADef.ALL_BOARDS }
     for i in range(len(activeIP)):
-        filename_head = pername + "/" + boardID[i] + "_" + str( fileID ).zfill( 4 )
+        filename_head = f"{current_period}/{boardID[i]}_{str( fileID ).zfill( 4 )}"
         filename_mada = f"{filename_head}.mada"
         filename_info = f"{filename_head}.info"
         cmd = f"ls -l {filename_mada}"
-        proc = subprocess.Popen( cmd, stdout = subprocess.PIPE, shell = True ).communicate( )[0].decode( 'utf-8' )
+        proc = subprocess.Popen( cmd, stdout = subprocess.PIPE, shell = True ).communicate( )[0].decode( "utf-8" )
         sizel = str( proc ).split( )
         dmes = {}
-        dmes['end'] = endtime
-        dmes['size'] = sizel[4]
+        dmes["end"] = endtime
+        dmes["size"] = sizel[4]
         size[boardID[i]] = sizel[4]
         ddmes = {"runinfo": dmes}
-        info_open = open( filename_info, 'r' )
+        info_open = open( filename_info, "r" )
         info_load = json.load( info_open )
         dict_giga = {}
         dict_info = {}
-        for x in info_load['GBKB']:
-            dict_giga.update(info_load['GBKB'])
-        for x in info_load['runinfo']:
-            dict_info.update(info_load['runinfo'])
+        for x in info_load["GBKB"]:
+            dict_giga.update(info_load["GBKB"])
+        for x in info_load["runinfo"]:
+            dict_info.update(info_load["runinfo"])
         starttime = dict_info["start"]
         dict_info.update(dmes)
         dict = {"GBKB": dict_giga, "runinfo": dict_info}
-        with open( filename_info, mode='w', encoding='utf-8' ) as file:
+        with open( filename_info, mode="w", encoding="utf-8" ) as file:
             json.dump( dict, file, ensure_ascii = False, indent = 2 )
 
         realtime = endtime - starttime
@@ -137,7 +137,7 @@ def kill_DAQ( config, pername ):
         ratefile = MADADef.DEF_RATEPATH + y + m.zfill( 2 ) + d.zfill( 2 )
     
     # write out event rate into text file
-    with open(ratefile, 'a') as f:
+    with open(ratefile, "a") as f:
         rate = {bid: 0 for bid in MADADef.ALL_BOARDS}
         for ii in range( len( activeIP ) ):
             rate[boardID[ii]] = float( size[boardID[ii]] ) / realtime
