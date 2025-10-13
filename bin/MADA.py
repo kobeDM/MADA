@@ -2,6 +2,7 @@
 import os
 import sys
 import time
+import argparse
 import json
 from udp_util import UDPGenericSocket
 import MADA_defs as MADADef
@@ -254,6 +255,10 @@ def main( ):
     print( "MAQS servers connected.")
     print( )
 
+    print( " === Distributing config file to all MAQS servers ===")
+    MADAUtil.divide_config( config_load )
+    print( " === Distributing config file Done ===")
+    
     try:
         daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock )
     except KeyboardInterrupt:

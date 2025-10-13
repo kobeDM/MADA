@@ -124,6 +124,7 @@ CTRL_CMD_SWVETO     = 0b00001101.to_bytes( 1, "little" )
 
 CTRL_CMD_LVCHECK    = 0b00010000.to_bytes( 1, "little" )
 CTRL_CMD_LVSTATUS   = 0b00010001.to_bytes( 1, "little" )
+CTRL_CMD_LVRESET    = 0b00010010.to_bytes( 1, "little" )
 
 CTRL_VAL_NONE       = 0b00000000.to_bytes( 1, "little" )
 CTRL_VAL_TRUE       = 0b00000001.to_bytes( 1, "little" )
