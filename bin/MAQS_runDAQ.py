@@ -20,13 +20,15 @@ def start_daq( args, current_period ):
         config_load = json.load( config_open )
     activeIP = []
     boardID = []
+    allBoardID = []
     for gbkb_name in config_load[ "GBKB" ]:
+        allBoardID.append( gbkb_name )
         if config_load["GBKB"][gbkb_name]["active"] == 1:
             activeIP.append( config_load["GBKB"][gbkb_name]["IP"] )
             boardID.append( gbkb_name )
             print( config_load["GBKB"][gbkb_name]["IP"] )
     
-    print( f"The number of GBKB boards: {len( activeIP )}/{MADADef.MAX_BOARDS}" )
+    print( f"The number of GBKB boards: {len( activeIP )}/{len( allBoardID )}" )
 
     cmd = f"cp {mada_config_path} {current_period}"
     proc = subprocess.run( cmd, shell = True )
@@ -78,12 +80,11 @@ def start_daq( args, current_period ):
             if int( pnum ) == 1:
                 runs += 1
 
-        # if runs < len( pids ):
         if runs == 0:
             running = 0
             print( "file terminate" )
             endtime = time.time( )
-            MADAUtil.kill_process( 'MADA_iwaki' )
+            MADAUtil.kill_process( "MADA_iwaki" )
             break
 
     print( f"file {fileID} finished at {endtime}" )
