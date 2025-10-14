@@ -77,8 +77,9 @@ int main(int argc, char* argv[]){
             continue;
         }
 
-        for( int i=0; i < num-1; ++i )
-            if( c_data[i] == 'I' && c_data[i+1] == 'C' ) trig_count += 1;
+        for( int i=0; i < num-3; ++i )
+            if( c_data[i]   == 'u' && c_data[i+1] == 'P' && c_data[i+2] == 'I' && c_data[i+3] == 'C')
+                trig_count += 1;
 
         cout << fixed << setw(4) << trig_count << "/" << setw(4) << max_trig << " count stored\r";
         if( trig_count >= max_trig )  {

@@ -69,9 +69,10 @@ int main( int argc, char* argv[] )
         std::ofstream OutData( filename, std::ios::out );
 
         int e_index = 0;
+        int max_e_index = 100;
         data_size = 0;
-        int max_count = 10;
-        int count = 0;
+        // int max_count = 10;
+        // int count = 0;
 
         while( true ) {
             count++;
@@ -81,12 +82,17 @@ int main( int argc, char* argv[] )
                 data_size += num;
             }
 
-            if( c_data[num - 4] == 'u' && c_data[num - 3] == 'P' && c_data[num - 2] == 'I' && c_data[num - 1] == 'C' )
-                e_index++;
+            // if( c_data[num - 4] == 'u' && c_data[num - 3] == 'P' && c_data[num - 2] == 'I' && c_data[num - 1] == 'C' )
+            //     e_index++;
+            // std::cout << " DAC value: " << std::dec << i << "/64: \r" << std::flush;
 
-            std::cout << " DAC value: " << std::dec << i << "/64: \r" << std::flush;
+            // if( data_size > 0x80000 || e_index > 1e3 || count > max_count ) break;
 
-            if( data_size > 0x80000 || e_index > 1e3 || count > max_count ) break;
+            for( int i=0; i < num-3; ++i )
+                if( c_data[i]   == 'u' && c_data[i+1] == 'P' && c_data[i+2] == 'I' && c_data[i+3] == 'C')
+                    e_index += 1;
+
+            if( e_index > max_e_index ) break;
         }
 
         OutData.close();

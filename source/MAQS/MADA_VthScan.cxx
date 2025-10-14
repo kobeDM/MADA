@@ -82,6 +82,7 @@ int main( int argc, char* argv[] )
         ofstream OutData( filename, ios::out );
 
         int e_index = 0;
+        int max_e_index = 0;
         data_size = 0;
         while( true ) {
             std::cout << std::hex;
@@ -92,11 +93,16 @@ int main( int argc, char* argv[] )
                 OutData.write( c_data, num );
                 data_size += num;
             }
-            if( c_data[num - 4] == 'u' && c_data[num - 3] == 'P' &&
-                c_data[num - 2] == 'I' && c_data[num - 1] == 'C' )
-                e_index++;
+            // if( c_data[num - 4] == 'u' && c_data[num - 3] == 'P' &&
+            //     c_data[num - 2] == 'I' && c_data[num - 1] == 'C' )
+            //     e_index++;
+            // if( data_size > 0x100000 || e_index > 1e3 ) break;
 
-            if( data_size > 0x100000 || e_index > 1e3 ) break;
+            for( int i=0; i < num-3; ++i )
+                if( c_data[i]   == 'u' && c_data[i+1] == 'P' && c_data[i+2] == 'I' && c_data[i+3] == 'C')
+                    e_index += 1;
+            
+            if( e_index > max_e_index ) break;
         }
 
         std::cout << "                                            " << '\r' << std::flush;
