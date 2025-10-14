@@ -30,16 +30,15 @@ def main( ):
     gbkb_info_arr = []
     for gbkb_name in config_load[ "GBKB" ]:
         if config_load["GBKB"][gbkb_name]["active"] == 0: continue
-    
         activeIP     = config_load["GBKB"][gbkb_name]["IP"]
         VthVal       = config_load["GBKB"][gbkb_name]["Vth"]
         VthScanWidth = config_load["GBKB"][gbkb_name]["VthScanWidth"]
         VthScanStep  = config_load["GBKB"][gbkb_name]["VthScanStep"]
         VthMin       = VthVal - VthScanWidth
-        VthMax      = VthVal + VthScanWidth
+        VthMax       = VthVal + VthScanWidth
         print( f"IP:       {activeIP}"     )
         print( f"Vth min.: {VthMin}"       )
-        print( f"Vth max.: {VthMax}"      )
+        print( f"Vth max.: {VthMax}"       )
         print( f"Vth step: {VthScanWidth}" )
 
         newrun = MADAUtil.make_new_scan_run( MADADef.DEF_VTHSCAN_HEADER )
