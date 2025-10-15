@@ -37,12 +37,13 @@ def software_veto( is_swveto ):
 
 
 def start_scaler( ):
-    cmd = f"{MADADef.CPP_MACARON_SCALER}"
+    cmd = f"{MADADef.PY_MACARON_SCALER}"
     proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
     return
 
 
 def stop_scaler( ):
+    MADAUtil.kill_process( f"{MADADef.PY_MACARON_SCALER}" )
     MADAUtil.kill_process( f"{MADADef.CPP_MACARON_SCALER}" )
     return
 
