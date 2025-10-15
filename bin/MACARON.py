@@ -22,17 +22,28 @@ def counter_reset( ):
     return
 
 
-def testpulse_mode( is_tpmode )
+def testpulse_mode( is_tpmode ):
     cmd = f"{MADADef.CPP_MACARON_TPMODE} {is_tpmode}"
     proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
     proc.communicate( )
     return
 
 
-def software_veto( is_swveto )
+def software_veto( is_swveto ):
     cmd = f"{MADADef.CPP_MACARON_SWVETO} {is_swveto}"
     proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
     proc.communicate( )
+    return
+
+
+def start_scaler( ):
+    cmd = f"{MADADef.CPP_MACARON_SCALER}"
+    proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+    return
+
+
+def stop_scaler( ):
+    MADAUtil.kill_process( f"{MADADef.CPP_MACARON_SCALER}" )
     return
 
 
@@ -114,6 +125,12 @@ def main( ):
         elif data == MADADef.PACKET_SWVETO_OFF:
             print( "Control: Software veto: OFF" )
             software_veto( False )
+        elif data == MADADef.PACKET_SCALER_START:
+            print( "Control: Start scaler" )
+            start_scaler( )
+        elif data == MADADef.PACKET_SCALER_STOP:
+            print( "Control: Stop scaler" )
+            stop_scaler( )
         elif data == MADADef.PACKET_CHECKCTRL:
             print( "Control: Check controller status" )
             macaron_status = check_macaron_status( )
