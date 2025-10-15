@@ -48,7 +48,7 @@ def submit_to_mascot( mascot_sock, message ):
     return submit_success
 
 
-def get_current_period() -> str:
+def get_current_period( ) -> str:
     per_number = 0
     while os.path.isdir( "per"+str( per_number ).zfill( 4 ) ):
         per_number += 1

@@ -37,6 +37,7 @@ PY_MAQS_RUNDAQ    = "MAQS_runDAQ.py"
 PY_MAQS_SETVTHDAC = "MAQS_setVthDAC.py"
 PY_MAQS_VTHSCAN   = "MAQS_runVthScan.py"
 PY_MAQS_DACSCAN   = "MAQS_runDACScan.py"
+PY_MACARON_SCALER = "MACARON_runScaler.py"
 
 
 '''
@@ -78,6 +79,7 @@ DEF_VTHSCAN_HEADER   = "Vth_run"
 DEF_DACSCAN_HEADER   = "DAC_run"
 DEF_LV_USBDEVFILE    = "/dev/usbtmc*"
 DEF_LV_CONFIGFILE    = "LV_config.json"
+DEF_MACARON_CONFIG   = f"{HOME_ENV_PATH}/miraclue/scaler/MADA_config.json"
 
 MAX_BOARDS = 12
 ALL_BOARDS = [
