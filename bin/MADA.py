@@ -94,6 +94,9 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
         cmd = f"mkdir {maqs_pername}"
         proc = subprocess.run( cmd, shell = True )
 
+    # start MACARON scaler
+    MADAUtil.submit_to_macaron( MADADef.PACKET_SCALER_START )
+        
     print( )
     print( f"===========================" )
     print( f" DAQ starting... " )
@@ -196,7 +199,15 @@ def daq_abort( ):
     print( "===========================" )
     print( " DAQ aborting... " )
     print( "===========================" )
+
+    # state control
+    MADAUtil.submit_to_macaron( MADADef.PACKET_DAQDISABLE )
+    MADAUtil.submit_to_macaron( MADADef.PACKET_SWVETO_OFF )
+    MADAUtil.submit_to_mascot( MADADef.PACKET_DAQSTOP )
+
+    # DAQ stop
     MADAUtil.submit_to_maqs( MADADef.PACKET_DAQSTOP )
+    MADAUtil.submit_to_macaron( MADADef.PACKET_SCALER_STOP )
     
     return
 
