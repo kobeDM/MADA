@@ -1,6 +1,7 @@
 {
     "general":{
         "datadir":"/home/msgc/miraclue/data",
+        "rundir":"/home/msgc/miraclue/run",
         "detector":"30LAuPIC_2",
         "sleepLVReset":3,
         "sleepMAQSDAQBoot":5,
@@ -10,7 +11,8 @@
 
     "MACARON":{
         "IP":"10.37.0.178",
-        "port":"9100"
+        "port":"9100",
+        "scalerdir":"/home/msgc/miraclue/scaler"
     },
 
     "MASCOT":{
