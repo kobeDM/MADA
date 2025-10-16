@@ -165,6 +165,10 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
         MADAUtil.submit_to_macaron( MADADef.PACKET_DAQENABLE )
         print( f"Counter reset: command submitted to MACARON" )
         MADAUtil.submit_to_macaron( MADADef.PACKET_CNTRESET )
+        print( f"Waiting data flushing..." )
+        time.sleep( 1 )
+        print( f"Done!" )
+        print( )
         print( f"Deactivate software veto: command submitted to MACARON" )
         MADAUtil.submit_to_macaron( MADADef.PACKET_SWVETO_OFF )
         print( )
@@ -186,7 +190,10 @@ def daq_run( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
             time.sleep( config_load["general"]["sleepStatusCheck"] )
 
         # file changing (next loop)
+        MADAUtil.submit_to_macaron( MADADef.PACKET_SWVETO_ON )
+        time.sleep( 0.2 )
         MADAUtil.submit_to_macaron( MADADef.PACKET_DAQDISABLE )
+        MADAUtil.submit_to_macaron( MADADef.PACKET_SWVETO_OFF )
         print( f"...DAQ END, file changing..." )
         print( )
         fileID += 1
