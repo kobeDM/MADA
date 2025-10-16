@@ -44,7 +44,7 @@ def start_daq( args, current_period ):
         filename_mada = f"{filename_head}.mada"
         cmd = f"{MADADef.CPP_MADA_IWAKI} -n {num_trigger} -f {filename_mada} -i {IP}"
         print( cmd )
-        proc = subprocess.Popen( cmd, shell = True, stdout = PIPE, stderr = None )
+        proc = subprocess.Popen( cmd, shell = True, stdout = subprocess.DEVNULL )
         pids.append( proc.pid )
 
     # write info file
@@ -77,10 +77,11 @@ def start_daq( args, current_period ):
             cmd = f"ps aux | awk \'$2=={pids[i]}\' | wc -l"
             pnum = ( subprocess.Popen( cmd, stdout=subprocess.PIPE,
                                        shell = True ).communicate( )[0]).decode( 'utf-8' )
+            # print( f"{int(pnum)}, {pids[i]}" )
             if int( pnum ) == 1:
                 runs += 1
 
-        if runs == 0:
+        if runs < len( pids ):
             running = 0
             print( "file terminate" )
             endtime = time.time( )

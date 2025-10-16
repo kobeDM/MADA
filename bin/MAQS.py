@@ -63,8 +63,8 @@ def main( ):
     print( "** 2025 Aug by S. Higashino **" )
 
     parser = argparse.ArgumentParser( )
-    parser.add_argument( "-a", help="server IP address", default='localhost' )
-    parser.add_argument( "-p", help="UDP port", default='9000' )
+    parser.add_argument( "-a", help="server IP address", default="localhost" )
+    parser.add_argument( "-p", help="UDP port", default="9000" )
 
     args = parser.parse_args( )
     ip_address = (str)(args.a)

@@ -135,7 +135,7 @@ int main( int argc, char *argv[] )
         for( int dac = 0; dac < 64; dac++ ) proj->SetBinContent( dac + 1, DAC_image->GetBinContent( strip + 2, dac + 1 ) );
         std::string histname = Form( "%s/Ch %03d", dirname.c_str( ), strip );
         proj->SetTitle( histname.c_str( ) );
-        proj->SetMaximum(1);
+        proj->SetMaximum(proj->GetMaximum( ) * 1.5);
         proj->SetMinimum(0);
 
         erf->SetParLimits( 1, fit_min, fit_max );
