@@ -49,6 +49,20 @@ int main( int argc, char* argv[] )
 
     std::cout << "after SiTCP socekt open" << std::endl;
 
+    char tmp_data[4096];
+    int data_size = 0;
+    std::cout << " refreshing buffer..." << std::flush;
+    while( true ) {
+        int num = EtherData.Read( tmp_data, 1 );
+        if( num <= 0 ) break; // assuming that software veto will successfully be running
+        else           data_size += num;
+
+        if( data_size > 0x20000 ) break;
+    }
+    std::cout << " done" << '\n' << std::flush;
+
+    
+    char c_data[4096];
     for( int Vth = Vth_min; Vth <= Vth_max; Vth += step ) {
         if( Vth > 0x3fff ) break;
 
@@ -65,13 +79,6 @@ int main( int argc, char* argv[] )
         std::cout << std::dec;
         std::cout << " Vth : " << Vth;
 
-        char c_data[4096];
-        std::cout << " refreshing buffer..." << std::flush;
-        while( true ) {
-            int num = EtherData.Read( c_data );
-            if( num == 0 ) break; // assuming that software veto will successfully be running
-        }
-        std::cout << " done" << '\n' << std::flush;
 
         char filename[100];
         sprintf( filename, "Vth_%04x.scn", Vth );
@@ -79,7 +86,6 @@ int main( int argc, char* argv[] )
 
         int e_index = 0;
         int max_e_index = 400;
-        data_size = 0;
         while( true ) {
             int num = EtherData.Read( c_data );
             if( num > 0 )
@@ -89,7 +95,7 @@ int main( int argc, char* argv[] )
                 if( c_data[i]   == 'u' && c_data[i+1] == 'P' && c_data[i+2] == 'I' && c_data[i+3] == 'C')
                     e_index += 1;
             
-            cout << setw(6) << trig_count << "/" << setw(6) << max_trig << " counts stored\r";
+            cout << setw(6) << e_index << "/" << setw(6) << max_e_index << " counts stored\r";
             if( e_index > max_e_index ) break;
         }
 

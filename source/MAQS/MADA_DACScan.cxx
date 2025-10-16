@@ -6,7 +6,7 @@
 #include "SiTCP.h"
 #include <unistd.h>
 
-const int TIMEOUT_SEC = 100000;
+const int TIMEOUT_SEC = 1;
 
 int main( int argc, char* argv[] )
 {
@@ -43,6 +43,18 @@ int main( int argc, char* argv[] )
     std::cout << " Vth set at " << Vth << std::endl;
     std::cout << "DAC survey start" << std::endl;
 
+    char tmp_data[4096];
+    int data_size = 0;
+    std::cout << " refreshing buffer..." << std::flush;
+    while( true ) {
+        int num = EtherData.Read( tmp_data, TIMEOUT_SEC );
+        if( num <= 0 ) break; // assuming that software veto will successfully be running
+        else           data_size += num;
+
+        if( data_size > 0x20000 ) break;
+    }
+    std::cout << " done" << '\n' << std::flush;
+
     // DAC survey
     for( int i = 0; i < 64; i++ ) {
         // DAC Set
@@ -55,18 +67,11 @@ int main( int argc, char* argv[] )
         SlowCtrl.WriteRBCP( 0xf0, cmd, 1 );
         sleep( 1 );
 
-        char c_data[4096];
-        std::cout << " refreshing buffer..." << std::flush;
-        while( true ) {
-            int num = EtherData.Read( c_data, TIMEOUT_SEC );
-            if( num == 0 ) break; // assuming that software veto will successfully be running
-        }
-        std::cout << " done" << '\n' << std::flush;
-
         char filename[100];
         sprintf( filename, "DAC_%02d_%04x.srv", i, Vth );
         std::ofstream OutData( filename, std::ios::out );
 
+        char c_data[4096];
         int e_index = 0;
         int max_e_index = 400;
         while( true ) {
@@ -78,7 +83,7 @@ int main( int argc, char* argv[] )
                 if( c_data[i]   == 'u' && c_data[i+1] == 'P' && c_data[i+2] == 'I' && c_data[i+3] == 'C')
                     e_index += 1;
 
-            cout << setw(6) << trig_count << "/" << setw(6) << max_trig << " counts stored\r";
+            cout << setw(6) << e_index << "/" << setw(6) << max_e_index << " counts stored\r";
             if( e_index > max_e_index ) break;
         }
 

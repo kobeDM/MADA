@@ -62,18 +62,20 @@ int main(int argc, char* argv[]){
     cout<<"Datafile "<<filename<<""<<std::endl;
     cout<<"IP:"<<IP<<endl;;
     
-    char c_data[4096];
+    char tmp_data[4096];
     int num = 0;
     int max_trig = numperfile;
     int trig_count = 0;
 
     std::cout << " refreshing buffer..." << std::flush;
     while( true ) {
-        int num = EtherData.Read( c_data );
-        if( num == 0 ) break; // assuming that software veto will successfully be running
+        num = EtherDAQ.Read( tmp_data, 1 );
+        cout << num << endl;
+        if( num <= 0 ) break; // assuming that software veto will successfully be running
     }
     std::cout << " done" << '\n' << std::flush;
 
+    char c_data[4096];
     while(!end_flag){
         num = EtherDAQ.Read(c_data);
         if( num > 0 )
