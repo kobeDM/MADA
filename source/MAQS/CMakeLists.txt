@@ -25,7 +25,7 @@ add_executable(SetVth SetVth.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
 add_executable(SetDAC SetDAC.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
 add_executable(read_CtrlMem read_CtrlMem.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
 
-set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/..)
+set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/../../)
 install(TARGETS ${Targets} RUNTIME DESTINATION bin)
 
 

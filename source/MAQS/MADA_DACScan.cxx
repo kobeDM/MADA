@@ -75,7 +75,7 @@ int main( int argc, char* argv[] )
         // int count = 0;
 
         while( true ) {
-            count++;
+            // count++;
             int num = EtherData.Read( c_data );
             if( num > 0 ) {
                 OutData.write( c_data, num );
