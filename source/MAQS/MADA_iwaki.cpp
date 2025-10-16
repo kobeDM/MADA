@@ -61,16 +61,23 @@ int main(int argc, char* argv[]){
     OutData.open(filename, ios::out);
     cout<<"Datafile "<<filename<<""<<std::endl;
     cout<<"IP:"<<IP<<endl;;
-
+    
     char c_data[4096];
     int num = 0;
     int max_trig = numperfile;
     int trig_count = 0;
+
+    std::cout << " refreshing buffer..." << std::flush;
+    while( true ) {
+        int num = EtherData.Read( c_data );
+        if( num == 0 ) break; // assuming that software veto will successfully be running
+    }
+    std::cout << " done" << '\n' << std::flush;
+
     while(!end_flag){
         num = EtherDAQ.Read(c_data);
-        if(num>0){      
-            OutData.write(c_data, num);
-        }
+        if( num > 0 )
+            OutData.write( c_data, num );
 
         if( num > 4096 ) { // will not enter this nest in principle
             cout << "warning: data overflow..." << endl;
