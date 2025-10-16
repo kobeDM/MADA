@@ -65,15 +65,11 @@ int main( int argc, char* argv[] )
         std::cout << std::dec;
         std::cout << " Vth : " << Vth;
 
-        int data_size = 0;
         char c_data[4096];
-
         std::cout << " refreshing buffer..." << std::flush;
         while( true ) {
             int num = EtherData.Read( c_data );
-            if( num > 0 ) data_size += num;
-
-            if( data_size > 0x20000 ) break;
+            if( num == 0 ) break; // assuming that software veto will successfully be running
         }
         std::cout << " done" << '\n' << std::flush;
 
@@ -82,30 +78,21 @@ int main( int argc, char* argv[] )
         ofstream OutData( filename, ios::out );
 
         int e_index = 0;
-        int max_e_index = 0;
+        int max_e_index = 400;
         data_size = 0;
         while( true ) {
-            std::cout << std::hex;
-            std::cout << " data reading...   " << data_size << '\r' << std::flush;
-
             int num = EtherData.Read( c_data );
-            if( num > 0 ) {
+            if( num > 0 )
                 OutData.write( c_data, num );
-                data_size += num;
-            }
-            // if( c_data[num - 4] == 'u' && c_data[num - 3] == 'P' &&
-            //     c_data[num - 2] == 'I' && c_data[num - 1] == 'C' )
-            //     e_index++;
-            // if( data_size > 0x100000 || e_index > 1e3 ) break;
 
             for( int i=0; i < num-3; ++i )
                 if( c_data[i]   == 'u' && c_data[i+1] == 'P' && c_data[i+2] == 'I' && c_data[i+3] == 'C')
                     e_index += 1;
             
+            cout << setw(6) << trig_count << "/" << setw(6) << max_trig << " counts stored\r";
             if( e_index > max_e_index ) break;
         }
 
-        std::cout << "                                            " << '\r' << std::flush;
         OutData.close( );
     }
 
