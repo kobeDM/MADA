@@ -57,6 +57,13 @@ def config_vth_scan( ):
     proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
     return
 
+
+def config_dac_scan( ):
+    cmd = f"{MADADef.PY_MAQS_DACSCAN}"
+    proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+    return
+
+
 def main( ):
     print( "** MADA MAQS Server starting... **" )
     print( "** Miraclue Argon DAQ (http://github.com/kobeDM/MADA) **" )
@@ -95,8 +102,12 @@ def main( ):
         elif data == MADADef.PACKET_VTHSCAN:
             print( "Config: run Vth scan" )
             config_vth_scan( )
+        elif data == MADADef.PACKET_DACSCAN:
+            print( "Config: run DAC scan" )
+            config_dac_scan( )
         else:
             print( "Unknown message..." )
+
     return
 
 
