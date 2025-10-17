@@ -20,8 +20,8 @@ def runVthScan_run( maqs_sock_arr, macaron_sock, mascot_sock ):
 
     # submit runVthScan to MAQS
     MADAUtil.submit_to_all_maqs( maqs_sock_arr, MADADef.PACKET_VTHSCAN )
+    time.sleep( 2 )
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQENABLE )
-    time.sleep( 1 )
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_OFF )
     
     # Status check

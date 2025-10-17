@@ -57,7 +57,7 @@ int main( int argc, char* argv[] )
         if( num <= 0 ) break; // assuming that software veto will successfully be running
         else           data_size += num;
 
-        if( data_size > 0x20000 ) break;
+        if( data_size > 0x100000 ) break;
     }
     std::cout << " done" << '\n' << std::flush;
 
@@ -85,7 +85,7 @@ int main( int argc, char* argv[] )
         ofstream OutData( filename, ios::out );
 
         int e_index = 0;
-        int max_e_index = 400;
+        int max_e_index = 100;
         while( true ) {
             int num = EtherData.Read( c_data );
             if( num > 0 )
