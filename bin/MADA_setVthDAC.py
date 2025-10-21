@@ -59,6 +59,10 @@ def main( ):
     print( "MAQS servers connected.")
     print( )
         
+    print( " === Distributing config file to all MAQS servers ===")
+    MADAUtil.divide_config( config_load )
+    print( " === Distributing config file Done ===")
+
     try:
         setVthDAC_run( maqs_sock_arr )
     except KeyboardInterrupt:

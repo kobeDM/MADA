@@ -106,6 +106,10 @@ def main( ):
     print( )
     print( "MAQS servers connected.")
     print( )
+
+    print( " === Distributing config file to all MAQS servers ===")
+    MADAUtil.divide_config( config_load )
+    print( " === Distributing config file Done ===")
     
     try:
         runVthScan_run( maqs_sock_arr, macaron_sock, mascot_sock )
