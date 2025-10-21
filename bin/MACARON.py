@@ -107,25 +107,25 @@ def main( ):
         
         if data == MADADef.PACKET_DAQENABLE:
             print( "Control: DAQ enable" )
-            daq_enable( True )
+            daq_enable( 1 )
         elif data == MADADef.PACKET_DAQDISABLE:
             print( "Control: DAQ disable" )
-            daq_enable( False )
+            daq_enable( 0 )
         elif data == MADADef.PACKET_CNTRESET:
             print( "Control: Counter reset" )
             counter_reset( )
         elif data == MADADef.PACKET_TPMODE_ON:
             print( "Control: Test pluse mode: ON" )
-            testpulse_mode( True )
+            testpulse_mode( 1 )
         elif data == MADADef.PACKET_TPMODE_OFF:
             print( "Control: Test pluse mode: OFF" )
-            testpulse_mode( False )
+            testpulse_mode( 0 )
         elif data == MADADef.PACKET_SWVETO_ON:
             print( "Control: Software veto: ON" )
-            software_veto( True )
+            software_veto( 1 )
         elif data == MADADef.PACKET_SWVETO_OFF:
             print( "Control: Software veto: OFF" )
-            software_veto( False )
+            software_veto( 0 )
         elif data == MADADef.PACKET_SCALER_START:
             print( "Control: Start scaler" )
             start_scaler( )

@@ -52,6 +52,19 @@ def runVthScan_abort( ):
     
     return
 
+
+def check_maqs_status( maqs_sock ):
+
+    print("Checking MAQS's status...")
+    if MADAUtil.submit_to_maqs( maqs_sock, MADADef.PACKET_CHECKDAQ ) == False:
+        print( "Status check for " + maqs_sock[3] + " failed, aborting..." )
+        return 
+    reply_data = maqs_sock[0].receive( )
+    reply_val = int.from_bytes( reply_data ) & 0xff
+    
+    return reply_val.to_bytes( 1, "little" )
+
+
 def main( ):
     print("** MADA_runVthScan start from client **")
     print("** Miraclue Argon DAQ (http://github.com/kobeDM/MADA) **")
@@ -91,11 +104,11 @@ def main( ):
     print( )
     print( "Checking connection with MAQS servers..." )
     maqs_sock_arr = []
-    for i in range( 6 ):
+    for i in range( 1 ):
         maqs_name = f"MAQS{i+1}"
         maqs_IP = config_load[maqs_name]["IP"]
         maqs_port = config_load[maqs_name]["port"]
-        maqs_sock = ( UDPGenericSocket( False, 1024 ), maqs_IP, (int)maqs_port, maqs_name  )
+        maqs_sock = ( UDPGenericSocket( False, 1024 ), maqs_IP, (int)(maqs_port), maqs_name  )
         if maqs_sock[0].initialize( maqs_sock[1], maqs_sock[2] ) == False:
             print( "Connection error: failed to establish connection to " + maqs_sock[1] + "." )
             continue
