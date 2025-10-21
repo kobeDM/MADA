@@ -106,9 +106,13 @@ def main( ):
     print( )
     print( "MAQS servers connected.")
     print( )
-        
-        runDACScan_run( maqs_sock-arr, macaron_sock, mascot_sock )
+
+    print( " === Distributing config file to all MAQS servers ===")
+    MADAUtil.divide_config( config_load )
+    print( " === Distributing config file Done ===")
+    
     try:
+        runDACScan_run( maqs_sock-arr, macaron_sock, mascot_sock )
     except KeyboardInterrupt:
         runDACScan_abort( )
 
