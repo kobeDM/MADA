@@ -83,7 +83,7 @@ def main( ):
     while True:
         data = udpsock.receive( )
         
-        if int.from_bytes( data, "little" ) & 0xffffff00).to_bytes( 4, "little" )  == MADADef.PACKET_DAQSTART:
+        if (int.from_bytes( data, "little" ) & 0xffffff00).to_bytes( 4, "little" )  == MADADef.PACKET_DAQSTART:
             print( "DAQ: start" )
             fileID = ( int.from_bytes( data, "little" ) & 0xff )
             start_maqs_daq( fileID )
