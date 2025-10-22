@@ -42,13 +42,13 @@ def daq_stop( ):
 def lv_check( ):
     retVal = True
     if os.path.isfile( MADADef.DEF_LV_CONFIGFILE ) == False:
-        cmd = f"cp {MADA_ENV_PATH}/config/{DEF_LV_CONFIGFILE}"
+        cmd = f"cp {MADADef.MADA_ENV_PATH}/config/{MADADef.DEF_LV_CONFIGFILE}"
         proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
         proc.communicate( )
         if proc.returncode == 0:
-            print( f"{DEF_LV_CONFIGFILE} copied from MADA repository" )
+            print( f"{MADADef.DEF_LV_CONFIGFILE} copied from MADA repository" )
         else:
-            print( f"Failed to copy {DEF_LV_CONFIGFILE} from MADA repository" )
+            print( f"Failed to copy {MADADef.DEF_LV_CONFIGFILE} from MADA repository" )
             return retVal
         
     config = load_json( MADADef.DEF_LV_CONFIGFILE )
@@ -67,13 +67,13 @@ def lv_check( ):
 
 def lv_reset( ):
     if os.path.isfile( MADADef.DEF_LV_CONFIGFILE ) == False:
-        cmd = f"cp {MADA_ENV_PATH}/config/{DEF_LV_CONFIGFILE}"
+        cmd = f"cp {MADADef.MADA_ENV_PATH}/config/{MADADef.DEF_LV_CONFIGFILE}"
         proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
         proc.communicate( )
         if proc.returncode == 0:
-            print( f"{DEF_LV_CONFIGFILE} copied from MADA repository" )
+            print( f"{MADADef.DEF_LV_CONFIGFILE} copied from MADA repository" )
         else:
-            print( f"Failed to copy {DEF_LV_CONFIGFILE} from MADA repository" )
+            print( f"Failed to copy {MADADef.DEF_LV_CONFIGFILE} from MADA repository" )
             return False
         
     config = load_json( MADADef.DEF_LV_CONFIGFILE )
@@ -81,11 +81,11 @@ def lv_reset( ):
     dev_list = LVCtrl.sort_devices( dev_file, config )
     itv_rbt = config["interval"]["reboot"]
     print( "+/- 2.5 V reset." )
-    send_command( dev_list[1], MADADef.LV_QUERY_OUTPUT_OFF )
-    send_command( dev_list[2], MADADef.LV_QUERY_OUTPUT_OFF )
+    LVCtrl.send_command( dev_list[1], MADADef.LV_QUERY_OUTPUT_OFF )
+    LVCtrl.send_command( dev_list[2], MADADef.LV_QUERY_OUTPUT_OFF )
     time.sleep( itv_rbt )
-    send_command( dev_list[1], MADADef.LV_QUERY_OUTPUT_ON )
-    send_command( dev_list[2], MADADef.LV_QUERY_OUTPUT_ON )
+    LVCtrl.send_command( dev_list[1], MADADef.LV_QUERY_OUTPUT_ON )
+    LVCtrl.send_command( dev_list[2], MADADef.LV_QUERY_OUTPUT_ON )
 
     return True
 
@@ -119,9 +119,9 @@ def main( ):
             print( "SCSM: LV check" )
             lv_OK = lv_check( )
             if lv_OK == True:
-                udpsock.send( PACKET_LVSTATUS_OK ) 
+                udpsock.send( MADADef.PACKET_LVSTATUS_OK ) 
             else:
-                udpsock.send( PACKET_LVSTATUS_NG ) 
+                udpsock.send( MADADef.PACKET_LVSTATUS_NG ) 
         elif data == MADADef.PACKET_LVRESET:
             print( "SCSM: LV reset" )
             if lv_reset( ) == True:

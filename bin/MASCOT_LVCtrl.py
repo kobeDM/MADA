@@ -11,7 +11,7 @@ import MADA_defs as MADADef
    
 def send_command( dev, command, delay = 0.1, read_len=256 ):
     lock_file = os.path.basename( dev )
-    lock_filepath = f"{MADADef.LOCK_TMP_PATH}/{MADADef.LOCK_FILENAME_ACCESS_PREFIX}_{lock_file}"
+    lock_filepath = f"{MADADef.LOCK_TMP_PATH}/{MADADef.LOCK_FILENAME_ACCESS_PREFIX}.{lock_file}"
     while True:
         if os.path.isfile( lock_filepath ) == True:
             time.sleep( 0.1 )

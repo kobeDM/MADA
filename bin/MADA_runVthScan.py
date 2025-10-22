@@ -49,7 +49,7 @@ def runVthScan_run( maqs_sock_arr, macaron_sock, mascot_sock ):
     return
 
 
-def runVthScan_abort( ):
+def runVthScan_abort( maqs_sock_arr, macaron_sock, mascot_sock ):
     
     print( )
     print( "===========================" )
@@ -79,7 +79,7 @@ def check_maqs_status( maqs_sock ):
         print( "Status check for " + maqs_sock[3] + " failed, aborting..." )
         return 
     reply_data = maqs_sock[0].receive( )
-    reply_val = int.from_bytes( reply_data, "little" ) & 0xff
+    reply_val = int.from_bytes( reply_data, "big" ) & 0xff
     
     return reply_val.to_bytes( 1, "little" )
 
@@ -146,7 +146,7 @@ def main( ):
     try:
         runVthScan_run( maqs_sock_arr, macaron_sock, mascot_sock )
     except KeyboardInterrupt:
-        runVthScan_abort( )
+        runVthScan_abort( maqs_sock_arr, macaron_sock, mascot_sock )
 
 
     return    

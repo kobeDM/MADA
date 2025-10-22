@@ -234,21 +234,21 @@ def divide_config( config_load ):
 
     print( f"{macaron_name} config file successfully distributed" )
 
-    # # config distribute to MASCOT
-    # mascot_name = f"MASCOT"
-    # config_filepath = f"{datadir_name}/{mascot_name}/{detector_name}/{current_dir_name}/{MADADef.DEF_CONFIGFILE}"
-    # print( f"config file {MADADef.DEF_CONFIGFILE} distributing to {config_filepath}" )
-    # dict = { }
-    # for index in config_load:
-    #     if index == "general":
-    #         d_gen = { "general" : config_load["general"] }
-    #         dict.update( d_gen )
-    #     elif index == mascot_name:
-    #         d_gbkb = { mascot_name : config_load[mascot_name] }
-    #         dict.update( d_gbkb )
-    # with open( config_filepath, mode = "wt", encoding = "utf-8" ) as file:
-    #     json.dump( dict, file, ensure_ascii = False, indent = 4 )
+    # config distribute to MASCOT
+    mascot_name = f"MASCOT"
+    config_filepath = f"{datadir_name}/{mascot_name}/{detector_name}/{current_dir_name}/{MADADef.DEF_CONFIGFILE}"
+    print( f"config file {MADADef.DEF_CONFIGFILE} distributing to {config_filepath}" )
+    dict = { }
+    for index in config_load:
+        if index == "general":
+            d_gen = { "general" : config_load["general"] }
+            dict.update( d_gen )
+        elif index == mascot_name:
+            d_gbkb = { mascot_name : config_load[mascot_name] }
+            dict.update( d_gbkb )
+    with open( config_filepath, mode = "wt", encoding = "utf-8" ) as file:
+        json.dump( dict, file, ensure_ascii = False, indent = 4 )
 
-    # print( f"{mascot_name} config file successfully distributed" )
+    print( f"{mascot_name} config file successfully distributed" )
     
     return
