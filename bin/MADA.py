@@ -16,7 +16,7 @@ def check_maqs_status( maqs_sock ):
         print( "Status check for " + maqs_sock[3] + " failed, aborting..." )
         return 
     reply_data = maqs_sock[0].receive( )
-    reply_val = int.from_bytes( reply_data ) & 0xff
+    reply_val = int.from_bytes( reply_data, "little" ) & 0xff
     
     return reply_val.to_bytes( 1, "little" )
     
@@ -29,7 +29,7 @@ def check_macaron_status( macaron_sock ):
         return
 
     reply_data = macaron_sock[0].receive( )
-    reply_val = int.from_bytes( reply_data ) & 0xff
+    reply_val = int.from_bytes( reply_data, "little" ) & 0xff
     
     return reply_val.to_bytes( 1, "little" )
 
