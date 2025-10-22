@@ -15,23 +15,30 @@ def runVthScan_run( maqs_sock_arr, macaron_sock, mascot_sock ):
     print( "===========================" )
 
     # MACARON setting
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQDISABLE )
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_ON )
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_TPMODE_ON )
+    time.sleep( 1 )
 
     # submit runVthScan to MAQS
     MADAUtil.submit_to_all_maqs( maqs_sock_arr, MADADef.PACKET_VTHSCAN )
     time.sleep( 2 )
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQENABLE )
+    time.sleep( 2 )
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_OFF )
     
     # Status check
     while True:
+        # time.sleep( 10 )
         vth_scan_end = False
         for maqs_sock in maqs_sock_arr:
-            if check_maqs_status( maqs_sock ) == MADADef.CTRL_MAQS_STATE_IDLE:
+            status = check_maqs_status( maqs_sock )
+            print( int.from_bytes(  status, "little"  ) & 0xff )
+            if status == MADADef.CTRL_MAQS_STATE_IDLE:
                 print( f"VthScan finished." )
                 vth_scan_end = True
                 break
+            time.sleep( 1 )
         if vth_scan_end == True:
             break
     
@@ -60,7 +67,7 @@ def check_maqs_status( maqs_sock ):
         print( "Status check for " + maqs_sock[3] + " failed, aborting..." )
         return 
     reply_data = maqs_sock[0].receive( )
-    reply_val = int.from_bytes( reply_data ) & 0xff
+    reply_val = int.from_bytes( reply_data, "little" ) & 0xff
     
     return reply_val.to_bytes( 1, "little" )
 
