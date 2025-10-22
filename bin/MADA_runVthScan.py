@@ -55,6 +55,7 @@ def runVthScan_abort( maqs_sock_arr, macaron_sock, mascot_sock ):
     print( "===========================" )
     print( " runVthScan aborting... " )
     print( "===========================" )
+
     print( )
     print( "MACARON Control: disable DAQ, software Veto ON, and TPMODE OFF..." )
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQDISABLE )

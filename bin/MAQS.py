@@ -25,19 +25,24 @@ def check_maqs_status( ):
     process_exist = False
     status = MADADef.CTRL_MAQS_STATE_UNKNOWN
     if MADAUtil.process_running( MADADef.PY_MAQS_RUNDAQ ) == True:
+        print( "Debug: DAQ running" )
         status = MADADef.CTRL_MAQS_STATE_DAQRUN
         process_exist = True
     if MADAUtil.process_running( MADADef.PY_MAQS_SETVTHDAC ) == True:
+        print( "Debug: SetVthDAC running" )
         status = MADADef.CTRL_MAQS_STATE_SETVTHDAC if process_exist == False else MADADef.CTRL_MAQS_STATE_OVERTASK
         process_exist = True
     if MADAUtil.process_running( MADADef.PY_MAQS_VTHSCAN ) == True:
+        print( "Debug: VthScan running" )
         status = MADADef.CTRL_MAQS_STATE_VTHSCAN if process_exist == False else MADADef.CTRL_MAQS_STATE_OVERTASK
         process_exist = True
     if MADAUtil.process_running( MADADef.PY_MAQS_DACSCAN ) == True:
+        print( "Debug: DACScan running" )
         status = MADADef.CTRL_MAQS_STATE_DACSCAN if process_exist == False else MADADef.CTRL_MAQS_STATE_OVERTASK
         process_exist = True
 
     if process_exist == False:
+        print( "Debug: No process running" )
         status = MADADef.CTRL_MAQS_STATE_IDLE
     return status
 
