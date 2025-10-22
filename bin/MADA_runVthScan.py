@@ -49,25 +49,36 @@ def runVthScan_run( maqs_sock_arr, macaron_sock, mascot_sock ):
     return
 
 
-def runVthScan_abort( ):
+def runVthScan_abort( maqs_sock_arr, macaron_sock, mascot_sock ):
     
     print( )
     print( "===========================" )
     print( " runVthScan aborting... " )
     print( "===========================" )
-    # do nothing at this moment (under construction...)
+    print( )
+    print( "MACARON Control: disable DAQ, software Veto ON, and TPMODE OFF..." )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQDISABLE )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_ON )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_TPMODE_OFF )
+    print( "Done!" )
+    print( )
+
+    print( "Kill MAQS process..." )
+    MADAUtil.submit_to_all_maqs( maqs_sock_arr, MADADef.PACKET_KILLALL )
+    print( )
+    print( "--- Aborted ---" )
     
     return
 
 
 def check_maqs_status( maqs_sock ):
 
-    print("Checking MAQS's status...")
+    print( "Checking MAQS's status..." )
     if MADAUtil.submit_to_maqs( maqs_sock, MADADef.PACKET_CHECKDAQ ) == False:
         print( "Status check for " + maqs_sock[3] + " failed, aborting..." )
         return 
     reply_data = maqs_sock[0].receive( )
-    reply_val = int.from_bytes( reply_data, "little" ) & 0xff
+    reply_val = int.from_bytes( reply_data, "big" ) & 0xff
     
     return reply_val.to_bytes( 1, "little" )
 
@@ -134,7 +145,7 @@ def main( ):
     try:
         runVthScan_run( maqs_sock_arr, macaron_sock, mascot_sock )
     except KeyboardInterrupt:
-        runVthScan_abort( )
+        runVthScan_abort( maqs_sock_arr, macaron_sock, mascot_sock )
 
 
     return    
