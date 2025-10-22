@@ -51,16 +51,20 @@ def lv_check( ):
             print( f"Failed to copy {MADADef.DEF_LV_CONFIGFILE} from MADA repository" )
             return retVal
         
-    config = load_json( MADADef.DEF_LV_CONFIGFILE )
+    with open( MADADef.DEF_LV_CONFIGFILE, "r" ) as config_open :
+        config = json.load( config_open )
     dev_file = MADADef.DEF_LV_USBDEVFILE
+    curr_lim = config["devices"]["currentlimit"]
+    curr_meas = []
+    volt_meas = []
     dev_list = LVCtrl.sort_devices( dev_file, config )
     for ch in range( len( dev_list ) ):
         curr_val = LVCtrl.send_command( dev_list[ch], MADADef.LV_QUERY_GET_CURRENT )
         curr_meas.append( float( curr_val.strip( ) ) )
         volt_val = LVCtrl.send_command( dev_list[ch], MADADef.LV_QUERY_GET_VOLTAGE )
         volt_meas.append( float( volt_val.strip( ) ) )
-        if curr_meas[1] > curr_lim[1] or curr_meas[2] > curr_lim[2]:
-            retVal = False
+    if curr_meas[1] > curr_lim[1] or curr_meas[2] > curr_lim[2]:
+        retVal = False
     
     return retVal
 
@@ -76,7 +80,8 @@ def lv_reset( ):
             print( f"Failed to copy {MADADef.DEF_LV_CONFIGFILE} from MADA repository" )
             return False
         
-    config = load_json( MADADef.DEF_LV_CONFIGFILE )
+    with open( MADADef.DEF_LV_CONFIGFILE, "r" ) as config_open :
+        config = json.load( config_open )
     dev_file = MADADef.DEF_LV_USBDEVFILE
     dev_list = LVCtrl.sort_devices( dev_file, config )
     itv_rbt = config["interval"]["reboot"]
