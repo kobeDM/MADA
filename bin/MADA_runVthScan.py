@@ -55,14 +55,26 @@ def runVthScan_abort( ):
     print( "===========================" )
     print( " runVthScan aborting... " )
     print( "===========================" )
-    # do nothing at this moment (under construction...)
+
+    print( )
+    print( "MACARON Control: disable DAQ, software Veto ON, and TPMODE OFF..." )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQDISABLE )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_ON )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_TPMODE_OFF )
+    print( "Done!" )
+    print( )
+
+    print( "Kill MAQS process..." )
+    MADAUtil.submit_to_all_maqs( maqs_sock_arr, MADADef.PACKET_KILLALL )
+    print( )
+    print( "--- Aborted ---" )
     
     return
 
 
 def check_maqs_status( maqs_sock ):
 
-    print("Checking MAQS's status...")
+    print( "Checking MAQS's status..." )
     if MADAUtil.submit_to_maqs( maqs_sock, MADADef.PACKET_CHECKDAQ ) == False:
         print( "Status check for " + maqs_sock[3] + " failed, aborting..." )
         return 
