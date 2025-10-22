@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import argparse
+import time
 import subprocess
 from subprocess import PIPE
 from udp_util import UDPGenericSocket
@@ -27,11 +28,14 @@ def check_maqs_status( ):
         status = MADADef.CTRL_MAQS_STATE_DAQRUN
         process_exist = True
     if MADAUtil.process_running( MADADef.PY_MAQS_SETVTHDAC ) == True:
-        status = MADADef.CTRL_MAQS_STATE_SETVTHDAC if process_running == False else MADADef.CTRL_MAQS_STATE_OVERTASK
+        status = MADADef.CTRL_MAQS_STATE_SETVTHDAC if process_exist == False else MADADef.CTRL_MAQS_STATE_OVERTASK
+        process_exist = True
     if MADAUtil.process_running( MADADef.PY_MAQS_VTHSCAN ) == True:
-        status = MADADef.CTRL_MAQS_STATE_VTHSCAN if process_running == False else MADADef.CTRL_MAQS_STATE_OVERTASK
+        status = MADADef.CTRL_MAQS_STATE_VTHSCAN if process_exist == False else MADADef.CTRL_MAQS_STATE_OVERTASK
+        process_exist = True
     if MADAUtil.process_running( MADADef.PY_MAQS_DACSCAN ) == True:
-        status = MADADef.CTRL_MAQS_STATE_DACSCAN if process_running == False else MADADef.CTRL_MAQS_STATE_OVERTASK
+        status = MADADef.CTRL_MAQS_STATE_DACSCAN if process_exist == False else MADADef.CTRL_MAQS_STATE_OVERTASK
+        process_exist = True
 
     if process_exist == False:
         status = MADADef.CTRL_MAQS_STATE_IDLE
@@ -54,7 +58,7 @@ def config_set_vth_dac( ):
 
 def config_vth_scan( ):
     cmd = f"{MADADef.PY_MAQS_VTHSCAN}"
-    proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.DEVNULL, stderr=None )
     return
 
 
@@ -92,7 +96,10 @@ def main( ):
             abort_maqs_daq( )
         elif data == MADADef.PACKET_CHECKDAQ:
             print( "DAQ: status check" )
-            check_maqs_status( )
+            maqs_status = check_maqs_status( )
+            return_data = MADADef.CTRL_SYS_MIRACLUE + MADADef.CTRL_ROLE_SERVER + MADADef.CTRL_CMD_CHECKDAQ + maqs_status
+            time.sleep( 1 )
+            udpsock.send( return_data )
         elif data == MADADef.PACKET_KILLALL:
             print( "DAQ: kill all processes" )
             kill_all_process( )
