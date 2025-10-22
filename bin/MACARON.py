@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import argparse
+import time
 import subprocess
 from subprocess import PIPE
 from udp_util import UDPGenericSocket
@@ -136,6 +137,7 @@ def main( ):
             print( "Control: Check controller status" )
             macaron_status = check_macaron_status( )
             return_data = MADADef.CTRL_SYS_MIRACLUE + MADADef.CTRL_ROLE_SERVER + MADADef.CTRL_CMD_CHECKCTRL + macaron_status
+            time.sleep( 1 )
             udpsock.send( return_data )
         else:
             print( "Unknown message..." )
