@@ -57,7 +57,7 @@ def kill_all_process( ):
 
 def config_set_vth_dac( ):
     cmd = f"{MADADef.PY_MAQS_SETVTHDAC}"
-    proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.DEVNULL, stderr=None )
     return
 
 
@@ -69,7 +69,7 @@ def config_vth_scan( ):
 
 def config_dac_scan( ):
     cmd = f"{MADADef.PY_MAQS_DACSCAN}"
-    proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.DEVNULL, stderr=None )
     return
 
 
