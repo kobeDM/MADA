@@ -10,7 +10,7 @@ import MADA_defs as MADADef
    
 
 # code inherited from MAZYSCA_SW
-class ScalerLoggingEventHandler( LoggingEventHandler ):
+class RateLoggingEventHandler( LoggingEventHandler ):
     def on_modified( self, event ):
 
         if event.is_directory == False:
