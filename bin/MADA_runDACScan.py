@@ -141,9 +141,9 @@ def main( ):
     print( " === Distributing config file Done ===")
     
     try:
-        runDACScan_run( maqs_sock-arr, macaron_sock, mascot_sock )
+        runDACScan_run( maqs_sock_arr, macaron_sock, mascot_sock )
     except KeyboardInterrupt:
-        runDACScan_abort( maqs_sock-arr, macaron_sock, mascot_sock )
+        runDACScan_abort( maqs_sock_arr, macaron_sock, mascot_sock )
 
 
     return    
