@@ -47,7 +47,7 @@ def main( ):
         maqs_name = f"MAQS{i+1}"
         maqs_IP = config_load[maqs_name]["IP"]
         maqs_port = config_load[maqs_name]["port"]
-        maqs_sock = ( UDPGenericSocket( False, 1024 ), maqs_IP, (int)maqs_port, maqs_name  )
+        maqs_sock = ( UDPGenericSocket( False, 1024 ), maqs_IP, (int)(maqs_port), maqs_name  )
         if maqs_sock[0].initialize( maqs_sock[1], maqs_sock[2] ) == False:
             print( "Connection error: failed to establish connection to " + maqs_sock[1] + "." )
             continue
