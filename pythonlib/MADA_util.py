@@ -200,7 +200,11 @@ def divide_config( config_load ):
     # config distribute to MAQS servers
     for i in range( 6 ):
         maqs_name = f"MAQS{i+1}"
-        config_filepath = f"{datadir_name}/{maqs_name}/{detector_name}/{current_dir_name}/{MADADef.DEF_CONFIGFILE}"
+        current_dir_path = f"{datadir_name}/{maqs_name}/{detector_name}/{current_dir_name}"
+        if os.path.isdir( current_dir_name ) == False:
+            cmd = f"mkdir {current_dir_path}"
+            subprocess.run( cmd, shell = True )
+        config_filepath = f"{current_dir_path}/{MADADef.DEF_CONFIGFILE}"
         print( f"config file {MADADef.DEF_CONFIGFILE} distributing to {config_filepath}" )
         dict = { }
         for index in config_load:
@@ -219,6 +223,9 @@ def divide_config( config_load ):
     # config distribute to MACARON (mainly for scaler)
     macaron_name = f"MACARON"
     scalerdir_name = config_load[macaron_name]["scalerdir"]
+    if os.path.isdir( scalerdir_name ) == False:
+        cmd = f"mkdir {scalerdir_path}"
+        subprocess.run( cmd, shell = True )
     config_filepath = f"{scalerdir_name}/{MADADef.DEF_CONFIGFILE}"
     print( f"config file {MADADef.DEF_CONFIGFILE} distributing to {config_filepath}" )
     dict = { }
