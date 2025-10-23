@@ -263,15 +263,16 @@ def main( ):
     print( )
     print( "Checking connection with MAQS servers..." )
     maqs_sock_arr = []
-    for i in range( 1 ):
+    for i in range( 6 ):
         maqs_name = f"MAQS{i+1}"
-        maqs_IP = config_load[maqs_name]["IP"]
-        maqs_port = config_load[maqs_name]["port"]
-        maqs_sock = ( UDPGenericSocket( False, 1024 ), maqs_IP, (int)(maqs_port), maqs_name  )
-        if maqs_sock[0].initialize( maqs_sock[1], maqs_sock[2] ) == False:
-            print( "Connection error: failed to establish connection to " + maqs_sock[1] + "." )
-            continue
-        maqs_sock_arr.append( maqs_sock )
+        if maqs_name in config_load:
+            maqs_IP = config_load[maqs_name]["IP"]
+            maqs_port = config_load[maqs_name]["port"]
+            maqs_sock = ( UDPGenericSocket( False, 1024 ), maqs_IP, (int)(maqs_port), maqs_name  )
+            if maqs_sock[0].initialize( maqs_sock[1], maqs_sock[2] ) == False:
+                print( "Connection error: failed to establish connection to " + maqs_sock[1] + "." )
+                continue
+            maqs_sock_arr.append( maqs_sock )
     if len( maqs_sock_arr ) < 1:
         print( "No MAQS servers connected. aborting..." )
         return
