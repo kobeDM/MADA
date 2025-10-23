@@ -121,6 +121,7 @@ def kill_process( procname ):
     
     return
 
+
 def kill_DAQ( config, pername ):
 
     print( f"target dir: {pername}" )
@@ -145,7 +146,7 @@ def kill_DAQ( config, pername ):
 
     size = { bid: 0 for bid in MADADef.ALL_BOARDS }
     for i in range(len(activeIP)):
-        filename_head = f"{current_period}/{boardID[i]}_{str( fileID ).zfill( 4 )}"
+        filename_head = f"{pername}/{boardID[i]}_{str( fileID ).zfill( 4 )}"
         filename_mada = f"{filename_head}.mada"
         filename_info = f"{filename_head}.info"
         cmd = f"ls -l {filename_mada}"
