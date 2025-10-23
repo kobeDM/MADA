@@ -15,13 +15,16 @@ def runDACScan_run( maqs_sock_arr, macaron_sock, mascot_sock ):
     print( "===========================" )
     
     # MACARON setting
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQDISABLE )
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_ON )
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_TPMODE_ON )
+    time.sleep( 1 )
 
     # submit runDACScan to MAQS
     MADAUtil.submit_to_all_maqs( maqs_sock_arr, MADADef.PACKET_DACSCAN )
     time.sleep( 2 )
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQENABLE )
+    time.sleep( 2 )
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_OFF )
 
     # Status check
@@ -42,15 +45,40 @@ def runDACScan_run( maqs_sock_arr, macaron_sock, mascot_sock ):
     return
 
 
-def runDACScan_abort( ):
+def runDACScan_abort( maqs_sock_arr, macaron_sock, mascot_sock ):
     
     print( )
     print( "===========================" )
-    print( " ruDACScan aborting... " )
+    print( " runDACScan aborting... " )
     print( "===========================" )
-    # do nothing at this moment (under construction...)
+
+    print( )
+    print( "MACARON Control: disable DAQ, software Veto ON, and TPMODE OFF..." )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQDISABLE )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_ON )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_TPMODE_OFF )
+    print( "Done!" )
+    print( )
+
+    print( "Kill MAQS process..." )
+    MADAUtil.submit_to_all_maqs( maqs_sock_arr, MADADef.PACKET_KILLALL )
+    print( )
+    print( "--- Aborted ---" )
     
     return
+
+
+def check_maqs_status( maqs_sock ):
+
+    print( "Checking MAQS's status..." )
+    if MADAUtil.submit_to_maqs( maqs_sock, MADADef.PACKET_CHECKDAQ ) == False:
+        print( "Status check for " + maqs_sock[3] + " failed, aborting..." )
+        return 
+    reply_data = maqs_sock[0].receive( )
+    reply_val = int.from_bytes( reply_data, "big" ) & 0xff
+    
+    return reply_val.to_bytes( 1, "little" )
+
 
 def main( ):
     print("** MADA_runDACScan start from MAQS client **")
@@ -93,13 +121,14 @@ def main( ):
     maqs_sock_arr = []
     for i in range( 6 ):
         maqs_name = f"MAQS{i+1}"
-        maqs_IP = config_load[maqs_name]["IP"]
-        maqs_port = config_load[maqs_name]["port"]
-        maqs_sock = ( UDPGenericSocket( False, 1024 ), maqs_IP, (int)maqs_port, maqs_name  )
-        if maqs_sock[0].initialize( maqs_sock[1], maqs_sock[2] ) == False:
-            print( "Connection error: failed to establish connection to " + maqs_sock[1] + "." )
-            continue
-        maqs_sock_arr.append( maqs_sock )
+        if maqs_name in config_load:
+            maqs_IP = config_load[maqs_name]["IP"]
+            maqs_port = config_load[maqs_name]["port"]
+            maqs_sock = ( UDPGenericSocket( False, 1024 ), maqs_IP, (int)(maqs_port), maqs_name  )
+            if maqs_sock[0].initialize( maqs_sock[1], maqs_sock[2] ) == False:
+                print( "Connection error: failed to establish connection to " + maqs_sock[1] + "." )
+                continue
+            maqs_sock_arr.append( maqs_sock )
     if len( maqs_sock_arr ) < 1:
         print( "No MAQS servers connected. aborting..." )
         return
@@ -114,7 +143,7 @@ def main( ):
     try:
         runDACScan_run( maqs_sock-arr, macaron_sock, mascot_sock )
     except KeyboardInterrupt:
-        runDACScan_abort( )
+        runDACScan_abort( maqs_sock-arr, macaron_sock, mascot_sock )
 
 
     return    

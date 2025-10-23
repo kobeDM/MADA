@@ -152,20 +152,24 @@ def daq_run( mada_config_path, config_load, maqs_sock_arr, macaron_sock, mascot_
         print( f" MAQS DAQ booting..." )
         print( f" ===========================================================" )
         print( )
-        while True:
-            for maqs_sock in maqs_sock_arr:
-                fileID_command = fileID.to_bytes( 1, "little" )
-                daq_start_command = MADADef.CTRL_SYS_MIRACLUE + MADADef.CTRL_ROLE_MASTER + MADADef.CTRL_CMD_DAQSTART + fileID_command
-                MADAUtil.submit_to_maqs( maqs_sock, daq_start_command )
-                timeout_itv = 0
-                while True:
-                    if check_maqs_status( maqs_sock ) == MADADef.CTRL_MAQS_STATE_DAQRUN:
-                        print( f"===> {maqs_sock[3]} DAQ RUNNING" )
-                        break
-                    timeout_itv += 1
-                    if timeout_itv <= 100:
-                        print( f"ERROR: failed to boot {maqs_sock[3]} DAQ. aborting..." )
-                        sys.exit( 1 )
+
+        for maqs_sock in maqs_sock_arr:
+            print( f"{maqs_sock[3]} DAQ booting." )
+            fileID_command = fileID.to_bytes( 1, "little" )
+            print( fileID_command )
+            daq_start_command = MADADef.CTRL_SYS_MIRACLUE + MADADef.CTRL_ROLE_MASTER + MADADef.CTRL_CMD_DAQSTART + fileID_command
+            MADAUtil.submit_to_maqs( maqs_sock, daq_start_command )
+            print( daq_start_command )
+            timeout_itv = 0
+            while True:
+                print( f"timeout inverval: {timeout_itv}" )
+                if check_maqs_status( maqs_sock ) == MADADef.CTRL_MAQS_STATE_DAQRUN:
+                    print( f"===> {maqs_sock[3]} DAQ RUNNING" )
+                    break
+                timeout_itv += 1
+                if timeout_itv >= 100:
+                    print( f"ERROR: failed to boot {maqs_sock[3]} DAQ. aborting..." )
+                    sys.exit( 1 )
         
         # DAQ enable
         print( f"Waiting data flushing..." )
@@ -202,7 +206,7 @@ def daq_run( mada_config_path, config_load, maqs_sock_arr, macaron_sock, mascot_
         
     return
 
-def daq_abort( ):
+def daq_abort( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
     
     print( )
     print( "===========================" )
@@ -259,15 +263,16 @@ def main( ):
     print( )
     print( "Checking connection with MAQS servers..." )
     maqs_sock_arr = []
-    for i in range( 1 ):
+    for i in range( 6 ):
         maqs_name = f"MAQS{i+1}"
-        maqs_IP = config_load[maqs_name]["IP"]
-        maqs_port = config_load[maqs_name]["port"]
-        maqs_sock = ( UDPGenericSocket( False, 1024 ), maqs_IP, (int)(maqs_port), maqs_name  )
-        if maqs_sock[0].initialize( maqs_sock[1], maqs_sock[2] ) == False:
-            print( "Connection error: failed to establish connection to " + maqs_sock[1] + "." )
-            continue
-        maqs_sock_arr.append( maqs_sock )
+        if maqs_name in config_load:
+            maqs_IP = config_load[maqs_name]["IP"]
+            maqs_port = config_load[maqs_name]["port"]
+            maqs_sock = ( UDPGenericSocket( False, 1024 ), maqs_IP, (int)(maqs_port), maqs_name  )
+            if maqs_sock[0].initialize( maqs_sock[1], maqs_sock[2] ) == False:
+                print( "Connection error: failed to establish connection to " + maqs_sock[1] + "." )
+                continue
+            maqs_sock_arr.append( maqs_sock )
     if len( maqs_sock_arr ) < 1:
         print( "No MAQS servers connected. aborting..." )
         return
