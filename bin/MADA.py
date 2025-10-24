@@ -291,7 +291,8 @@ def main( ):
     print( " === Distributing config file Done ===")
     
     try:
-        daq_run( mada_config_path, config_load, maqs_sock_arr, macaron_sock, mascot_sock )
+        while True:
+            daq_run( mada_config_path, config_load, maqs_sock_arr, macaron_sock, mascot_sock )
     except KeyboardInterrupt:
         daq_abort( config_load, maqs_sock_arr, macaron_sock, mascot_sock )
 
