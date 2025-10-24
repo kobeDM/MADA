@@ -11,7 +11,7 @@ import MADA_defs as MADADef
    
 def send_command( dev, command, delay = 0.1, read_len=256 ):
     lock_file = os.path.basename( dev )
-    lock_filepath = f"{MADADef.LOCK_TMP_PATH}/{MADADef.LOCK_FILENAME_ACCESS_PREFIX}.{lock_file}"
+    lock_filepath = f"{MADADef.LOCK_TMP_PATH}/{MADADef.LOCK_FILENAME_ACCESS_PREFIX}_{lock_file}.{MADADef.LOCK_FILE_EXTENSION}"
     while True:
         if os.path.isfile( lock_filepath ) == True:
             time.sleep( 0.1 )
@@ -29,6 +29,7 @@ def send_command( dev, command, delay = 0.1, read_len=256 ):
             retVal = f.read( read_len ).decode( "ascii", errors = "ignore" )
         else:
             retVal = None
+        f.close( )
 
     cmd = f"rm {lock_filepath}"
     proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=None )
@@ -47,8 +48,6 @@ def sort_devices( dev_file, config ):
     print( "Device files are: " + dev_file )
     ser_num = config["devices"]["serialnumber"]
     usbtmc_list = glob.glob( dev_file )
-    print( "Before: " )
-    print( usbtmc_list )
     dev_list = ["N/A"] * len( ser_num )
     for i in range( len( usbtmc_list ) ):
         dev_info = send_command( usbtmc_list[i], MADADef.LV_QUERY_ASK_SERIAL )
@@ -61,14 +60,14 @@ def sort_devices( dev_file, config ):
             dev_list[2] = usbtmc_list[i]
         else:
             continue
-    print( "After: " )
-    print( dev_list )
+    for ch in range( len( dev_list ) ):
+        print(f"{ser_num[ch]}'s device file is {usbtmc_list[ch]}.")
     time.sleep( 1 )
     return dev_list
 
 
 def output_on( dev_list, config ):
-    print( "Output ON." )
+    print( "** Output ON. **" )
     volt_set = config["devices"]["voltage"]
     for ch in range( len( dev_list ) ):
         cmd_volt = f"{MADADef.LV_QUERY_SET_VOLTAGE} {volt_set[ch]}"
@@ -79,7 +78,7 @@ def output_on( dev_list, config ):
 
 
 def monitor_value( dev_list, config ):
-    print( "Monitoring Start." )
+    print( "** Monitoring Start. **" )
     curr_lim = config["devices"]["currentlimit"]
     measurement = config["influxdb"]["measurement"]
     host_tags = config["influxdb"]["tags"]["host"]
@@ -108,17 +107,17 @@ def monitor_value( dev_list, config ):
             #current check
             if os.path.isfile( MADADef.LOCK_FILE_FULLPATH_AUTORESET ) == False:
                 if curr_meas[1] > curr_lim[1] or curr_meas[2] > curr_lim[2]:
-                    print( "+/- 2.5 V reset." )
+                    print( "## +/- 2.5 V reset. ##" )
                     send_command( dev_list[1], MADADef.LV_QUERY_OUTPUT_OFF )
                     send_command( dev_list[2], MADADef.LV_QUERY_OUTPUT_OFF )
                     time.sleep( itv_rbt )
                     send_command( dev_list[1], MADADef.LV_QUERY_OUTPUT_ON )
                     send_command( dev_list[2], MADADef.LV_QUERY_OUTPUT_ON )
-                if curr_meas[0] > curr_lim[0]:
-                    print( "+3.3 V reset." )
-                    send_command( dev_list[0], MADADef.LV_QUERY_OUTPUT_OFF )
-                    time.sleep( itv_rbt )
-                    send_command( dev_list[0], MADADef.LV_QUERY_OUTPUT_ON )
+                # if curr_meas[0] > curr_lim[0]:
+                #     print( "## +3.3 V reset. ##" )
+                #     send_command( dev_list[0], MADADef.LV_QUERY_OUTPUT_OFF )
+                #     time.sleep( itv_rbt )
+                #     send_command( dev_list[0], MADADef.LV_QUERY_OUTPUT_ON )
 
             #influxdb
             utc = datetime.utcnow( )
@@ -150,9 +149,13 @@ def monitor_value( dev_list, config ):
             time.sleep( itv_mon )
 
     except KeyboardInterrupt:
+        for lock_file in glob.glob(f"{MADADef.LOCK_TMP_PATH}/*.{MADADef.LOCK_FILE_EXTENSION}"):
+            cmd = f"rm {lock_file}"
+            proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=None )
+            print(f"\nlock file {lock_file} was successfully removed.")
         for ch in range( len( dev_list ) ):
             send_command( dev_list[ch], MADADef.LV_QUERY_OUTPUT_OFF )
-        print( f"\n Output OFF." )
+        print( f"\n** Output OFF. **" )
 
     return
         
