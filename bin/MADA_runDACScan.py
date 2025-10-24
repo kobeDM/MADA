@@ -28,14 +28,21 @@ def runDACScan_run( maqs_sock_arr, macaron_sock, mascot_sock ):
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_OFF )
 
     # Status check
+    is_dacscan_end_dict = {}
+    for maqs_sock in maqs_sock_arr:
+        is_dacscan_end_dict[maqs_sock[3]] = False
+    num_MAQS = len( maqs_sock_arr )
+    num_dacscan_end = 0
     while True:
-        dac_scan_end = False
         for maqs_sock in maqs_sock_arr:
+            if is_dacscan_end_dict[maqs_sock[3]] == True:
+                continue
             if check_maqs_status( maqs_sock ) == MADADef.CTRL_MAQS_STATE_IDLE:
-                print( f"DACScan finished." )
-                dac_scan_end = True
-                break
-        if dac_scan_end == True:
+                print( f"{maqs_sock[3]} DACScan finished." )
+                if is_dacscan_end_dict[maqs_sock[3]] == False:
+                    num_dacscan_end += 1
+                is_dacscan_end_dict[maqs_sock[3]] = True
+        if num_dac_can_end == num_MAQS:
             break
     
     # MACARON post process

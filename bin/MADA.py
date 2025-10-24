@@ -184,14 +184,22 @@ def daq_run( mada_config_path, config_load, maqs_sock_arr, macaron_sock, mascot_
         print( )
             
         # Status check
+        is_daq_end_dict = {}
+        for maqs_sock in maqs_sock_arr:
+            is_daq_end_dict[maqs_sock[3]] = False
+        num_MAQS = len( maqs_sock_arr )
+        num_daq_end = 0
         while True:
-            daq_end = False
             for maqs_sock in maqs_sock_arr:
+                if is_daq_end_dict[maqs_sock[3]] == True:
+                    continue
                 if check_maqs_status( maqs_sock ) == MADADef.CTRL_MAQS_STATE_IDLE:
-                    print( f"DAQ file: {fileID} finished. file changing..." )
-                    daq_end = True
-                    break
-            if daq_end == True:
+                    print( f"{maqs_sock[3]} DAQ file: {fileID} finished. file changing..." )
+                    if is_daq_end_dict[maqs_sock[3]] == False:
+                        num_daq_end += 1
+                    is_daq_end_dict[maqs_sock[3]] = True
+
+            if num_daq_end == num_MAQS:
                 break
             check_reset_lv( mascot_sock, True )
             time.sleep( config_load["general"]["sleepStatusCheck"] )

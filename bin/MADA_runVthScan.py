@@ -28,14 +28,22 @@ def runVthScan_run( maqs_sock_arr, macaron_sock, mascot_sock ):
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_OFF )
     
     # Status check
+    is_vthscan_end_dict = {}
+    for maqs_sock in maqs_sock_arr:
+        is_vthscan_end_dict[maqs_sock[3]] = False
+    num_MAQS = len( maqs_sock_arr )
+    num_vth_scan_end = 0
     while True:
-        vth_scan_end = False
         for maqs_sock in maqs_sock_arr:
+            if is_vthscan_end_dict[maqs_sock[3]] == True:
+                continue
             if check_maqs_status( maqs_sock ) == MADADef.CTRL_MAQS_STATE_IDLE:
-                print( f"VthScan finished." )
-                vth_scan_end = True
-                break
-        if vth_scan_end == True:
+                print( f"{maqs_sock[3]} VthScan finished." )
+                if is_vthscan_end_dict[maqs_sock[3]] == False:
+                    num_vth_scan_end += 1
+                is_vthscan_end_dict[maqs_sock[3]] = True
+
+        if num_vth_scan_end == num_MAQS:
             break
     
     # MACARON post process
