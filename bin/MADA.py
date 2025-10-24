@@ -156,10 +156,8 @@ def daq_run( mada_config_path, config_load, maqs_sock_arr, macaron_sock, mascot_
         for maqs_sock in maqs_sock_arr:
             print( f"{maqs_sock[3]} DAQ booting." )
             fileID_command = fileID.to_bytes( 1, "little" )
-            print( fileID_command )
             daq_start_command = MADADef.CTRL_SYS_MIRACLUE + MADADef.CTRL_ROLE_MASTER + MADADef.CTRL_CMD_DAQSTART + fileID_command
             MADAUtil.submit_to_maqs( maqs_sock, daq_start_command )
-            print( daq_start_command )
             timeout_itv = 0
             while True:
                 print( f"timeout inverval: {timeout_itv}" )
