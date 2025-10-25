@@ -218,7 +218,12 @@ def daq_abort( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
     print( "===========================" )
     print( " DAQ aborting... " )
     print( "===========================" )
+    print( )
+    print( "Waiting 2 sec. for MAMA-Servers' communication" )
+    time.sleep( 2 )
+    print( "Abort start!" )
 
+    
     # state control
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQDISABLE )
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_OFF )
@@ -227,6 +232,7 @@ def daq_abort( config_load, maqs_sock_arr, macaron_sock, mascot_sock ):
     # DAQ stop
     MADAUtil.submit_to_all_maqs( maqs_sock_arr, MADADef.PACKET_DAQSTOP )
     MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SCALER_STOP )
+    print( "MADA Aborted." )
     
     return
 
