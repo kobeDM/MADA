@@ -104,7 +104,7 @@ def main( ):
     udpsock.initialize( ip_address, udp_port )
 
     while True:
-        data = udpsock.receive( )
+        data = udpsock.receive( True )
         
         if data == MADADef.PACKET_DAQENABLE:
             print( "Control: DAQ enable" )
@@ -139,6 +139,9 @@ def main( ):
             return_data = MADADef.CTRL_SYS_MIRACLUE + MADADef.CTRL_ROLE_SERVER + MADADef.CTRL_CMD_CHECKCTRL + macaron_status
             time.sleep( 1 )
             udpsock.send( return_data )
+        elif data == UDPGenericSocket.initialize_data:
+            print( "Initialize socket" )
+            # do nothing (socket property already updated on udpsock.receive( ))
         else:
             print( "Unknown message..." )
 
