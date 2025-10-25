@@ -112,7 +112,7 @@ def main( ):
     udpsock.initialize( ip_address, udp_port )
 
     while True:
-        data = udpsock.receive( )
+        data = udpsock.receive( True )
         
         if data == MADADef.PACKET_DAQSTART:
             print( "SCSM: DAQ start" )
@@ -133,6 +133,9 @@ def main( ):
                 print( "Succeeded in resetting LV" )
             else:
                 print( "Failed to reset LV..." )
+        elif data == UDPGenericSocket.initialize_data:
+            print( "Initialize socket" )
+            # do nothing (socket property already updated on udpsock.receive( ))
         else:
             print( "Unknown message..." )
 
