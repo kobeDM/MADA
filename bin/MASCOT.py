@@ -112,7 +112,7 @@ def main( ):
     udpsock.initialize( ip_address, udp_port )
 
     while True:
-        data = udpsock.receive( )
+        data = udpsock.receive( True )
         
         if data == MADADef.PACKET_DAQSTART:
             print( "SCSM: DAQ start" )
