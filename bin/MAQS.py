@@ -90,7 +90,7 @@ def main( ):
     udpsock.initialize( ip_address, udp_port )
 
     while True:
-        data = udpsock.receive( )
+        data = udpsock.receive( True )
         
         if (int.from_bytes( data, "big" ) & 0xffffff00).to_bytes( 4, "big" )  == MADADef.PACKET_DAQSTART:
             print( "DAQ: start" )
@@ -117,6 +117,9 @@ def main( ):
         elif data == MADADef.PACKET_DACSCAN:
             print( "Config: run DAC scan" )
             config_dac_scan( )
+        elif data == UDPGenericSocket.initialize_data:
+            print( "Initialize socket" )
+            # do nothing (socket property already updated on udpsock.receive( ))
         else:
             print( "Unknown message..." )
 
