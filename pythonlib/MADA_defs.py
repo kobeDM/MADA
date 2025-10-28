@@ -67,6 +67,16 @@ LV_QUERY_GET_CURRENT = "MEAS:CURR?"
 
 
 '''
+LV status file path
+'''
+
+LV_STATUS_TMP_PATH = "/tmp/MADA_LV_STATUS_CHECK"
+LV_STATUS_OK       = "OK"
+LV_STATUS_NG       = "NG"
+LV_STATUS_UNKNOWN  = "UNKNOWN"
+
+
+'''
 Definition of MADA constants.
 '''
 
