@@ -35,7 +35,7 @@ int main( int argc, char** argv )
     // check period number
     std::string perNumStr = argv[2];
     if( std::all_of( perNumStr.cbegin( ), perNumStr.cend( ), isdigit ) == false ) {
-        std::cerr << "ERROR: period number is not digit." << std::endl;
+        std::cerr << "ERROR: period number " << perNumStr << " is not digit." << std::endl;
         usage( );
         std::abort( );
     }

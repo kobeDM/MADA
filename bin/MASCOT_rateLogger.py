@@ -7,6 +7,13 @@ from watchdog.events import LoggingEventHandler
 import datetime
 from influxdb import InfluxDBClient
 import MADA_defs as MADADef
+
+
+client = InfluxDBClient( host = "10.37.0.214",
+                         port = "8086",
+                         username = "root",
+                         password = "root",
+                         database = "miraclue")
    
 
 # code inherited from MAZYSCA_SW
@@ -22,8 +29,10 @@ class RateLoggingEventHandler( LoggingEventHandler ):
                 last_line = f.readlines()[-1]
 
             fileID = last_line.split()[0]
-            realtimeClk = last_line.split( )[ 1 ]
-            livetimeClk = last_line.split( )[ 2 ]
+            realtimeClk_str = last_line.split( )[ 1 ]
+            livetimeClk_str = last_line.split( )[ 2 ]
+            realtimeClk = int(realtimeClk_str)
+            livetimeClk = int(livetimeClk_str)
             if realtimeClk < 1 or livetimeClk < 1:
                 print( "realtime or livetime is zero. skip event rate logging." )
                 return
@@ -54,12 +63,6 @@ class RateLoggingEventHandler( LoggingEventHandler ):
             result = client.write_points( json_data )    
 
 def main( ):
-    client = InfluxDBClient( host = "localhost",
-                             port = "8086",
-                             username = "root",
-                             password = "root",
-                             database = "miraclue")
-
     logging.basicConfig( level = logging.INFO,
                          format = '%(asctime)s - %(message)s',
                          datefmt = '%Y-%m-%d %H:%M:%S' )
