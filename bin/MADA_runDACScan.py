@@ -42,7 +42,7 @@ def runDACScan_run( maqs_sock_arr, macaron_sock, mascot_sock ):
                 if is_dacscan_end_dict[maqs_sock[3]] == False:
                     num_dacscan_end += 1
                 is_dacscan_end_dict[maqs_sock[3]] = True
-        if num_dac_can_end == num_MAQS:
+        if num_dacscan_end == num_MAQS:
             break
     
     # MACARON post process
