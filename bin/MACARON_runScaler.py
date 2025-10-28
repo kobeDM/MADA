@@ -29,14 +29,15 @@ def main( ):
     det_name = config_load["general"]["detector"]
     current_dir = os.path.basename( scaler_path )
     run_current_path = f"{run_path}/{det_name}/{current_dir}"
-
+    
     per_number = 0
-    while os.path.isdir( f"{run_current_path}/per{str(per_number).zfill(4)}." ) == True:
+    while os.path.isdir( f"{run_current_path}/per{str(per_number).zfill(4)}" ) == True:
         per_number += 1
     current_per = per_number - 1
 
     cmd = f"{MADADef.CPP_MACARON_SCALER} {scaler_path} {current_per}"
     proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
+    stdout  = proc.communicate()
     
     return
 
