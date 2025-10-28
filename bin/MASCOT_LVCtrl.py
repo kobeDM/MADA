@@ -20,7 +20,7 @@ def send_command( dev, command, delay = 0.1, read_len=256 ):
             break
 
     cmd = f"touch {lock_filepath}"
-    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=None )
+    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.DEVNULL, stderr=None )
     proc.communicate( )
     with open( dev, "r+b", buffering = 0 ) as f:
         f.write( command.encode( "ascii" ) )
@@ -29,10 +29,9 @@ def send_command( dev, command, delay = 0.1, read_len=256 ):
             retVal = f.read( read_len ).decode( "ascii", errors = "ignore" )
         else:
             retVal = None
-        f.close( )
 
     cmd = f"rm {lock_filepath}"
-    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=None )
+    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.DEVNULL, stderr=None )
     proc.communicate( )
             
     return retVal
@@ -44,8 +43,6 @@ def load_json( json_file = MADADef.DEF_LV_CONFIGFILE ):
 
     
 def sort_devices( dev_file, config ):
-    print( "Sorting PWR401Ls by S/N." )
-    print( "Device files are: " + dev_file )
     ser_num = config["devices"]["serialnumber"]
     usbtmc_list = glob.glob( dev_file )
     dev_list = ["N/A"] * len( ser_num )
@@ -60,8 +57,6 @@ def sort_devices( dev_file, config ):
             dev_list[2] = usbtmc_list[i]
         else:
             continue
-    for ch in range( len( dev_list ) ):
-        print(f"{ser_num[ch]}'s device file is {usbtmc_list[ch]}.")
     time.sleep( 1 )
     return dev_list
 
@@ -93,6 +88,11 @@ def monitor_value( dev_list, config ):
         password = config["influxdb"]["password"],
         database = config["influxdb"]["database"]
     )
+
+    # Create LV status check file in /tmp directory
+    with open( f"MADADef.LV_STATUS_TMP_PATH", "w" ) as f:
+        f.write( MADADef.LV_STATUS_UNKNOWN )
+
     loop_num = 0
     try:
         while True:
@@ -105,20 +105,22 @@ def monitor_value( dev_list, config ):
                 volt_meas.append( float( volt_val.strip( ) ) )
 
             #current check
-            if os.path.isfile( MADADef.LOCK_FILE_FULLPATH_AUTORESET ) == False:
-                if curr_meas[1] > curr_lim[1] or curr_meas[2] > curr_lim[2]:
+            if curr_meas[1] > curr_lim[1] or curr_meas[2] > curr_lim[2]:
+                with open( f"MADADef.LV_STATUS_TMP_PATH", "w" ) as f:
+                    f.write( MADADef.LV_STATUS_NG )
+                
+                if os.path.isfile( MADADef.LOCK_FILE_FULLPATH_AUTORESET ) == False:
                     print( "## +/- 2.5 V reset. ##" )
                     send_command( dev_list[1], MADADef.LV_QUERY_OUTPUT_OFF )
                     send_command( dev_list[2], MADADef.LV_QUERY_OUTPUT_OFF )
                     time.sleep( itv_rbt )
                     send_command( dev_list[1], MADADef.LV_QUERY_OUTPUT_ON )
                     send_command( dev_list[2], MADADef.LV_QUERY_OUTPUT_ON )
-                # if curr_meas[0] > curr_lim[0]:
-                #     print( "## +3.3 V reset. ##" )
-                #     send_command( dev_list[0], MADADef.LV_QUERY_OUTPUT_OFF )
-                #     time.sleep( itv_rbt )
-                #     send_command( dev_list[0], MADADef.LV_QUERY_OUTPUT_ON )
 
+            else:
+                with open( f"MADADef.LV_STATUS_TMP_PATH", "w" ) as f:
+                    f.write( MADADef.LV_STATUS_OK )
+                    
             #influxdb
             utc = datetime.utcnow( )
             jst = datetime.now( timezone( timedelta( hours = 9 ) ) )
@@ -170,7 +172,7 @@ def main( ):
         else:
             print( f"Failed to copy {MADADef.DEF_LV_CONFIGFILE} from MADA repository" )
             return
-        
+
     config = load_json( MADADef.DEF_LV_CONFIGFILE )
     dev_file = MADADef.DEF_LV_USBDEVFILE
     dev_list = sort_devices( dev_file, config )
