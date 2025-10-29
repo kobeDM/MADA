@@ -79,7 +79,10 @@ def lv_reset( ):
     time.sleep( itv_rbt )
     LVCtrl.send_command( dev_list[1], MADADef.LV_QUERY_OUTPUT_ON )
     LVCtrl.send_command( dev_list[2], MADADef.LV_QUERY_OUTPUT_ON )
-
+        
+    with open( f"{MADADef.LV_STATUS_TMP_PATH}", "w" ) as f:
+        f.write( MADADef.LV_STATUS_OK )
+        
     return True
 
 
