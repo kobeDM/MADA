@@ -42,29 +42,39 @@ def check_mascot_status( mascot_sock ):
     return data
 
 
-def check_reset_lv( mascot_sock, enable_swveto ):
+def check_reset_lv( config_load, maqs_sock_arr, macaron_sock, mascot_sock, enable_swveto ):
     data = check_mascot_status( mascot_sock )
     if data == MADADef.PACKET_LVSTATUS_NG:
         print( f" === LV currents exceed threshold. LV reset start === " )
         print( )
         if enable_swveto == True:
             print( f"Software veto: ON" )
-            MADAUtil.submit_to_macaron( MADADef.PACKET_SWVETO_ON )
+            MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_ON )
             
-        MADAUtil.submit_to_mascot( MADADef.PACKET_LVRESET )
+        MADAUtil.submit_to_mascot( mascot_sock, MADADef.PACKET_LVRESET )
         lv_reset_sleep = config_load["general"]["sleepLVReset"]
         print( f"LV resetting... (sleep time: {lv_reset_sleep} sec.)" )
         time.sleep( lv_reset_sleep )
         while True:
-            MADAUtil.submit_to_mascot( MADADef.PACKET_LVCHECK )
+            MADAUtil.submit_to_mascot( mascot_sock, MADADef.PACKET_LVCHECK )
             data = mascot_sock[0].receive( )
             if data == MADADef.PACKET_LVSTATUS_OK:
                 print( f"LV reset successfully done!" )
                 break
 
+        # configuration
+        print( f"Vth and DAC parameter setting..." )
+        MADAUtil.submit_to_all_maqs( maqs_sock_arr, MADADef.PACKET_SETVTHDAC )
+        while True:
+            if MADAUtil.process_running( MADADef.PY_MAQS_SETVTHDAC ) == True:
+                continue
+            else:
+                break
+        print( f"Done!" )
+            
         if enable_swveto == True:
             print( f"Software veto: OFF" )
-            MADAUtil.submit_to_macaron( MADADef.PACKET_SWVETO_OFF )
+            MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_OFF )
             
     print( )
     return
@@ -111,9 +121,10 @@ def daq_run( mada_config_path, config_load, maqs_sock_arr, macaron_sock, mascot_
         print( f"{fileID} / {max_files}" )
 
         # send software veto
+        MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQDISABLE )
         MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_ON )
         print( f"Activate software veto: command submitted to MACARON" )
-
+        
         # DAQ status check (and kill all processes)
         for maqs_sock in maqs_sock_arr:
             if check_maqs_status( maqs_sock ) != MADADef.CTRL_MAQS_STATE_IDLE:
@@ -124,10 +135,6 @@ def daq_run( mada_config_path, config_load, maqs_sock_arr, macaron_sock, mascot_
         # send DAQ start flag to mascot
         MADAUtil.submit_to_mascot( mascot_sock, MADADef.PACKET_DAQSTART )
         print( f"LV auto-reset from SCSM is locked: command submitted to MASCOT" )
-        time.sleep( 1 )
-        
-        # check LV status
-        check_reset_lv( mascot_sock, False )
         
         # configuration
         print( f"Vth and DAC parameter setting..." )
@@ -139,15 +146,6 @@ def daq_run( mada_config_path, config_load, maqs_sock_arr, macaron_sock, mascot_
                 break
         print( f"Done!" )
             
-        # DAQ start
-        print( )
-        print( f" ===========================================================" )
-        print( f" DAQ enable ON" )
-        print( f" ===========================================================" )
-        MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQENABLE )
-        print( f"Counter reset: command submitted to MACARON" )
-        MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_CNTRESET )
-
         print( f" ===========================================================" )
         print( f" MAQS DAQ booting..." )
         print( f" ===========================================================" )
@@ -170,9 +168,20 @@ def daq_run( mada_config_path, config_load, maqs_sock_arr, macaron_sock, mascot_
                     sys.exit( 1 )
         
         # DAQ enable
+        print( )
+        print( f" ===========================================================" )
+        print( f" DAQ enable ON" )
+        print( f" ===========================================================" )
+        MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQENABLE )
+
         print( f"Waiting data flushing..." )
         time.sleep( 1 )
         print( f"Done!" )
+
+        # Counter reset
+        print( f"Counter reset: command submitted to MACARON" )
+        MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_CNTRESET )
+
         print( )
         print( f"Deactivate software veto: command submitted to MACARON" )
         MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_OFF )
@@ -192,14 +201,14 @@ def daq_run( mada_config_path, config_load, maqs_sock_arr, macaron_sock, mascot_
                 if is_daq_end_dict[maqs_sock[3]] == True:
                     continue
                 if check_maqs_status( maqs_sock ) == MADADef.CTRL_MAQS_STATE_IDLE:
-                    print( f"{maqs_sock[3]} DAQ file: {fileID} finished. file changing..." )
+                    print( f"{maqs_sock[3]} DAQ file: {fileID} finished." )
                     if is_daq_end_dict[maqs_sock[3]] == False:
                         num_daq_end += 1
                     is_daq_end_dict[maqs_sock[3]] = True
 
             if num_daq_end == num_MAQS:
                 break
-            check_reset_lv( mascot_sock, True )
+            check_reset_lv( config_load, maqs_sock_arr, macaron_sock, mascot_sock, True )
             time.sleep( config_load["general"]["sleepStatusCheck"] )
 
         # file changing (next loop)
