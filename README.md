@@ -75,14 +75,14 @@ $ MADA.py
 $ MADA_SetVthDAC.py
 ```
 
--- Set Vth or DAC parameter for each GBKB
+- Set Vth or DAC parameter for each GBKB
 ```
 $ SetDAC [IP] [DAC file]  
 $ SetVth [IP] [Vth value]  
 ```
 
--- Vth and scans 
+- Vth and DAC scans 
 ```
 $ MADA_runVthScan.py  
-$ MADA_runDACScan  
+$ MADA_runDACScan.py  
 ```
