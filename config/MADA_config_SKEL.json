@@ -5,7 +5,7 @@
         "detector":"30LAuPIC_2",
         "sleepLVReset":3,
         "sleepMAQSDAQBoot":5,
-        "sleepStatusCheck":2,
+        "sleepStatusCheck":0.2,
         "numTrigger":1000
     },
 
