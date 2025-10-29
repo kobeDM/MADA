@@ -42,29 +42,16 @@ def daq_stop( ):
 
 def lv_check( ):
     retVal = True
-    if os.path.isfile( MADADef.DEF_LV_CONFIGFILE ) == False:
-        cmd = f"cp {MADADef.MADA_ENV_PATH}/config/{MADADef.DEF_LV_CONFIGFILE}"
-        proc = subprocess.Popen( cmd, shell=True, stdout=PIPE, stderr=None )
-        proc.communicate( )
-        if proc.returncode == 0:
-            print( f"{MADADef.DEF_LV_CONFIGFILE} copied from MADA repository" )
-        else:
-            print( f"Failed to copy {MADADef.DEF_LV_CONFIGFILE} from MADA repository" )
-            return retVal
-        
-    with open( MADADef.DEF_LV_CONFIGFILE, "r" ) as config_open :
-        config = json.load( config_open )
-    dev_file = MADADef.DEF_LV_USBDEVFILE
-    curr_lim = config["devices"]["currentlimit"]
-    curr_meas = []
-    volt_meas = []
-    dev_list = LVCtrl.sort_devices( dev_file, config )
-    for ch in range( len( dev_list ) ):
-        curr_val = LVCtrl.send_command( dev_list[ch], MADADef.LV_QUERY_GET_CURRENT )
-        curr_meas.append( float( curr_val.strip( ) ) )
-        volt_val = LVCtrl.send_command( dev_list[ch], MADADef.LV_QUERY_GET_VOLTAGE )
-        volt_meas.append( float( volt_val.strip( ) ) )
-    if curr_meas[1] > curr_lim[1] or curr_meas[2] > curr_lim[2]:
+    if os.path.isfile( MADADef.LV_STATUS_TMP_PATH ) == False:
+        print( "LV monitor not working. LV check returns default value (true)" )
+        return retVal
+
+    status = MADADef.LV_STATUS_UNKNOWN
+    with open( MADADef.LV_STATUS_TMP_PATH, "r" ) as file_lv_status :
+        status = file_lv_status.read( )
+    if status == MADADef.LV_STATUS_OK:
+        retVal = True
+    elif status == MADADef.LV_STATUS_NG:
         retVal = False
     
     return retVal

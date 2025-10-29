@@ -90,7 +90,7 @@ def monitor_value( dev_list, config ):
     )
 
     # Create LV status check file in /tmp directory
-    with open( f"MADADef.LV_STATUS_TMP_PATH", "w" ) as f:
+    with open( f"{MADADef.LV_STATUS_TMP_PATH}", "w" ) as f:
         f.write( MADADef.LV_STATUS_UNKNOWN )
 
     loop_num = 0
@@ -106,7 +106,7 @@ def monitor_value( dev_list, config ):
 
             #current check
             if curr_meas[1] > curr_lim[1] or curr_meas[2] > curr_lim[2]:
-                with open( f"MADADef.LV_STATUS_TMP_PATH", "w" ) as f:
+                with open( f"{MADADef.LV_STATUS_TMP_PATH}", "w" ) as f:
                     f.write( MADADef.LV_STATUS_NG )
                 
                 if os.path.isfile( MADADef.LOCK_FILE_FULLPATH_AUTORESET ) == False:
@@ -118,7 +118,7 @@ def monitor_value( dev_list, config ):
                     send_command( dev_list[2], MADADef.LV_QUERY_OUTPUT_ON )
 
             else:
-                with open( f"MADADef.LV_STATUS_TMP_PATH", "w" ) as f:
+                with open( f"{MADADef.LV_STATUS_TMP_PATH}", "w" ) as f:
                     f.write( MADADef.LV_STATUS_OK )
                     
             #influxdb
