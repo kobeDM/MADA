@@ -1,111 +1,159 @@
 #!/usr/bin/python3
-import subprocess
-import os
-import sys
+import time
 import argparse
-import glob
-from subprocess import PIPE
-
-MADAPATH = "/home/msgc/miraclue/MADA/bin"
-EXE = "MADA_DACScan"
-# ANAPATH="/home/msgc/miraclue/ana/bin"
-ANA = "MADA_DACAna"
+import json
+from udp_util import UDPGenericSocket
+import MADA_defs as MADADef
+import MADA_util as MADAUtil
 
 
-def parser():
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument("IP", type=str, nargs='?', const=None, help='[IP]')
-    argparser.add_argument("Vth", type=str, nargs='?', const=None, help='[V thresholod]')
-    argparser.add_argument("--batch", "-b", action='store_true')
-    opts = argparser.parse_args()
-    return (opts)
+def runDACScan_run( maqs_sock_arr, macaron_sock, mascot_sock ):
+    
+    print( )
+    print( "===========================" )
+    print( " runDACScan starting... " )
+    print( "===========================" )
+    
+    # MACARON setting
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQDISABLE )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_ON )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_TPMODE_ON )
+    time.sleep( 1 )
+
+    # submit runDACScan to MAQS
+    MADAUtil.submit_to_all_maqs( maqs_sock_arr, MADADef.PACKET_DACSCAN )
+    time.sleep( 2 )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQENABLE )
+    time.sleep( 2 )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_OFF )
+
+    # Status check
+    is_dacscan_end_dict = {}
+    for maqs_sock in maqs_sock_arr:
+        is_dacscan_end_dict[maqs_sock[3]] = False
+    num_MAQS = len( maqs_sock_arr )
+    num_dacscan_end = 0
+    while True:
+        for maqs_sock in maqs_sock_arr:
+            if is_dacscan_end_dict[maqs_sock[3]] == True:
+                continue
+            if check_maqs_status( maqs_sock ) == MADADef.CTRL_MAQS_STATE_IDLE:
+                print( f"{maqs_sock[3]} DACScan finished." )
+                if is_dacscan_end_dict[maqs_sock[3]] == False:
+                    num_dacscan_end += 1
+                is_dacscan_end_dict[maqs_sock[3]] = True
+        if num_dacscan_end == num_MAQS:
+            break
+    
+    # MACARON post process
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQDISABLE )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_TPMODE_OFF )
+        
+    return
 
 
-def print_and_exe(cmd):
-    print("execute:"+cmd)
-    subprocess.run(cmd, shell=True)
+def runDACScan_abort( maqs_sock_arr, macaron_sock, mascot_sock ):
+    
+    print( )
+    print( "===========================" )
+    print( " runDACScan aborting... " )
+    print( "===========================" )
 
-def exe(cmd):
-    subprocess.run(cmd, shell=True)
+    print( )
+    print( "MACARON Control: disable DAQ, software Veto ON, and TPMODE OFF..." )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQDISABLE )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_ON )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_TPMODE_OFF )
+    print( "Done!" )
+    print( )
 
-
-def find_newrun():
-    dir_header = 'DAC_run'
-    files = glob.glob(dir_header+'*')
-    if len(files) == 0:
-        return dir_header+'0'.zfill(4)
-    else:
-        files.sort(reverse=True)
-        num_pos = files[0].find("run")
-        return dir_header+str(int(files[0][num_pos+3:num_pos+3+4])+1).zfill(4)
-
-
-args = parser()
-if (args.IP):
-    IP = args.IP
-else:
-    print("runDACScan.py IP [Vth]")
-    sys.exit(1)
-
-if (args.Vth):
-    Vth = args.Vth
-else:
-    Vth = "8800"
-
-newrun = find_newrun()
+    print( "Kill MAQS process..." )
+    MADAUtil.submit_to_all_maqs( maqs_sock_arr, MADADef.PACKET_KILLALL )
+    print( )
+    print( "--- Aborted ---" )
+    
+    return
 
 
-CMD = "mkdir "+newrun
-print_and_exe(CMD)
-os.chdir(newrun)
-CMD = "mkdir png"
-print_and_exe(CMD)
+def check_maqs_status( maqs_sock ):
 
-EXECOM = MADAPATH+"/"+EXE+" "+IP+" "+Vth
-print_and_exe(EXECOM)
-os.chdir("../")
-
-#CMD = MADAPATH+"/"+ANA+" "+newrun+" "+Vth
-#CMD = f'{MADAPATH}/{ANA} {newrun} {Vth} {IP.split[3]} {int(args.batch)}'
-CMD = f'{MADAPATH}/{ANA} {newrun} {Vth} {(IP.split("."))[3]} {int(args.batch)}'
-print_and_exe(CMD)
+    print( "Checking MAQS's status..." )
+    if MADAUtil.submit_to_maqs( maqs_sock, MADADef.PACKET_CHECKDAQ ) == False:
+        print( "Status check for " + maqs_sock[3] + " failed, aborting..." )
+        return 
+    reply_data = maqs_sock[0].receive( )
+    reply_val = int.from_bytes( reply_data, "big" ) & 0xff
+    
+    return reply_val.to_bytes( 1, "little" )
 
 
-COM = "mv DAC.root "+newrun
-print_and_exe(COM)
+def main( ):
+    print("** MADA_runDACScan start from MAQS client **")
+    print("** Miraclue Argon DAQ (http://github.com/kobeDM/MADA) **")
+    print("** 2025 Aug by S. Higashino **")
+    
+    parser = argparse.ArgumentParser( )
+    parser.add_argument( "-c", help = "config file name", default = MADADef.DEF_CONFIGFILE )
+    args = parser.parse_args()
+
+    mada_config_path = args.c
+    MADAUtil.get_config( )
+    with open( mada_config_path, "r" ) as config_open :
+        config_load = json.load( config_open )
+
+    # network connection 
+    print( "Checking connection with MACARON..." )
+    macaron_IP = config_load["MACARON"]["IP"]
+    macaron_port = config_load["MACARON"]["port"]
+    macaron_sock = ( UDPGenericSocket( False, 1024 ), macaron_IP, (int)(macaron_port), "MACARON"  )
+    if macaron_sock[0].initialize( macaron_sock[1], macaron_sock[2] ) == False:
+        print( "Connection error: failed to establish connection to " + macaron_sock[1] + ", aborting..." )
+        return
+    print( )
+    print( "MACARON connected." )
+
+    print( )
+    print( "Checking connection with MASCOT..." )
+    mascot_IP = config_load["MASCOT"]["IP"]
+    mascot_port = config_load["MASCOT"]["port"]
+    mascot_sock = ( UDPGenericSocket( False, 1024 ), mascot_IP, (int)(mascot_port), "MASCOT"  )
+    if mascot_sock[0].initialize( mascot_sock[1], mascot_sock[2] ) == False:
+        print( "Connection error: failed to establish connection to " + mascot_sock[1] + ", aborting..." )
+        return
+    print( )
+    print( "MASCOT connected." )
+    
+    print( )
+    print( "Checking connection with MAQS servers..." )
+    maqs_sock_arr = []
+    for i in range( 6 ):
+        maqs_name = f"MAQS{i+1}"
+        if maqs_name in config_load:
+            maqs_IP = config_load[maqs_name]["IP"]
+            maqs_port = config_load[maqs_name]["port"]
+            maqs_sock = ( UDPGenericSocket( False, 1024 ), maqs_IP, (int)(maqs_port), maqs_name  )
+            if maqs_sock[0].initialize( maqs_sock[1], maqs_sock[2] ) == False:
+                print( "Connection error: failed to establish connection to " + maqs_sock[1] + "." )
+                continue
+            maqs_sock_arr.append( maqs_sock )
+    if len( maqs_sock_arr ) < 1:
+        print( "No MAQS servers connected. aborting..." )
+        return
+    print( )
+    print( "MAQS servers connected.")
+    print( )
+
+    print( " === Distributing config file to all MAQS servers ===")
+    MADAUtil.divide_config( config_load )
+    print( " === Distributing config file Done ===")
+    
+    try:
+        runDACScan_run( maqs_sock_arr, macaron_sock, mascot_sock )
+    except KeyboardInterrupt:
+        runDACScan_abort( maqs_sock_arr, macaron_sock, mascot_sock )
 
 
-COM = "mv base_correct.dac "+newrun
-print_and_exe(COM)
-
-# write DAC_image
-cmd = """
-echo 'auto c = new TCanvas; DAC_image->Draw("colz"); c->SaveAs("{0}/DAC_image.png");' | root -b {0}/DAC.root 
-""".strip().format(newrun)
-print_and_exe(cmd)
-
-
-# concat png
-target_file_format = '{}/Ch_{}.png'
-for i in range(8):
-    target_indexes = [f'{16*i+j:03}' for j in range(16)]
-    target_files = [target_file_format.format(newrun, idx)
-                    for idx in target_indexes]
-    target_files_str = ' '.join(target_files)
-    cmd = f'convert +append {target_files_str} {newrun}/col{i}.jpg'
-    #print_and_exe(cmd)
-    exe(cmd)
-
-cols = ' '.join([f'{newrun}/col{i}.jpg' for i in range(8)])
-cmd = f'convert -append {cols} {newrun}/DAC.jpg'
-#print_and_exe(cmd)
-exe(cmd)
-
-# print summary
-cmd = f'imgcat {newrun}/DAC_image.png'
-exe(cmd)
-#print_and_exe(cmd)
-
-#cleanup
-cmd = f'mv  {newrun}/*png.jpg {newrun}/png'
-print_and_exe(COM)
+    return    
+    
+if __name__ == "__main__":
+    main( )

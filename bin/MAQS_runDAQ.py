@@ -1,0 +1,166 @@
+#!/usr/bin/python3
+import os
+import time
+import datetime
+import json
+import argparse
+import subprocess
+from subprocess import PIPE
+import MADA_defs as MADADef
+import MADA_util as MADAUtil
+
+
+def start_daq( args, current_period ):
+    mada_config_path = args.c
+    fileID = args.i
+
+    # load config file
+    MADAUtil.get_config( )
+    with open( mada_config_path, "r" ) as config_open :
+        config_load = json.load( config_open )
+    activeIP = []
+    boardID = []
+    allBoardID = []
+    for gbkb_name in config_load[ "GBKB" ]:
+        allBoardID.append( gbkb_name )
+        if config_load["GBKB"][gbkb_name]["active"] == 1:
+            activeIP.append( config_load["GBKB"][gbkb_name]["IP"] )
+            boardID.append( gbkb_name )
+            print( config_load["GBKB"][gbkb_name]["IP"] )
+    
+    print( f"The number of GBKB boards: {len( activeIP )}/{len( allBoardID )}" )
+
+    cmd = f"cp {mada_config_path} {current_period}"
+    proc = subprocess.run( cmd, shell = True )
+
+    MADAUtil.kill_process( "MADA_iwaki" )
+
+    # run MADA_iwaki
+    num_trigger = config_load["general"]["numTrigger"]
+    pids = []
+    for i in range( len( activeIP ) ):
+        IP = activeIP[i]
+        filename_head = f"{current_period}/{boardID[i]}_{str( fileID ).zfill( 4 )}"
+        filename_mada = f"{filename_head}.mada"
+        cmd = f"{MADADef.CPP_MADA_IWAKI} -n {num_trigger} -f {filename_mada} -i {IP}"
+        print( cmd )
+        proc = subprocess.Popen( cmd, shell = True, stdout = subprocess.DEVNULL )
+        pids.append( proc.pid )
+
+    # write info file
+    starttime = time.time( )
+    for i in range( len( activeIP ) ):
+        IP = activeIP[i]
+        filename_head = f"{current_period}/{boardID[i]}_{str( fileID ).zfill( 4 )}"
+        filename_info = f"{filename_head}.info"
+        print( f"board {IP} info was written in {filename_info}" )
+        dict = { }
+        for gbkb_name in config_load["GBKB"]:
+            if config_load["GBKB"][gbkb_name]["IP"] == IP:
+                dict.update( config_load["GBKB"][gbkb_name] )
+                dd = {"GBKB": dict}
+                dmes = { }
+                dmes["start"] = starttime
+                ddmes = {"runinfo": dmes}
+                dd.update( ddmes )
+                with open( filename_info, mode = "wt", encoding = "utf-8" ) as file:
+                    json.dump( dd, file, ensure_ascii = False, indent = 2 )
+
+    print( f"GIGAiwaki pids: {pids}" )
+    print( f"working directory: {current_period}" )
+    print( f"started at: {starttime}" )
+
+    running = 1
+    while running:
+        runs = 0
+        for i in range( len( pids ) ):
+            cmd = f"ps aux | awk \'$2=={pids[i]}\' | wc -l"
+            pnum = ( subprocess.Popen( cmd, stdout=subprocess.PIPE,
+                                       shell = True ).communicate( )[0]).decode( 'utf-8' )
+            # print( f"{int(pnum)}, {pids[i]}" )
+            if int( pnum ) == 1:
+                runs += 1
+
+        if runs < len( pids ):
+            running = 0
+            print( "file terminate" )
+            endtime = time.time( )
+            MADAUtil.kill_process( "MADA_iwaki" )
+            break
+
+    print( f"file {fileID} finished at {endtime}" )
+    realtime = endtime - starttime
+    print( f"real time = {realtime}" )
+    size = { bid: 0 for bid in boardID }
+    for i in range( len( activeIP ) ):
+        filename_head = f"{current_period}/{boardID[i]}_{str( fileID ).zfill( 4 )}"
+        filename_mada = f"{filename_head}.mada"
+        filename_info = f"{filename_head}.info"
+        cmd = f"ls -l {filename_mada}"
+        proc = subprocess.Popen( cmd, stdout = subprocess.PIPE, shell = True ).communicate( )[0].decode( 'utf-8' )
+        print( proc )
+        sizel = str( proc ).split( )
+        print( f"size= {sizel[4]} byte" )
+        dmes = {}
+        dmes["end"] = endtime
+        dmes["size"] = sizel[4]
+        size[boardID[i]] = sizel[4]
+        ddmes = {"runinfo": dmes}
+        info_open = open( filename_info, "r" )
+        info_load = json.load( info_open )
+        dict_giga = {}
+        dict_info = {}
+        for x in info_load["GBKB"]:
+            dict_giga.update(info_load["GBKB"])
+        for x in info_load["runinfo"]:
+            dict_info.update(info_load["runinfo"])
+        dict_info.update( dmes )
+        dict = {"GBKB": dict_giga, "runinfo": dict_info}
+        with open( filename_info, mode="w", encoding="utf-8" ) as file:
+            json.dump( dict, file, ensure_ascii = False, indent = 2 )
+
+    y  = str( datetime.datetime.fromtimestamp( endtime ).year )
+    m  = str( datetime.datetime.fromtimestamp( endtime ).month )
+    d  = str( datetime.datetime.fromtimestamp( endtime ).day )
+    ratefile = MADADef.DEF_RATEPATH + y + m.zfill( 2 ) + d.zfill( 2 )
+
+    # write out event rate into text file
+    with open(ratefile, "a") as f:
+        rate = {bid: 0 for bid in allBoardID}
+        for ii in range( len( activeIP ) ):
+            rate[boardID[ii]] = float( size[boardID[ii]] ) / realtime
+        f.write( f"{endtime}\t{size}\t{rate}\n" )
+
+    # compensate size and rate dict when inactive board exist
+    inactive_board = list( set( allBoardID ) - set( boardID ) )
+    for bid in inactive_board:
+        size[bid] = 0
+        rate[bid] = 0
+
+    return
+
+
+def main():
+
+    print( "**MADA start on MAQS servers**" )
+    print( "**Miraclue Argon DAQ (http://github.com/kobeDM/MADA)**" )
+    print( "**2025 Aug by S. Higashino**" )
+
+    parser = argparse.ArgumentParser( )
+    parser.add_argument( "-c", help = "config file name", default = MADADef.DEF_CONFIGFILE )
+    parser.add_argument( "-s", help = "silent mode (control only)", action = 'store_true' )
+    parser.add_argument( "-i", help = "file ID", default = 0 )
+    args = parser.parse_args( )
+    current_period = MADAUtil.get_current_period( )
+    
+    try:
+        start_daq(args, current_period)
+    except KeyboardInterrupt:
+        print()
+        print("===========================")
+        print("DAQ aborting...")
+        print("===========================")
+        MADAUtil.kill_DAQ( args.c, current_period )
+    
+if __name__ == "__main__":
+    main( )

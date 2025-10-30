@@ -1,136 +1,160 @@
 #!/usr/bin/python3
-import subprocess, os,sys
+import time
 import argparse
-import glob
-from subprocess import PIPE
-
-def parser():
-    argparser=argparse.ArgumentParser()
-    argparser.add_argument("IP",type=str,nargs='?',const=None,help='[IP]')
-    argparser.add_argument("VthLow",type=int,nargs='?',const=None,help='[V thresholod lower bound]')
-    argparser.add_argument("VthHigh",type=int,nargs='?',const=None,help='[V thresholod upper bound]')
-    argparser.add_argument("VthStep",type=int,nargs='?',const=None,help='[V thresholod step]')
-    argparser.add_argument("-b","--batch", help="batch mode",dest='batch',action="store_true")
-    opts=argparser.parse_args()
-    return(opts)
+import json
+from udp_util import UDPGenericSocket
+import MADA_defs as MADADef
+import MADA_util as MADAUtil
 
 
-def print_and_exe(cmd):
-    print("execute:"+cmd)
-    subprocess.run(cmd,shell=True)
-
-
-
-def find_newrun():
-    dir_header = 'Vth_run'
-    files = glob.glob(dir_header+'*')
-    if len(files) == 0:
-        return dir_header+'0'.zfill(4)
-    else:
-        files.sort(reverse=True)
-        num_pos = files[0].find("run")
-        return dir_header+str(int(files[0][num_pos+3:num_pos+3+4])+1).zfill(4)
-
-MADAPATH="/home/msgc/miraclue/MADA/bin/"
-CONFIGPATH="/home/msgc/miraclue/MADA/config/"
-
-VTHSCAN="MADA_VthScan"
-EXE_SETDAC=MADAPATH+"SetDAC"
-EXE_DAQ=MADAPATH+"MADA_VthScan"
-EXE_ANA=MADAPATH+"MADA_runVthAna.py"
-Enable=MADAPATH+"MADA_DAQenable.py"
-TestPulse=MADAPATH+"MADA_testout.py -f 1000"
-
-
-
-args=parser()
-if(args.IP):
-    IP=args.IP
-else:
-    print("runDACScan IP [Vth lower] [Vth upper] [Vth step]")
-    sys.exit(1)
-#    IP="192.168.100.25"
-
-#write null DAC velues
-#DACfile=CONFIGPATH+"base_correct_null.dac"
-#cmd=EXE_SETDAC+" "+IP+" "+DACfile
-#print_and_exe(cmd)
-
-
-if(args.VthLow):
-    VthLow=args.VthLow
-else:
-    #VthLow="8500"
-    VthLow="0"
-
-if(args.VthHigh):
-    VthHigh=args.VthHigh
-else:
-#    VthHigh="8900"
-    VthHigh="16384"
-
-if(args.VthStep):
-    VthStep=args.VthStep
-else:
-    #VthStep="1000"
-    #VthStep="64"
-    VthStep="32"
-
-if args.batch:
-    #switch for batch mode
-    print("batch mode")
-    batch_mode=1
-else:
-    batch_mode=0
-
-#procEnable.kill()
-#procTP.kill()
-
-print("IP:",IP)
-print("Vth low:",VthLow)
-print("Vth high:",VthHigh)
-print("Vth Step:",VthStep)
-if batch_mode:
-    print("batch mode")
-
-cmd="pwd".split('/')
-subprocess.run(cmd,shell=True)
-
+def runVthScan_run( maqs_sock_arr, macaron_sock, mascot_sock ):
     
-newrun=find_newrun()
-CMD="mkdir "+newrun
-print_and_exe(CMD)
-#subprocess.run(CMD,shell=True)
-os.chdir(newrun)
+    print( )
+    print( "===========================" )
+    print( " runVthScan starting... " )
+    print( "===========================" )
 
-#procEnable = subprocess.Popen(Enable,stdout=subprocess.PIPE)
-#procTP = subprocess.Popen(TestPulse,stdout=subprocess.PIPE,shell=True)
+    # MACARON setting
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQDISABLE )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_ON )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_TPMODE_ON )
+    time.sleep( 1 )
+
+    # submit runVthScan to MAQS
+    MADAUtil.submit_to_all_maqs( maqs_sock_arr, MADADef.PACKET_VTHSCAN )
+    time.sleep( 2 )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQENABLE )
+    time.sleep( 2 )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_OFF )
+    
+    # Status check
+    is_vthscan_end_dict = {}
+    for maqs_sock in maqs_sock_arr:
+        is_vthscan_end_dict[maqs_sock[3]] = False
+    num_MAQS = len( maqs_sock_arr )
+    num_vth_scan_end = 0
+    while True:
+        for maqs_sock in maqs_sock_arr:
+            if is_vthscan_end_dict[maqs_sock[3]] == True:
+                continue
+            if check_maqs_status( maqs_sock ) == MADADef.CTRL_MAQS_STATE_IDLE:
+                print( f"{maqs_sock[3]} VthScan finished." )
+                if is_vthscan_end_dict[maqs_sock[3]] == False:
+                    num_vth_scan_end += 1
+                is_vthscan_end_dict[maqs_sock[3]] = True
+
+        if num_vth_scan_end == num_MAQS:
+            break
+    
+    # MACARON post process
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQDISABLE )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_TPMODE_OFF )
+
+    return
 
 
-#EXECOM=EXEPATH+"/"+EXE+" "+IP+" "+srt(VthLow)+" "+srt(VthHigh)+" "+srt(VthStep)
-CMD=EXE_DAQ+" "+IP+" "+str(VthLow)+" "+str(VthHigh)+" "+str(VthStep)
-print_and_exe(CMD)
+def runVthScan_abort( maqs_sock_arr, macaron_sock, mascot_sock ):
+    
+    print( )
+    print( "===========================" )
+    print( " runVthScan aborting... " )
+    print( "===========================" )
+
+    print( )
+    print( "MACARON Control: disable DAQ, software Veto ON, and TPMODE OFF..." )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_DAQDISABLE )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_SWVETO_ON )
+    MADAUtil.submit_to_macaron( macaron_sock, MADADef.PACKET_TPMODE_OFF )
+    print( "Done!" )
+    print( )
+
+    print( "Kill MAQS process..." )
+    MADAUtil.submit_to_all_maqs( maqs_sock_arr, MADADef.PACKET_KILLALL )
+    print( )
+    print( "--- Aborted ---" )
+    
+    return
 
 
-#procEnable.kill()
-#procTP.kill()
+def check_maqs_status( maqs_sock ):
 
-os.chdir("../")
-
-
-if batch_mode:
-    print("batch mode")
-    CMD=EXE_ANA+" -b "+newrun
-else:
-    CMD=EXE_ANA+" "+newrun
-
-print_and_exe(CMD)
-
-CMD="mv Vthcheck.png "+newrun
-print_and_exe(CMD)
-
-#CMD="mv scan_config.out Vth.root"+
-#print("execute:",EXECOM)
-#subprocess.run(EXECOM,shell=True)
+    print( "Checking MAQS's status..." )
+    if MADAUtil.submit_to_maqs( maqs_sock, MADADef.PACKET_CHECKDAQ ) == False:
+        print( "Status check for " + maqs_sock[3] + " failed, aborting..." )
+        return 
+    reply_data = maqs_sock[0].receive( )
+    reply_val = int.from_bytes( reply_data, "big" ) & 0xff
+    
+    return reply_val.to_bytes( 1, "little" )
 
 
+def main( ):
+    print("** MADA_runVthScan start from client **")
+    print("** Miraclue Argon DAQ (http://github.com/kobeDM/MADA) **")
+    print("** 2025 Aug by S. Higashino **")
+    
+    parser = argparse.ArgumentParser( )
+    parser.add_argument( "-c", help = "config file name", default = MADADef.DEF_CONFIGFILE )
+    args = parser.parse_args()
+
+    mada_config_path = args.c
+    MADAUtil.get_config( )
+    with open( mada_config_path, "r" ) as config_open :
+        config_load = json.load( config_open )
+
+    # network connection 
+    print( "Checking connection with MACARON..." )
+    macaron_IP = config_load["MACARON"]["IP"]
+    macaron_port = config_load["MACARON"]["port"]
+    macaron_sock = ( UDPGenericSocket( False, 1024 ), macaron_IP, (int)(macaron_port), "MACARON"  )
+    if macaron_sock[0].initialize( macaron_sock[1], macaron_sock[2] ) == False:
+        print( "Connection error: failed to establish connection to " + macaron_sock[1] + ", aborting..." )
+        return
+    print( )
+    print( "MACARON connected." )
+
+    print( )
+    print( "Checking connection with MASCOT..." )
+    mascot_IP = config_load["MASCOT"]["IP"]
+    mascot_port = config_load["MASCOT"]["port"]
+    mascot_sock = ( UDPGenericSocket( False, 1024 ), mascot_IP, (int)(mascot_port), "MASCOT"  )
+    if mascot_sock[0].initialize( mascot_sock[1], mascot_sock[2] ) == False:
+        print( "Connection error: failed to establish connection to " + mascot_sock[1] + ", aborting..." )
+        return
+    print( )
+    print( "MASCOT connected." )
+    
+    print( )
+    print( "Checking connection with MAQS servers..." )
+    maqs_sock_arr = []
+    for i in range( 6 ):
+        maqs_name = f"MAQS{i+1}"
+        if maqs_name in config_load:
+            maqs_IP = config_load[maqs_name]["IP"]
+            maqs_port = config_load[maqs_name]["port"]
+            maqs_sock = ( UDPGenericSocket( False, 1024 ), maqs_IP, (int)(maqs_port), maqs_name  )
+            if maqs_sock[0].initialize( maqs_sock[1], maqs_sock[2] ) == False:
+                print( "Connection error: failed to establish connection to " + maqs_sock[1] + "." )
+                continue
+            maqs_sock_arr.append( maqs_sock )
+    if len( maqs_sock_arr ) < 1:
+        print( "No MAQS servers connected. aborting..." )
+        return
+    print( )
+    print( "MAQS servers connected.")
+    print( )
+
+    print( " === Distributing config file to all MAQS servers ===")
+    MADAUtil.divide_config( config_load )
+    print( " === Distributing config file Done ===")
+    
+    try:
+        runVthScan_run( maqs_sock_arr, macaron_sock, mascot_sock )
+    except KeyboardInterrupt:
+        runVthScan_abort( maqs_sock_arr, macaron_sock, mascot_sock )
+
+
+    return    
+    
+if __name__ == "__main__":
+    main( )

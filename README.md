@@ -1,41 +1,88 @@
 # MADA
-MiraclueArgonDAQ  
+MiraclueArgonDAQ
+
+Upgraded DAQ system (ver. 2025 Autumn)
+
+## Preparation
+
+For all server and clients, NetworkUtil should be cloned in MADA repository
+```
+$ git clone git@github.com:kobeDM/MADA.git
+$ cd MADA
+$ git clone git@github.com:kobeDM/NetworkUtil.git
+```
+
+### MADA (Client for integration)
+
+After git clone, make and move "run" directory and edit a config file
+```
+$ cd /home/msgc/miraclue/run/30LAuPIC_2/
+$ mkdir yyyymmdd && cd yyyymmdd
+$ cp ${MADAPATH}/config/MADA_config_SKEL.json ./MADA_config.json
+$ emacs MADA_config.json
+```
+
+### MAQS (DAQ server)
+
+In MADA directory, make a build directory and build the project
+```
+$ mkdir build && cd build
+$ cmake ../source/MAQS
+$ make && make install
+```
+
+Then start MAQS's server.
+```
+$ cd /home/msgc/miraclue/data/30LAuPIC_2/yyyymmdd/
+$ MAQS.py -a 10.37.0.18X -p 900X
+(if you need to start MAQS1 server, do above commands with X = 1)
+```
+
+### MACARON (Control server)
+
+In MADA directory, make a build directory and build the project
+```
+$ mkdir build && cd build
+$ cmake ../source/MACARON
+$ make && make install
+```
+
+Then start MAQS's server.
+```
+$ cd /home/msgc/miraclue/scaler/
+$ MACARON.py -a 10.37.0.178 -p 9100
+```
+
+### MASCOT (Slow control and monitor server)
+
+Enter MASCOT then just do below command in the home directory
+```
+$ MASCOT.py -a 10.37.0.214 -p 9200
+```
+
+## Operation
+
+Do below scripts in MAMA client.
+Do not forget editing MADA_config.json for each execution
+
 - DAQ  
-$MADA.py [-n num of events per file] [-m num of files per fir]   
--- config file を準備  (MADA.pyから呼ばれる)  
-$MADA_fetch_config.py 
-必要に応じて MADA_config.json  を作成
+```
+$ MADA.py
+```
 
-- Vth調整関係  
--- DAC、Vth設定  
---- 全ボードのDAC、Vthを設定、確認  
-$MADA_SetAllDAC.py [-c configfile]   
-$MADA_checkVths.py  
+- Set Vth and DAC   
+```
+$ MADA_SetVthDAC.py
+```
 
---- 個々のボードのDACを設定  
-$SetDAC IP DACfile  
-例 $SetDAC 192.168.100.24 DAC_run0006/base_correct.dac  
---- 個々のボードのVthを設定 
-$SetVth IP Vth  
-例 $SetDAC 192.168.100.24 8000 
--- DAC, Vth scan  
-$MADA_runVthScan.py IP Vth下限 Vth上限 Vth_step  
-例　$MADA_runVthScan.py 192.168.100.16 8500 10000 1000  
-$MADA_VthScan  
--- DAC値scan
-MADA_runDACScan.py  Vth
+- Set Vth or DAC parameter for each GBKB
+```
+$ SetDAC [IP] [DAC file]  
+$ SetVth [IP] [Vth value]  
+```
 
-- その他  
--- $MADA_clockout.py [-f rate(Hz)] [-u URI]  
--- $MADA_DAQenable.py [-d] : DAQ enable出す。 -d optionでenable下げる。　
--- $MADA_counterreset.py : counter reset出す。  
-
-
-
-
-MADA_VthAna          
-MADA_runVthAna.py
-MADA.py~                      MADA_runVthScan.py
-MADA_DACAna          MADA_con             MADA_runVthScan.py~
-MADA_DACScan         MADA_iwaki           
-       MADA_runDACScan.py   
+- Vth and DAC scans 
+```
+$ MADA_runVthScan.py  
+$ MADA_runDACScan.py  
+```
