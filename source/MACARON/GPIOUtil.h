@@ -25,14 +25,14 @@ const unsigned int CHIP_ID_CNT_STORE       = 1;  // 0x4120_0000
 const unsigned int CHIP_ID_TRG_CNT         = 19; // 0x4121_0000
 const unsigned int CHIP_ID_TRG_CNT_STORE   = 20; // 0x4122_0000
 const unsigned int CHIP_ID_CNT             = 0;  // 0x4123_0000
-const unsigned int CHIP_ID_REAL_CNT        = 15; // 0x4124_0000
-const unsigned int CHIP_ID_REAL_CNT_STORE  = 16; // 0x4125_0000
-const unsigned int CHIP_ID_SW_BUSY         = 17; // 0x4126_0000
-const unsigned int CHIP_ID_SW_READ_ENABLE  = 18; // 0x4127_0000
-const unsigned int CHIP_ID_DAQ_ENABLE      = 4;  // 0x4128_0000
-const unsigned int CHIP_ID_DAQ_TPMODE      = 3;  // 0x4129_0000
-const unsigned int CHIP_ID_DAQ_STATUS      = 6;  // 0x412a_0000
-const unsigned int CHIP_ID_DAQ_SWVETO      = 5;  // 0x412b_0000
+const unsigned int CHIP_ID_REAL_CNT        = 13; // 0x4124_0000
+const unsigned int CHIP_ID_REAL_CNT_STORE  = 14; // 0x4125_0000
+const unsigned int CHIP_ID_SW_BUSY         = 16; // 0x4126_0000
+const unsigned int CHIP_ID_SW_READ_ENABLE  = 17; // 0x4127_0000
+const unsigned int CHIP_ID_DAQ_ENABLE      = 3;  // 0x4128_0000
+const unsigned int CHIP_ID_DAQ_TPMODE      = 18; // 0x4129_0000
+const unsigned int CHIP_ID_DAQ_STATUS      = 4;  // 0x412a_0000
+const unsigned int CHIP_ID_DAQ_SWVETO      = 15; // 0x412b_0000
 const unsigned int CHIP_ID_DAQ_COUNT_RESET = 2;  // 0x412c_0000
 
 
