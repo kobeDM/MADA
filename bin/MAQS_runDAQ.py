@@ -126,13 +126,13 @@ def start_daq( args, current_period ):
 
     # write out event rate into text file
     with open(ratefile, "a") as f:
-        rate = {bid: 0 for bid in MADADef.ALL_BOARDS}
+        rate = {bid: 0 for bid in allBoardID}
         for ii in range( len( activeIP ) ):
             rate[boardID[ii]] = float( size[boardID[ii]] ) / realtime
-            f.write( f"{endtime}\t{size}\t{rate}\n" )
+        f.write( f"{endtime}\t{size}\t{rate}\n" )
 
     # compensate size and rate dict when inactive board exist
-    inactive_board = list( set( MADADef.ALL_BOARDS ) - set( boardID ) )
+    inactive_board = list( set( allBoardID ) - set( boardID ) )
     for bid in inactive_board:
         size[bid] = 0
         rate[bid] = 0
