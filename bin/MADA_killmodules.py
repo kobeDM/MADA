@@ -9,7 +9,7 @@ def main():
 
     killpids = []
     for i in range(len(modules)):
-        print('kill modlue:', modules[i])
+        print('Kill modlue:' + modules[i])
         ps = "ps -aux  | grep -v \' grep \' | grep " + modules[i]
         process = (subprocess.Popen(ps, stdout=subprocess.PIPE, shell=True).communicate()[0]).decode('utf-8')
         pl = process.split("\n")
@@ -18,7 +18,7 @@ def main():
             killpids.append(pll[1])
 
     for i in range(len(killpids) - 1):
-        kill="kill -KILL " + killpids[i]
+        kill = "kill -KILL " + killpids[i]
         subprocess.run(kill, shell=True)
 
     print('### MADA_killmodules.py end ###')

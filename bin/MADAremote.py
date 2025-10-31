@@ -34,7 +34,7 @@ CONFIG        = 'MADA_config.json'
 def parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', help='config file path',    default=CONFIG     )
-    parser.add_argument('-n', help='file size in MB',     default=num )
+    parser.add_argument('-n', help='file size in MB',     default=num        )
     parser.add_argument('-f', help='maximum file number', default=fileperdir )
     parser.add_argument('-r', '--remote', help='Start DAQ in remote', action='store_true')
     args = parser.parse_args()
@@ -49,7 +49,7 @@ print('*********************************************************')
 
 num         = 10   # default data size in Mbyte 
 num_max     = 100  # maximum data size (Mbyte)
-fileperdir  = 2000 # maximum file number
+fileperdir  = 1000 # maximum file number
 
 # read option parameters
 args = parser()
@@ -97,6 +97,7 @@ print('---')
 subprocess.run(MODULEKILLER, shell=True)
 print('---')
 
+# Make kill window
 if not (args.remote):
     cmd = 'xterm -geometry 50x5+50+850 -title \'MADA killer\' -background black -foreground green -e ' + DAQKILLER + ' -p ' + str(newper)
     prockiller = subprocess.Popen(cmd, shell=True)
@@ -117,13 +118,13 @@ while fileID < int(fileperdir):
     subprocess.run(cmd, shell=True)
     print()
     
-    #DAC reset in case LV was dropped in the last file
+    # DAC reset in case LV was dropped in the last file
     cmd = SETDAC 
     subprocess.run(SETDAC, shell=True)
     print()
 
     pids = []
-    for i in range(len(activeIP)):
+    for i in range(len(activeIP)): # run DAQ
         IP = activeIP[i]
         filename_head = newper + '/' + boardID[i] + '_' + str(fileID).zfill(4)
         filename_info = filename_head + '.info'
@@ -141,11 +142,13 @@ while fileID < int(fileperdir):
         proc = subprocess.Popen(cmd, shell=True, stdout=PIPE, stderr=None)
         pids.append(proc.pid)
 
+    # Make window for DAQ enable
     cmd = 'xterm -geometry 50x10+400+0 -e ' + ENABLE
     print('Exectue: ' + cmd)
     proc = subprocess.Popen(cmd,shell=True)
     enablepid = proc.pid
 
+    # Write information
     starttime = time.time()
     for i in range(len(activeIP)):
         IP = activeIP[i]
@@ -165,6 +168,7 @@ while fileID < int(fileperdir):
                     json.dump(dd, file, ensure_ascii=False, indent=2) 
     print()
             
+    # Reset trigger count
     subprocess.run(COUNTERRESET, shell=True)
     print()
 
@@ -172,10 +176,11 @@ while fileID < int(fileperdir):
     print('GIGAiwaki pids   :', pids)
     print('enable pid       :', enablepid)    
     print('working directory:', newper)
-    print('started at       :', starttime)
+    print('started at        ', starttime)
 
     running = 1
     while running:
+        # Check running DAQ numbers
         runs = 0
         for i in range(len(pids)):
             cmd = 'ps -aux | awk \'$2=='+str(pids[i]) + '\' | wc -l'
@@ -183,13 +188,14 @@ while fileID < int(fileperdir):
             if int(pnum) == 1:
                 runs += 1
  
-        if runs < len(pids): # kill DAQ
+        # Catch DAQ termination
+        if runs < len(pids):
             running = 0
-            print('file terminate')
             subprocess.run(ADKILLER, shell=True)
             subprocess.run(DISABLE, shell=True)
             endtime = time.time()
 
+            # kill all running DAQ
             ps       = 'ps -aux | grep -v \' grep \' | grep xterm | grep iwaki'
             process  = (subprocess.Popen(ps, stdout=subprocess.PIPE, shell=True).communicate()[0]).decode('utf-8')
             pl       = process.split('\n')
@@ -202,12 +208,14 @@ while fileID < int(fileperdir):
                     subprocess.run(kill,shell=True)    
             break
             
+    # --- Finalize ---
     print('file ' + str(fileID) + 'finished at ' + str(endtime))
     realtime = endtime - starttime
     print('real time = ' + str(realtime))
 
+    # Write log
     size = []
-    for i in range(len(activeIP)): # write log
+    for i in range(len(activeIP)):
         filename_head = newper + '/' + boardID[i] + '_' + str(fileID).zfill(4)
         filename_info = filename_head + '.info'
         filename_mada = filename_head + '.mada'
@@ -245,7 +253,7 @@ while fileID < int(fileperdir):
     with open(ofile, 'a') as f:
         rate = []
         for ii in range(len(activeIP)):
-            rate.append(float(size[ii])/realtime)
+            rate.append(float(size[ii]) / realtime)
         out_list = [t, starttime, endtime] + size + [float(s) / realtime for s in size]
         out_str = '\t'.join(map(str, out_list)) + '\n'
         f.write(out_str)

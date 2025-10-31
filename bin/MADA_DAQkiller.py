@@ -9,13 +9,13 @@ import glob
 import time
 import datetime
 
-CONFIG = "MADA_config.json"
+CONFIG   = "MADA_config.json"
 
-HOME = os.environ["HOME"]
+HOME     = os.environ["HOME"]
 RATEPATH = HOME + "/rate/"
 
 MADAIWAKI = "MADA_iwaki"
-MADApy = "MADA.py"
+MADApy    = "MADA.py"
 DAQENABLE = "MADA_DAQenable.py"
 
 #read option parameters
@@ -31,9 +31,9 @@ def parser():
 def main():
     print("### MADAkiller.py start ###")
 
-    args = parser()
+    args   = parser()
     config = args.config
-    per = args.period
+    per    = args.period
 
     if per[0] != "p":
         per = "per" + str(per).zfill(4)        
@@ -51,7 +51,7 @@ def main():
             boardID.append(x)
 
     if not args.direct:
-        s=input('return to kill MADA>')
+        s = input('return to kill MADA>')
     endtime = time.time()
 
     # find the latest info file
