@@ -1,132 +1,125 @@
 #!/usr/bin/env python3
 
-import os, sys
+import os
 import subprocess
 import json
 import argparse
 
 import glob
-import time,datetime
+import time
+import datetime
 
-#configs
-CONFIG = "MADA_config.json"
+CONFIG   = "MADA_config.json"
 
-HOME=os.environ["HOME"]
-RATEPATH=HOME+"/rate/"
+HOME     = os.environ["HOME"]
+RATEPATH = HOME + "/rate/"
 
-
-MADAIWAKI="MADA_iwaki"
-MADApy="MADA.py"
+MADAIWAKI = "MADA_iwaki"
+MADApy    = "MADA.py"
+DAQENABLE = "MADA_DAQenable.py"
 
 #read option parameters
-parser = argparse.ArgumentParser()
-parser.add_argument("-c",help="config file name",default=CONFIG)
-parser.add_argument("-p",help="pername",default=-1)
-parser.add_argument("-d",help="kill process without pressing the enter key",action="store_true")
-args = parser.parse_args( )
-config=args.c
-per=args.p
+def parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--config", help="config file name", default=CONFIG)
+    parser.add_argument("-p", "--period", help="period name", default=-1)
+    parser.add_argument("-d", "--direct", help="kill process without pressing the enter key", action="store_true")
+    args = parser.parse_args( )
 
-if per[0] != "p":
-    per="per"+str(per).zfill(4)
-    
-print("**MADAkiller.py**")
-print(" target dir: "+per)
+    return args
 
-#load config file
-config_open= open(config,'r')
-config_load = json.load(config_open)
-activeIP=[]
-boardID=[]
-for x in config_load['gigaIwaki']:
-    if config_load['gigaIwaki'][x]['active']==1:
-        activeIP.append(config_load['gigaIwaki'][x]['IP'])
-        boardID.append(x)
-#        print(config_load['gigaIwaki'][x]['IP'])
-#load config file ends.
+def main():
+    print("### MADAkiller.py start ###")
 
-if not args.d:
-    s=input('return to kill MADA>')
-endtime=time.time()#.now().timestamp()
+    args   = parser()
+    config = args.config
+    per    = args.period
 
-# find the latest info file
-fileID=0
-file=per+"/*_"+str(fileID).zfill(4)+".info"
-while(len(glob.glob(file))):
-    fileID=fileID+1
-    file=per+"/*_"+str(fileID).zfill(4)+".info"
-fileID=fileID-1  
-file=per+"/*_"+str(fileID).zfill(4)+".info"  
-print(" target file: "+file)
+    if per[0] != "p":
+        per = "per" + str(per).zfill(4)        
+    print("Target directory : " + per)
 
-size=[]
+    #load config file
+    with open(config, 'r') as file:
+        config_load = json.load(file)
 
-for i in range(len(activeIP)):
-    
-    filename_head=per+"/"+boardID[i]+"_"+str(fileID).zfill(4)
-    filename_info=filename_head+".info"
-    filename_mada=filename_head+".mada"
-    cmd='ls -l '+filename_mada
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                            shell=True).communicate()[0].decode('utf-8')
-#    print(proc)
-    sizel=str(proc).split()
-    
-#    print("size= ",str(sizel[4]),"byte")
-    dmes={}
- #   dmes['start']=starttime
-    dmes['end']=endtime
-    dmes['size']=sizel[4]
-#    print(str(i)+" ")
-    
-    size.append(sizel[4])
-    ddmes={"runinfo":dmes}
-    info_open= open(filename_info,'r')
-    info_load = json.load(info_open)
-    dict_giga={}
-    dict_info={}
-    for x in info_load['gigaIwaki']:
-        dict_giga.update(info_load['gigaIwaki'])
-    for x in info_load['runinfo']:
-        dict_info.update(info_load['runinfo'])
-    starttime=dict_info["start"]
-    #    print(starttime)
-    dict_info.update(dmes)
-    dict={"gigaIwaki":dict_giga,"runinfo":dict_info}
-    with open(filename_info, mode='w', encoding='utf-8') as file:
-        json.dump(dict, file, ensure_ascii=False, indent=2)
-            
+    activeIP=[]
+    boardID=[]
+    for x in config_load['gigaIwaki']:
+        if config_load['gigaIwaki'][x]['active']==1:
+            activeIP.append(config_load['gigaIwaki'][x]['IP'])
+            boardID.append(x)
 
-    y  =    str(datetime.datetime.fromtimestamp(endtime).year)
-    m  =    str(datetime.datetime.fromtimestamp(endtime).month)
-    d  =    str(datetime.datetime.fromtimestamp(endtime).day)
-    hh  =    str(datetime.datetime.fromtimestamp(endtime).hour)
-    mm  =    str(datetime.datetime.fromtimestamp(endtime).minute)
-    ss  =    str(datetime.datetime.fromtimestamp(endtime).second)
-    ofile=RATEPATH+y+m.zfill(2)+d.zfill(2)#+"_"+str(i)
-    t=y+"/"+m.zfill(2)+"/"+d.zfill(2)+"/"+hh.zfill(2)+":"+mm.zfill(2)+":"+ss.zfill(2)
+    if not args.direct:
+        s = input('return to kill MADA>')
+    endtime = time.time()
 
-    realtime=endtime-starttime
+    # find the latest info file
+    fileID = 0
+    file = per + "/*_" + str(fileID).zfill(4) + ".info"
+    while len(glob.glob(file)):
+        fileID += 1
+        file = per + "/*_" + str(fileID).zfill(4) + ".info"
+    fileID -= 1  
+    file = per + "/*_" + str(fileID).zfill(4) + ".info"  
+    print("Target file: " + file)
+
+    size=[]
+
+    for i in range(len(activeIP)):
         
-f = open(ofile, 'a')
-#print("active"+str(len(activeIP)))
-#print("size"+str(len(size)))
-rate=[]
+        filename_head = per + "/" + boardID[i] + "_" + str(fileID).zfill(4)
+        filename_info = filename_head + ".info"
+        filename_mada = filename_head + ".mada"
+        cmd = 'ls -l ' + filename_mada
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True).communicate()[0].decode('utf-8')
+        sizel = str(proc).split()
+        
+        dmes = {}
+        dmes['end'] = endtime
+        dmes['size'] = sizel[4]
+        
+        size.append(sizel[4])
+        ddmes = {"runinfo":dmes}
+        with open(filename_info, 'r') as file:
+            info_load = json.load(file)
 
-# for ii in range(4):
-for ii in range(2):
-    rate.append(float(size[ii])/realtime)
-# f.write(t+"\t"+str(starttime)+"\t"+str(endtime)+"\t"+str(size[0])+"\t"+str(size[1])+"\t"+str(size[2])+"\t"+str(size[3])+"\t"+str(float(size[0])/realtime)+"\t"+str(float(size[1])/realtime)+"\t"+str(float(size[2])/realtime)+"\t"+str(float(size[3])/realtime)+"\n")
-f.write(t+"\t"+str(starttime)+"\t"+str(endtime)+"\t"+str(size[0])+"\t"+str(size[1])+"\t"+str(float(size[0])/realtime)+"\t"+str(float(size[1])/realtime)+"\n")
-f.close()
+        dict_giga={}
+        dict_info={}
+        for x in info_load['gigaIwaki']:
+            dict_giga.update(info_load['gigaIwaki'])
+        for x in info_load['runinfo']:
+            dict_info.update(info_load['runinfo'])
+        starttime = dict_info["start"]
+        dict_info.update(dmes)
+        
+        dict={"gigaIwaki":dict_giga,"runinfo":dict_info}
+        
+        with open(filename_info, mode='w', encoding='utf-8') as file:
+            json.dump(dict, file, ensure_ascii=False, indent=2)        
 
-exes=[MADApy, MADAIWAKI]
-for exe in exes:
-    cmd="ps -aux | grep "+exe+" | grep -v 'ps -aux' |awk '{print $2}'"
-    print(cmd)
-    pid=subprocess.run(cmd,shell=True,encoding='utf-8',stdout=subprocess.PIPE).stdout.replace("\n"," ")
-    #    pid.replace("\n"," ")
-    print(pid)
-    cmd="kill "+pid
-    subprocess.run(cmd,shell=True)
+        y = str(datetime.datetime.fromtimestamp(endtime).year)
+        m = str(datetime.datetime.fromtimestamp(endtime).month)
+        d = str(datetime.datetime.fromtimestamp(endtime).day)
+        hh = str(datetime.datetime.fromtimestamp(endtime).hour)
+        mm = str(datetime.datetime.fromtimestamp(endtime).minute)
+        ss = str(datetime.datetime.fromtimestamp(endtime).second)
+        ofile = RATEPATH + y + m.zfill(2) + d.zfill(2)
+        t = y + "/" + m.zfill(2) + "/" + d.zfill(2) + "/" + hh.zfill(2) + ":" + mm.zfill(2) + ":" + ss.zfill(2)
 
+        realtime = endtime - starttime
+            
+    with open(ofile, 'a') as file:
+        file.write(t + "\t" + str(starttime) + "\t" + str(endtime) + "\t" + str(size[0]) + "\t"+str(size[1]) + "\t"+str(float(size[0]) / realtime) + "\t" + str(float(size[1]) / realtime) + "\n")
+    
+    exes = [MADApy, MADAIWAKI, DAQENABLE]
+    for exe in exes:
+        cmd = "ps -aux | grep " + exe + " | grep -v 'ps -aux' |awk '{print $2}'"
+        print('Execute: ' + cmd)
+        pid = subprocess.run(cmd, shell=True, encoding='utf-8', stdout=subprocess.PIPE).stdout.replace("\n", " ")
+        print(pid)
+        cmd = "kill " + pid
+        subprocess.run(cmd, shell=True)
+
+if __name__ == "__main__":
+    main()
