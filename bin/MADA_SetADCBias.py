@@ -1,58 +1,56 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 import json
 import subprocess
 import argparse
 
 MADAHOME = os.environ['MADAHOME']
-IWAKIANAHOME = os.environ['IWAKIANAHOME']
 MADABIN = MADAHOME + '/bin'
-IWAKIANABIN = IWAKIANAHOME + '/bin'
 
-FETCHCONFIG = MADABIN + '/MADA_fetch_config.py'
-SETADCBIAS = IWAKIANABIN + '/SetADCBias'
+FETCHCONFIG = os.path.join(MADABIN, 'MADA_fetch_config.py')
+SETADCBIAS = os.path.join(MADABIN, 'SetADCBias')
 
-# default value
 CONFIG = './MADA_config.json'
 
-def parser():
+def arg_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', help='config file path', default=CONFIG)
+    parser.add_argument('-c', '--config', default=CONFIG)
     args = parser.parse_args()
-    
     return args
 
 def main():
     print("### MADA_SetADCBias.py start ###")
 
-    args = parser()
+    args = arg_parser()
     config = args.config
-    if (os.path.isfile(config)):
-        print('Config file: ' + config)
-    else:
+
+    if not os.path.isfile(config):
         print('Config file was not found. Fetching skelton file...')
-        cmd = FETCHCONFIG
-        print('Execute: ' + cmd)
-        subprocess.run(cmd, shell=True)
+        subprocess.run([FETCHCONFIG])
         config = CONFIG
+
+    print('Config file: ' + config)
     print('---')
 
     with open(config, 'r') as file:
         config_load = json.load(file)
-    for x in config_load['gigaIwaki']:
-        if config_load['gigaIwaki'][x]['active'] == 1:
-            ip = config_load['gigaIwaki'][x]['IP']
-            bias = config_load['gigaIwaki'][x]['bias']
 
-        print('GigaIwaki: ' + x)
+    for name, data in config_load.get('gigaIwaki', {}).items():
+        if data.get('active') != 1:
+            continue
+
+        ip = data.get('IP')
+        bias = data.get('bias')
+
+        print('GigaIwaki: ' + name)
         print('  IP      : ' + ip)
         print('  ADC bias: ' + str(bias))
-        cmd = SETADCBIAS + ' ' + ip + ' ' + str(bias)
-        print('Execute : ' + cmd)
-        stdout = subprocess.run(cmd, shell=True, capture_output=True, text=True).stdout
-        print(stdout)
+
+        cmd = [SETADCBIAS, ip, str(bias)]
+        print('Execute : ' + ' '.join(cmd))
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        print(result.stdout)
         print('---')
 
     print("### MADA_SetADCBias.py end ###")

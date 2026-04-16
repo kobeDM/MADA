@@ -1,44 +1,61 @@
 {
 	"general": {},
 	"gigaIwaki": {
-	  "GBKB-11": {
-		"active": 1,
-		"connection": "c1",
-		"pitch": "800",
-		"IP": "192.168.100.96",
-		"Vth": 10190,
-		"bias": 8000,
-		"DACfile": "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.96_2.dac"
-	  },
-	  "GBKB-03": {
-		"active": 1,
-		"connection": "a1",
-		"pitch": "800",
-		"IP": "192.168.100.64",
-		"Vth": 9220,
-		"bias": 8000,
-		"DACfile": "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.64_5.dac"
-	  }
+		"GBKB-34": {
+			"active": 1,
+			"connection": "c2",
+			"pitch": "400",
+			"IP": "192.168.100.97",
+			"Vth": 10190,
+			"bias": 8000,
+			"DACfile": "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.97.dac"
+		},
+		"GBKB-35": {
+			"active": 1,
+			"connection": "c3",
+			"pitch": "400",
+			"IP": "192.168.100.98",
+			"Vth": 10190,
+			"bias": 8000,
+			"DACfile": "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.98.dac"
+		},
+		"GBKB-32": {
+			"active": 1,
+			"connection": "a2",
+			"pitch": "400",
+			"IP": "192.168.100.65",
+			"Vth": 9220,
+			"bias": 8000,
+			"DACfile": "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.65.dac"
+		},
+		"GBKB-33": {
+			"active": 1,
+			"connection": "a3",
+			"pitch": "400",
+			"IP": "192.168.100.66",
+			"Vth": 9220,
+			"bias": 8000,
+			"DACfile": "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.66.dac"
+		}
 	},
 	"ADALM": {
-	  "MADALM_0": {
-		"active": 1,
-		"URI": "usb:3.14.5",
-		"S/N": "10447372c6040013f9ff360057ecd401ea",
-		"Clock_d": 100000000.0
-	  },
-	  "MADALM_1": {
-		"active": 1,
-		"URI": "usb:3.15.5",
-		"S/N": "1044739614060004160029005f9c48a42b",
-		"Clock_d": 100000000.0
-	  },
-	  "MADALM_2": {
-		"active": 1,
-		"URI": "usb:3.13.5",
-		"S/N": "104473961406000b03003800c90049e980",
-		"Clock_d": 100000000.0
-	  }
+		"MADALM_0": {
+			"active": 1,
+			"URI": "usb:3.14.5",
+			"S/N": "10447372c6040013f9ff360057ecd401ea",
+			"Clock_d": 100000000.0
+		},
+		"MADALM_1": {
+			"active": 1,
+			"URI": "usb:3.15.5",
+			"S/N": "1044739614060004160029005f9c48a42b",
+			"Clock_d": 100000000.0
+		},
+		"MADALM_2": {
+			"active": 1,
+			"URI": "usb:3.13.5",
+			"S/N": "104473961406000b03003800c90049e980",
+			"Clock_d": 100000000.0
+		}
 	}
-  }
-  
+}

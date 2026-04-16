@@ -1,24 +1,31 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 import subprocess
+import argparse
 
-IWAKIANAHOME = os.environ['IWAKIANAHOME']
-IWAKIANABIN = IWAKIANAHOME + '/bin'
+MADAHOME = os.environ['MADAHOME']
+MADABIN = MADAHOME + '/bin'
 
-SETAP = IWAKIANABIN + "/SetAP"
+SETAP = MADABIN + "/SetAP"
+
+def arg_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("ip")
+    parser.add_argument("io")
+    args = parser.parse_args()
+    return args
 
 def main():
+    args = arg_parser()
+
     print("*** MADA_SetAP.py start ***")
-    if len(sys.argv) < 3:
-        print("usage: python3 MADA_SetAP.py [ip] [I/O]")
-    ip = sys.argv[1]
-    io = sys.argv[2]
-    cmd = [SETAP, ip, io]
+
+    cmd = [SETAP, args.ip, args.io]
     print(cmd)
     stdout = subprocess.run(cmd, capture_output=True, text=True).stdout
     print(stdout)
+
     print("*** MADA_SetAP.py end ***")
 
 if __name__ == "__main__":
