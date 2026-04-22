@@ -23,12 +23,12 @@ int main(int argc, char *argv[]){
   char cmd[256];
   
   if (val == 1){
-    cmd[0] = 0x08;
+    cmd[0] = 0x01;
   } else {
-    cmd[0] = 0x10;
+    cmd[0] = 0x00;
   }
 
-  SlowCtrl.WriteRBCP(0xf0, cmd, 1);
+  SlowCtrl.WriteRBCP(0xf1, cmd, 1);
   sleep(1);
 
   SlowCtrl.ReadRBCP();
