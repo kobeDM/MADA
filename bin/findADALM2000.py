@@ -5,9 +5,9 @@ import sys
 import subprocess
 from subprocess import PIPE
 
-ADALMHOME = os.environ["ADAHOME"]
-ADALMBIN   = ADALMHOME  + '/adalm_out/bin'
-ADOUT     = 'ad_out'
+ADSW = os.environ["ADSW"]
+ADOUT     = ADSW + '/bin/ad_out'
+
 PRODUCTID = '0456:b672'
 
 def main():
@@ -33,7 +33,7 @@ def main():
     # Check devices
     found = 0
     for i in range(len(usbs)):
-        cmd = ADALMBIN + '/' + ADOUT + ' -s -u ' + usbs[i] + '| grep serial'
+        cmd = ADOUT + ' -s -u ' + usbs[i] + '| grep serial'
         ret = subprocess.run(cmd, shell=True, stdout=PIPE, text=True)
         if find == 0:
             print('device', str(i), '\t', usbs[i], '\t S/N:', SN[i])

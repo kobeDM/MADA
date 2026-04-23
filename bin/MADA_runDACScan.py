@@ -1,32 +1,29 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 import glob
 import argparse
 
 import subprocess
-from subprocess import PIPE
 
 MADAHOME  = os.environ['MADAHOME']
-IWAKIANAHOME = os.environ['IWAKIANAHOME']
 
-MADABIN = MADAHOME + '/bin'
-IWAKIANABIN = IWAKIANAHOME + '/bin'
-SCAN = "DAC_Survey"
-ANA = "DAC_Analysis"
+SCAN = MADAHOME + "/bin/DAC_Survey"
+ANA = MADAHOME + "/bin/DAC_Analysis"
 
 def parser():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("IP", type=str, nargs='?', const=None, help='[IP]')
-    argparser.add_argument("Vth", type=str, nargs='?', const=None, help='[V thresholod]')
+    argparser.add_argument("ip", type=str, nargs='?', const=None, help='[IP]', default='192.168.100.64')
+    argparser.add_argument("v_th", type=str, nargs='?', const=None, help='[V thresholod]', default=8800)
     args = argparser.parse_args()
     
     return args
 
-def print_and_exe(cmd):
+
+def run_command(cmd):
     print("Execute: " + cmd)
     subprocess.run(cmd, shell=True)
+
 
 def find_newrun():
     dir_header = 'DAC_run'
@@ -40,53 +37,45 @@ def find_newrun():
     
     return newrun
 
+
 def main():
     print('### MADA_runDACScan.py start ###')
 
     args = parser()
-    if args.IP:
-        IP = args.IP
-    else:
-        print("runDACScan.py IP [Vth]")
-        sys.exit(1)
-
-    if args.Vth:
-        Vth=args.Vth
-    else:
-        Vth="8800"
-        print('Used default Vth:', Vth)
-
+    ip = args.ip
+    Vth = args.v_th
 
     newrun = find_newrun()
     cmd = "mkdir " + newrun
-    print_and_exe(cmd)
+    run_command(cmd)
 
     os.chdir(newrun)
 
     cmd = "mkdir png"
-    print_and_exe(cmd)
+    run_command(cmd)
 
-    cmd = IWAKIANABIN + "/" + SCAN + " " + IP + " " + Vth
-    print_and_exe(cmd)
+    cmd = SCAN + " " + ip + " " + Vth
+    run_command(cmd)
 
     os.chdir("../")
 
-    cmd = IWAKIANABIN + "/" + ANA + " " + newrun + "/ " + Vth
-    print_and_exe(cmd)
+    cmd = ANA + " " + newrun + "/ " + Vth
+    run_command(cmd)
 
     cmd = "mv Ch_*.png " + newrun + "/png"
-    print_and_exe(cmd)
+    run_command(cmd)
     
     cmd = "mv DAC.root " + newrun
-    print_and_exe(cmd)
+    run_command(cmd)
 
     cmd = "mv base_correct.dac " + newrun
-    print_and_exe(cmd)
+    run_command(cmd)
 
     cmd = "mv DACsurvey_config.out DAC_ana_config.out " + newrun
-    print_and_exe(cmd)
+    run_command(cmd)
 
     print('### MADA_runDACScan.py start ###')
+
 
 if __name__ == '__main__':
     main()

@@ -7,15 +7,13 @@ import subprocess
 from subprocess import PIPE
 
 MADAHOME  = os.environ['MADAHOME']
-MADABIN   = MADAHOME + '/bin/'
-ADALMHOME  = os.environ['ADAHOME']
-ADALMOUT = ADALMHOME + '/adalm_out'
+
+ADSW  = os.environ['ADSW']
+ADOUT = ADSW + '/bin/ad_out'
 
 # scripts
-findADALM = "findADALM2000.py"
+findADALM = MADAHOME + "/bin/findADALM2000.py"
 
-# SN="104473961406000712000e0056e64887db"
-# SN="10447384b904001612002500df1edb6193"
 SN = "10447372c6040013f9ff360057ecd401ea" # ADALM S/N for DAQ enable
 
 def parser():
@@ -34,15 +32,15 @@ def main():
     if args.uri:
         uri = args.uri
     else:
-        cmd  = MADABIN + '/' + findADALM + " " + SN
+        cmd  = findADALM + " " + SN
         proc = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False)
         uri  = proc.stdout.decode("utf8").replace("\n", "")
         print("URI", uri, "for S/N:", SN)
 
     if args.disable: # latching down
-        cmd = ADALMOUT + "/bin/ad_out -u " + uri + " -m"
+        cmd = ADOUT + " -u " + uri + " -m"
     else: # latching up
-        cmd = ADALMOUT + "/bin/ad_out -u " + uri + " -l"
+        cmd = ADOUT + " -u " + uri + " -l"
 
     print('Execute:', cmd)
     subprocess.run(cmd, shell=True)

@@ -7,11 +7,11 @@ import subprocess
 from subprocess import PIPE
 
 MADAHOME = os.environ['MADAHOME']
-ADALMHOME  = os.environ['ADAHOME']
-MADABIN  = MADAHOME + '/bin'
-ADALMBIN   = ADALMHOME  + '/adalm_out/bin'
+findADALM = MADAHOME + "/bin/findADALM2000.py"
 
-findADALM = "findADALM2000.py"
+ADSW  = os.environ['ADSW']
+ADOUT   = ADSW  + '/bin/ad_out'
+
 
 SN = "10447372c6040013f9ff360057ecd401ea"
 
@@ -29,17 +29,17 @@ def main():
     if args.uri:
         uri = args.uri
     else:
-        cmd = MADABIN + '/' + findADALM + " " + SN
+        cmd = findADALM + " " + SN
         proc = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False)
         uri = proc.stdout.decode("utf8").replace("\n", "")
         print("\tURI " + uri + " for S/N: " + SN)      
 
     rate = args.freq
     if args.disable:
-        cmd = ADALMBIN + "/ad_out -u " + uri + " -a -v -0. -t 100 " + str(rate)
+        cmd = ADOUT + " -u " + uri + " -a -v -0. -t 100 " + str(rate)
     else:
-        cmd = ADALMBIN + "/ad_out -u " + uri + " -a -v -1. -t 100 -f " + str(rate)
-    
+        cmd = ADOUT + " -u " + uri + " -a -v -1. -t 100 -f " + str(rate)
+
     print('Execute: ' + cmd)
     subprocess.run(cmd, shell=True)
 

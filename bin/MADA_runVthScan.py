@@ -1,25 +1,35 @@
 #!/usr/bin/env python3
-import subprocess, os,sys
+
+import os
+import subprocess
 import argparse
 import glob
 from subprocess import PIPE
 
-print('### MADA_runVthScan.py start ###')
+MADAHOME = os.environ["MADAHOME"]
+
+FETCHCONFIG = MADAHOME + "/bin/MADA_fetch_config.py"
+EXE_SETDAC  = MADAHOME + "/bin/SetDAC"
+EXE_DAQ     = MADAHOME + "/bin/ScanVth"
+EXE_ANA     = MADAHOME + "/bin/MADA_runVthAna.py"
+EXE_CORR    = MADAHOME + "/rootmacro/DACValueCorrection.cxx"
+
+DEFAULT_DACFILE = MADAHOME + "/config/No00_base_v3.1.dac"
 
 def parser():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("IP", type=str, nargs='?', const=None, help='[IP]')
-    argparser.add_argument("VthLow", type=int, nargs='?', const=None, help='[V thresholod lower bound]')
-    argparser.add_argument("VthHigh", type=int, nargs='?', const=None, help='[V thresholod upper bound]')
-    argparser.add_argument("VthStep", type=int, nargs='?', const=None, help='[V thresholod step]')
+    argparser.add_argument("ip", type=str, nargs='?', const=None, help='[IP]')
+    argparser.add_argument("VthLow", type=int, nargs='?', const=None, help='[V thresholod lower bound]', default=0)
+    argparser.add_argument("VthHigh", type=int, nargs='?', const=None, help='[V thresholod upper bound]', default=16384)
+    argparser.add_argument("VthStep", type=int, nargs='?', const=None, help='[V thresholod step]', default=32)
     argparser.add_argument("-b", "--batch", help="batch mode", action="store_true")
-    argparser.add_argument("-d", "--dac", help="dac file path")
+    argparser.add_argument("-d", "--dac", help="dac file path", default=DEFAULT_DACFILE)
     argparser.add_argument("-c", "--correct", help="correct dac value", action="store_true")
     args = argparser.parse_args()
     
     return args
 
-def print_and_exe(cmd):
+def run_command(cmd):
     print("Execute: " + cmd)
     subprocess.run(cmd, shell=True)
 
@@ -36,109 +46,66 @@ def find_newrun():
     return newrun
 
 
-MADAHOME     = os.environ["MADAHOME"]
-IWAKIANAHOME = os.environ['IWAKIANAHOME']
-MADABIN      = MADAHOME + '/bin'
-MADAROOT     = MADAHOME + '/rootmacro' 
-IWAKIANABIN  = IWAKIANAHOME + '/bin'
-
-FETCHCONFIG   = MADABIN + "/MADA_fetch_config.py"
-EXE_SETDAC = MADABIN + "/SetDAC"
-EXE_DAQ    = IWAKIANABIN + "/ScanVth"
-EXE_ANA    = MADABIN + "/MADA_runVthAna.py"
-EXE_CORR   = MADAROOT + "/DACValueCorrection.cxx"
-
-
-
 def main():
-    # Default values
-    VthLow     = "0"
-    VthHigh    = "16384"
-    VthStep    = "32"
-    batch_mode = 0
-    DACfile = "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.64_4.dac"
-    # DACfile = "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.96_1.dac"
-    # DACfile = "/home/msgc/namai/VthScan/v3.1/DAC_run0022/base_correct.dac"
+    print('### MADA_runVthScan.py start ###')
     
+    # Default values
     args = parser()
-    if args.IP:
-        IP=args.IP
-    else:
-        print("runDACScan [IP] [Vth lower] [Vth upper] [Vth step]")
-        sys.exit(1)
-
-    if args.VthLow:
-        VthLow = args.VthLow
-    else:
-        print('Used default VthLow:', VthLow)
-
-    if args.VthHigh:
-        VthHigh=args.VthHigh
-    else:
-        print('Used default VthHigh:', VthHigh)
-
-    if args.VthStep:
-        VthStep=args.VthStep
-    else:
-        print('Used default VthStep:', VthStep)
-
-    if args.batch:
-        print("Batch mode")
-        batch_mode = 1
-
-    if args.dac:
-        DACfile = args.dac
-    else:
-        print('Used default DACfile:', DACfile)
-        
+    ip = args.ip
+    VthLow = args.VthLow
+    VthHigh = args.VthHigh
+    VthStep = args.VthStep
+    batch_mode = args.batch
+    DACfile = args.dac
 
     cmd = FETCHCONFIG
     ret = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False)
     print(ret.stdout)        
 
     # write DAC values
-    cmd = EXE_SETDAC + " " + IP + " " + DACfile
-    print_and_exe(cmd)
+    cmd = EXE_SETDAC + " " + ip + " " + DACfile
+    run_command(cmd)
 
-    print("IP      :", IP     )
+    print("IP      :", ip     )
     print("Vth Low :", VthLow )
     print("Vth High:", VthHigh)
     print("Vth Step:", VthStep)
         
     newrun = find_newrun()
     cmd = "mkdir " + newrun
-    print_and_exe(cmd)
+    run_command(cmd)
 
     os.chdir(newrun)
-    cmd = EXE_DAQ + " " + IP + " " + str(VthLow) + " "+str(VthHigh) + " "+str(VthStep)
-    print_and_exe(cmd)
+    cmd = EXE_DAQ + " " + ip + " " + str(VthLow) + " "+str(VthHigh) + " "+str(VthStep)
+    run_command(cmd)
     os.chdir("../")
 
     cmd = "cp " + newrun + "/scan_config.out ."
-    print_and_exe(cmd)
+    run_command(cmd)
 
     if batch_mode:
         cmd = EXE_ANA + " -b " + newrun
     else:
         cmd = EXE_ANA + " " + newrun
-    print_and_exe(cmd)
+    run_command(cmd)
 
     cmd = "mv Vthcheck.png Vth.root Vth_val.root " + newrun
-    print_and_exe(cmd)
+    run_command(cmd)
 
     cmd = "cp " + DACfile + " " + newrun
-    print_and_exe(cmd)
+    run_command(cmd)
 
     if args.correct:
-        print("Correct DAC values automatically.")
+        print("--- DAC value correction ---")
         rootfile = newrun + "/Vth_val.root"
         dacfile = glob.glob(newrun + "/*.dac")[0]
         print("Corrected DAC file: " + dacfile)
         outputfile = dacfile.replace('.dac', '') + "_correct.dac"
         cmd = "root -l -b -q \'" + EXE_CORR + "(\"" + rootfile + "\", " + "\"" + dacfile + "\", " + "\"" + outputfile + "\")\'"
-        print_and_exe(cmd) # Correct branch date is not filled to rootfile currently.
+        run_command(cmd) # Correct branch date is not filled to rootfile currently.
 
     print('### MADA_runVthScan.py end ###')
+
 
 if __name__ == '__main__':
     main()

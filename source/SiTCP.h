@@ -3,35 +3,35 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <iostream>
-#include <iomanip>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <string>
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 using namespace std;
 
 class SiTCP
 {
-public:
-  SiTCP();
-  SiTCP(const string);
-  ~SiTCP();
+    public:
+        SiTCP( );
+        SiTCP( const string );
+        ~SiTCP( );
 
-  bool Open(const string);
-  void Close();
+        bool Open( const string );
+        void Close( );
 
-  int Read(char *);
+        int Read( char * );
 
-private:
-  struct sockaddr_in param;
-  int sock;
-  int dev_num;
+    private:
+        struct sockaddr_in param;
+        int                sock;
+        int                dev_num;
 };
 
 #endif

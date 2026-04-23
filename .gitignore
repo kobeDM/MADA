@@ -5,3 +5,4 @@
 /config/DAClog
 
 .vscode
+.clang-format

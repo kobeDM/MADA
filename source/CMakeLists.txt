@@ -19,6 +19,8 @@ set(Targets
     SetADCBias
     SetAP
     SetLatchUpDetect
+    DAC_Analysis
+    DAC_Survey
 )
 
 find_package(Threads REQUIRED)
@@ -30,18 +32,20 @@ include(${ROOT_USE_FILE})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_executable(MADA_DAQenable MADA_DAQenable.cpp MADA_ad.cpp)
-add_executable(MADA_DACScan MADA_DACScan.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
-add_executable(MADA_VthScan MADA_VthScan.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
-add_executable(MADA_con MADA_con.cpp MADA_ad.cpp)
-add_executable(readIwaki readIwaki.cpp SiTCP.cxx TCPclient.cxx RBCP.cxx)
-add_executable(MADA_iwaki MADA_iwaki.cpp SiTCP.cxx TCPclient.cxx RBCP.cxx)
-add_executable(SetVth SetVth.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
-add_executable(SetDAC SetDAC.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
-add_executable(read_CtrlMem read_CtrlMem.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
-add_executable(SetADCBias SetADCBias.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
-add_executable(SetAP SetAP.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
-add_executable(SetLatchUpDetect SetLatchUpDetect.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
+add_executable(MADA_DAQenable MADA_DAQenable.cc MADA_ad.cc)
+add_executable(MADA_DACScan MADA_DACScan.cc SiTCP.cc TCPclient.cc RBCP.cc)
+add_executable(MADA_VthScan MADA_VthScan.cc SiTCP.cc TCPclient.cc RBCP.cc)
+add_executable(MADA_con MADA_con.cc MADA_ad.cc)
+add_executable(readIwaki readIwaki.cc SiTCP.cc TCPclient.cc RBCP.cc)
+add_executable(MADA_iwaki MADA_iwaki.cc SiTCP.cc TCPclient.cc RBCP.cc)
+add_executable(SetVth SetVth.cc SiTCP.cc TCPclient.cc RBCP.cc)
+add_executable(SetDAC SetDAC.cc SiTCP.cc TCPclient.cc RBCP.cc)
+add_executable(read_CtrlMem read_CtrlMem.cc SiTCP.cc TCPclient.cc RBCP.cc)
+add_executable(SetADCBias SetADCBias.cc SiTCP.cc TCPclient.cc RBCP.cc)
+add_executable(SetAP SetAP.cc SiTCP.cc TCPclient.cc RBCP.cc)
+add_executable(SetLatchUpDetect SetLatchUpDetect.cc SiTCP.cc TCPclient.cc RBCP.cc)
+add_executable(DAC_Analysis DAC_Analysis.cc )
+add_executable(DAC_Survey DAC_Survey.cc RBCP.cc SiTCP.cc )
 
 target_link_libraries(MADA_con PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(MADA_DAQenable PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
@@ -55,6 +59,8 @@ target_link_libraries(read_CtrlMem PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetADCBias PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetAP PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetLatchUpDetect PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
+target_link_libraries(DAC_Analysis PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
+target_link_libraries(DAC_Survey PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/..)
 
