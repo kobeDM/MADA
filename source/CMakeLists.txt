@@ -18,6 +18,7 @@ set(Targets
     MADA_DAQenable
     SetADCBias
     SetAP
+    SetLatchUpDetect
 )
 
 find_package(Threads REQUIRED)
@@ -40,6 +41,7 @@ add_executable(SetDAC SetDAC.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
 add_executable(read_CtrlMem read_CtrlMem.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
 add_executable(SetADCBias SetADCBias.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
 add_executable(SetAP SetAP.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
+add_executable(SetLatchUpDetect SetLatchUpDetect.cxx SiTCP.cxx TCPclient.cxx RBCP.cxx)
 
 target_link_libraries(MADA_con PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(MADA_DAQenable PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
@@ -52,6 +54,7 @@ target_link_libraries(SetDAC PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(read_CtrlMem PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetADCBias PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetAP PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
+target_link_libraries(SetLatchUpDetect PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/..)
 
