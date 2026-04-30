@@ -9,50 +9,51 @@ import subprocess
 from subprocess import PIPE
 
 MADAHOME    = os.environ['MADAHOME']
-IWAKIANAHOME = os.environ['IWAKIANAHOME']
-MADABIN     = MADAHOME + '/bin'
-IWAKIANABIN = IWAKIANAHOME + '/bin'
 
 #scripts
-FETCHCON    = "MADA_fetch_config.py"
+FETCHCON    = MADAHOME + "/bin/MADA_fetch_config.py"
 
 #configs
-CONFIG      = "MADA_config.json"
+DEFAULT_CONFIG      = MADAHOME + "/config/MADA_config_SKEL.json"
 
 # binary
 LOGPATH     = MADAHOME + "/config/DAClog"
-SETVTH_EXE  = IWAKIANABIN  + "/SetVth"
-SETDAC_EXE  = IWAKIANABIN  + "/SetDAC"
-READMEM_EXE = IWAKIANABIN  + "/read_CtrlMem"
+SETVTH_EXE  = MADAHOME + "/bin/SetVth"
+SETDAC_EXE  = MADAHOME + "/bin/SetDAC"
+READMEM_EXE = MADAHOME + "/bin/read_CtrlMem"
 
 def parser():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("config_file", type=str, nargs='?', const=None, help='config file', default=CONFIG)
+    argparser.add_argument("config_file", type=str, nargs='?', const=None, help='config file', default=DEFAULT_CONFIG)
     args = argparser.parse_args()
-
     return args
+
+def make_logdir():
+    if not os.path.exists(LOGPATH):
+        os.makedirs(LOGPATH)
 
 def main():
     print('### MADA_SetAllDAC.py start ###')
 
+    make_logdir()
     args = parser()
     if args.config_file:
         config = args.config_file
 
     # Fetch config file
-    cmd = MADABIN + '/' + FETCHCON
+    cmd = FETCHCON
     print('Execute: ' + cmd)
     ret = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False)
     print(ret.stdout)
             
     #load config file
-    activeIP = []
+    active_ip = []
     with open(config, 'r') as config_open:
         config_load = json.load(config_open)
 
     for x in config_load['gigaIwaki']:
         if config_load['gigaIwaki'][x]['active'] == 1:
-            activeIP.append(config_load['gigaIwaki'][x]['IP'])
+            active_ip.append(config_load['gigaIwaki'][x]['IP'])
             name    = x
             IP      = config_load['gigaIwaki'][x]['IP']
             Vth     = config_load['gigaIwaki'][x]['Vth']
@@ -69,11 +70,11 @@ def main():
             subprocess.run(cmd, shell=True)
 
             dt   = datetime.datetime.now()
-            flog_name = LOGPATH + '/' + str(dt.year) + str(dt.month).zfill(2) + str(dt.day).zfill(2) + "-" + str(dt.hour).zfill(2) + str(dt.minute).zfill(2) + str(dt.second).zfill(2) + "-" + name
-            with open(flog_name, 'w') as log_out:
+            log_file_name = LOGPATH + '/' + str(dt.year) + str(dt.month).zfill(2) + str(dt.day).zfill(2) + "-" + str(dt.hour).zfill(2) + str(dt.minute).zfill(2) + str(dt.second).zfill(2) + "-" + name
+            with open(log_file_name, 'w') as log_out:
                 cmd = READMEM_EXE + " " + IP
                 subprocess.run(cmd, shell=True, stdout=log_out)
-                print("Memory check log: " + flog_name)
+                print("Memory check log: " + log_file_name)
 
     print('### MADA_SetAllDAC.py end ###')
 

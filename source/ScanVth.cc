@@ -10,19 +10,28 @@ using namespace std;
 
 int main( int argc, char *argv[] )
 {
-    if ( argc != 3 ) {
-        cerr << " USAGE> DAC_Survey [IP address] [Vth val.] " << endl;
+    if ( argc != 4 && argc != 5 ) {
+        cerr << " USAGE> ScanVth [IP address] [start Vth] [end Vth] [delta-Vth]" << endl;
         cerr << "   Vth: give a decimal number from 0 and 16383 " << endl;
+        cerr << "        this program scan Vth from [start Vth] " << endl;
+        cerr << "        to [end Vth] with the pitch of [delta-Vth]" << endl;
+        cerr << "        default value of [delta-Vth] is 100 in decimal" << endl;
         exit( 1 );
     }
-    string   IPaddr              = argv[1];
-    int      Vth                 = atoi( argv[2] ) & 0x3fff;
-    string   outfile_config_name = "DACsurvey_config.out";
-    ofstream outfile_config;
+    string IPaddr = argv[1];
+    int    s_Vth  = atoi( argv[2] ) & 0x3fff;
+    int    e_Vth  = atoi( argv[3] ) & 0x3fff;
+    int    delta  = 100;
+    if ( argc == 5 )
+        delta = atoi( argv[4] ) & 0x3fff;
 
+    string   outfile_config_name = "scan_config.out";
+    ofstream outfile_config;
     outfile_config.open( outfile_config_name.c_str( ), ios::out );
     outfile_config << "IP: " << IPaddr << endl;
-    outfile_config << "Vth: " << Vth << endl;
+    outfile_config << "Vth(lower): " << s_Vth << endl;
+    outfile_config << "Vth(upper): " << e_Vth << endl;
+    outfile_config << "Vth(delta): " << delta << endl;
     outfile_config.close( );
 
     RBCP  SlowCtrl;
@@ -30,31 +39,18 @@ int main( int argc, char *argv[] )
     SlowCtrl.Open( IPaddr );
     EtherData.Open( IPaddr );
 
-    // Set Vth
-    char cmd[256];
-    cmd[0] = ( Vth >> 8 ) & 0x3f;
-    cmd[1] = Vth & 0xff;
-    SlowCtrl.WriteRBCP( 0x80, cmd, 2 );
-    cout << " Vth value write " << endl;
+    for ( int Vth = s_Vth; Vth <= e_Vth; Vth += delta ) {
+        // Set Vth
+        char cmd[256];
+        cmd[0] = ( Vth >> 8 ) & 0x3f;
+        cmd[1] = Vth & 0xff;
+        SlowCtrl.WriteRBCP( 0x80, cmd, 2 );
 
-    cmd[0] = 0x01;
-    SlowCtrl.WriteRBCP( 0xf0, cmd, 1 );
-    sleep( 1 );
-    cout << " Vth set " << endl;
-
-    // DAC survey
-    for ( int i = 0; i < 64; i++ ) {
-        cout << dec;
-        cout << " DAC val : " << i << endl;
-
-        // DAC Set
-        for ( int ch = 0; ch < 128; ch++ )
-            cmd[ch] = SlowCtrl.convDAC( i, 0, 0 );
-        SlowCtrl.WriteRBCP( 0, cmd, 128 );
-
-        cmd[0] = 0x02;
+        cmd[0] = 0x01;
         SlowCtrl.WriteRBCP( 0xf0, cmd, 1 );
         sleep( 1 );
+        cout << dec;
+        cout << " Vth : " << Vth << endl;
 
         int  data_size = 0;
         char c_data[4096];
@@ -70,7 +66,7 @@ int main( int argc, char *argv[] )
         }
 
         char filename[100];
-        sprintf( filename, "DAC_%02d_%04x.srv", i, Vth );
+        sprintf( filename, "Vth_%04x.scn", Vth );
         ofstream OutData( filename, ios::out );
 
         int e_index = 0;
@@ -84,11 +80,10 @@ int main( int argc, char *argv[] )
                 OutData.write( c_data, num );
                 data_size += num;
             }
-
             if ( c_data[num - 4] == 'u' && c_data[num - 3] == 'P' && c_data[num - 2] == 'I' && c_data[num - 1] == 'C' )
                 e_index++;
 
-            if ( data_size > 0x80000 || e_index > 1e3 )
+            if ( data_size > 0x400000 || e_index > 1e3 )
                 break;
         }
         cout << "                                            " << '\r' << flush;

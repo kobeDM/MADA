@@ -9,14 +9,10 @@ from csv import reader
 print('### MADA_runVthAna.py start ###')
 
 MADAHOME  = os.environ['MADAHOME']
-IWAKIANAHOME = os.environ['IWAKIANAHOME']
 
-MADABIN   = MADAHOME     + '/bin/'
-MADAROOT  = MADAHOME     + '/rootmacro'
-EXEPATH   = IWAKIANAHOME + '/bin'
-EXE       = "Vth_Analysis"
-SKEL      = "ShowVth_skel.cxx"
-SHOW_CODE = "ShowVth.cxx"
+EXE       = MADAHOME + '/bin/Vth_Analysis'
+SKEL      = MADAHOME + '/rootmacro/ShowVth_skel.cxx'
+SHOW_CODE = MADAHOME + '/rootmacro/ShowVth.cxx'
 
 #configs
 CONFIG = "MADA_config.json"
@@ -29,7 +25,7 @@ def parser():
     
     return args
 
-def print_and_exe(cmd):
+def run_command(cmd):
     print("execute: " + cmd)
     subprocess.run(cmd, shell=True)
 
@@ -42,10 +38,8 @@ def main():
         print("Error: RUN ID is not selected.")
         exit(1)
 
-    batch_mode=0
     if args.batch:
         print("batch mode")
-        batch_mode=1
 
     configfile = run + '/scan_config.out'
     print("Config file:", configfile)
@@ -82,25 +76,23 @@ def main():
         print('Used default Vth:', Vth)
 
 
-    EXECOM = EXEPATH + "/" + EXE + " " + run + "/ " + VthLow + " " + VthHigh + " " + VthStep
+    EXECOM = EXE + " " + run + "/ " + VthLow + " " + VthHigh + " " + VthStep
     print("execute:",EXECOM)
     subprocess.run(EXECOM,shell=True)
 
-    SKEL_FULL = MADAROOT + '/' + SKEL
-
     # fetch skelton file
-    with open(SKEL_FULL, mode='r') as f:
+    with open(SKEL, mode='r') as f:
         str_list = f.readlines()
         showcode = [ s.replace("RUNID",run).replace("IP", IP).replace("VTH", str(Vth))  for s in str_list ]
     with open(SHOW_CODE, mode='w') as f:
         f.writelines(showcode)
 
-    if batch_mode:
-        cmd = 'root -b -q ' + SHOW_CODE
+    if args.batch:
+        cmd = 'root -b -q -l ' + SHOW_CODE
     else:
         cmd = 'root ' + SHOW_CODE
 
-    print_and_exe(cmd)
+    run_command(cmd)
 
     print('### MADA_runVthAna.py end ###')
 

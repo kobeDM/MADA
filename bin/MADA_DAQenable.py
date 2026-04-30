@@ -14,7 +14,7 @@ ADOUT = ADSW + '/bin/ad_out'
 # scripts
 findADALM = MADAHOME + "/bin/findADALM2000.py"
 
-SN = "10447372c6040013f9ff360057ecd401ea" # ADALM S/N for DAQ enable
+SN = "10447384b904001612002500df1edb6193" # ADALM S/N for DAQ enable
 
 def parser():
     parser = argparse.ArgumentParser()

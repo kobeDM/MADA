@@ -5,8 +5,12 @@ import sys
 import subprocess
 from subprocess import PIPE
 
-ADSW = os.environ["ADSW"]
-ADOUT     = ADSW + '/bin/ad_out'
+try:
+    ADSW = os.environ["ADSW"]
+    ADOUT = ADSW + '/bin/ad_out'
+except KeyError:
+    print("Environment variable 'ADSW' is not set")
+    sys.exit(1)
 
 PRODUCTID = '0456:b672'
 

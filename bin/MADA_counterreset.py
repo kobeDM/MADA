@@ -10,12 +10,12 @@ findADALM = MADAHOME + "/bin/findADALM2000.py"
 ADSW = os.environ['ADSW']
 ADOUT = ADSW + '/bin/ad_out'
 
-SN = "1044739614060004160029005f9c48a42b"
+SN = "10447372c6040002fdff0e00202fd5fcc7"
 
 def main():
     print('### MADA_conterreset.py start ###')
 
-    cmd = MADAHOME + "/bin/" + findADALM + " " + SN
+    cmd = findADALM + " " + SN
     proc = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False)
     uri = proc.stdout.decode("utf8").replace("\n", "")
     print("\tURI " + uri + " for S/N: " + SN) 

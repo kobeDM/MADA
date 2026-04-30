@@ -8,7 +8,7 @@
 			"IP": "192.168.100.97",
 			"Vth": 10190,
 			"bias": 8000,
-			"DACfile": "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.97.dac"
+			"DACfile": "/home/msgc/repo/MADA/config/No00_base_v3.1.dac"
 		},
 		"GBKB-35": {
 			"active": 1,
@@ -17,7 +17,7 @@
 			"IP": "192.168.100.98",
 			"Vth": 10190,
 			"bias": 8000,
-			"DACfile": "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.98.dac"
+			"DACfile": "/home/msgc/repo/MADA/config/No00_base_v3.1.dac"
 		},
 		"GBKB-32": {
 			"active": 1,
@@ -26,7 +26,7 @@
 			"IP": "192.168.100.65",
 			"Vth": 9220,
 			"bias": 8000,
-			"DACfile": "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.65.dac"
+			"DACfile": "/home/msgc/repo/MADA/config/No00_base_v3.1.dac"
 		},
 		"GBKB-33": {
 			"active": 1,
@@ -35,26 +35,20 @@
 			"IP": "192.168.100.66",
 			"Vth": 9220,
 			"bias": 8000,
-			"DACfile": "/home/msgc/namai/VthScan/v3.1/dac/192.168.100.66.dac"
+			"DACfile": "/home/msgc/repo/MADA/config/No00_base_v3.1.dac"
 		}
 	},
 	"ADALM": {
 		"MADALM_0": {
 			"active": 1,
-			"URI": "usb:3.14.5",
-			"S/N": "10447372c6040013f9ff360057ecd401ea",
+			"URI": "N/A",
+			"S/N": "10447384b904001612002500df1edb6193",
 			"Clock_d": 100000000.0
 		},
 		"MADALM_1": {
 			"active": 1,
-			"URI": "usb:3.15.5",
-			"S/N": "1044739614060004160029005f9c48a42b",
-			"Clock_d": 100000000.0
-		},
-		"MADALM_2": {
-			"active": 1,
-			"URI": "usb:3.13.5",
-			"S/N": "104473961406000b03003800c90049e980",
+			"URI": "N/A",
+			"S/N": "10447372c6040002fdff0e00202fd5fcc7",
 			"Clock_d": 100000000.0
 		}
 	}

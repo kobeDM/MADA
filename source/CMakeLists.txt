@@ -21,6 +21,8 @@ set(Targets
     SetLatchUpDetect
     DAC_Analysis
     DAC_Survey
+    ScanVth
+    Vth_Analysis
 )
 
 find_package(Threads REQUIRED)
@@ -46,6 +48,8 @@ add_executable(SetAP SetAP.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(SetLatchUpDetect SetLatchUpDetect.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(DAC_Analysis DAC_Analysis.cc )
 add_executable(DAC_Survey DAC_Survey.cc RBCP.cc SiTCP.cc )
+add_executable(ScanVth ScanVth.cc SiTCP.cc RBCP.cc)
+add_executable(Vth_Analysis Vth_Analysis.cc)
 
 target_link_libraries(MADA_con PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(MADA_DAQenable PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
@@ -61,7 +65,8 @@ target_link_libraries(SetAP PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetLatchUpDetect PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(DAC_Analysis PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(DAC_Survey PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
-
+target_link_libraries(ScanVth PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
+target_link_libraries(Vth_Analysis PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/..)
 
 install(TARGETS ${Targets} RUNTIME DESTINATION bin)
