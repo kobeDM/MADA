@@ -1,4 +1,4 @@
-#include "SiTCP.h"
+#include "../include/SiTCP.h"
 #include <unistd.h>
 bool SiTCP::Open( const string ip )
 {

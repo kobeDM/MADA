@@ -8,14 +8,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(Targets
     MADA_iwaki
-    MADA_con
     readIwaki
     SetVth
     read_CtrlMem
     SetDAC
     MADA_VthScan
     MADA_DACScan
-    MADA_DAQenable
     SetADCBias
     SetAP
     SetLatchUpDetect
@@ -23,6 +21,8 @@ set(Targets
     DAC_Survey
     ScanVth
     Vth_Analysis
+    FindAdalm
+    AdalmControl
 )
 
 find_package(Threads REQUIRED)
@@ -34,10 +34,8 @@ include(${ROOT_USE_FILE})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_executable(MADA_DAQenable MADA_DAQenable.cc MADA_ad.cc)
 add_executable(MADA_DACScan MADA_DACScan.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(MADA_VthScan MADA_VthScan.cc SiTCP.cc TCPclient.cc RBCP.cc)
-add_executable(MADA_con MADA_con.cc MADA_ad.cc)
 add_executable(readIwaki readIwaki.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(MADA_iwaki MADA_iwaki.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(SetVth SetVth.cc SiTCP.cc TCPclient.cc RBCP.cc)
@@ -50,12 +48,10 @@ add_executable(DAC_Analysis DAC_Analysis.cc )
 add_executable(DAC_Survey DAC_Survey.cc RBCP.cc SiTCP.cc )
 add_executable(ScanVth ScanVth.cc SiTCP.cc RBCP.cc)
 add_executable(Vth_Analysis Vth_Analysis.cc)
+add_executable(FindAdalm FindAdalm.cc)
+add_executable(AdalmControl AdalmControl.cc AdalmUtil.cc)
 
-target_link_libraries(MADA_con PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
-target_link_libraries(MADA_DAQenable PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
-target_link_libraries(MADA_DACScan PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
-target_link_libraries(MADA_VthScan PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
-target_link_libraries(readIwaki PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
+target_link_libraries(AdalmControl PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(MADA_iwaki PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetVth PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetDAC PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
@@ -67,6 +63,7 @@ target_link_libraries(DAC_Analysis PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(DAC_Survey PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(ScanVth PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(Vth_Analysis PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
+target_link_libraries(FindAdalm PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/..)
 
 install(TARGETS ${Targets} RUNTIME DESTINATION bin)

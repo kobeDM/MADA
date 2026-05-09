@@ -1,4 +1,4 @@
-#include "RBCP.h"
+#include "../include/RBCP.h"
 #include <cstdio>
 #include <cstdlib>
 #include <iomanip>

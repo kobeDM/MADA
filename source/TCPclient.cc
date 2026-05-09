@@ -1,4 +1,4 @@
-#include "TCPclient.h"
+#include "../include/TCPclient.h"
 
 TCPclient::TCPclient( const char *server, int port )
 {

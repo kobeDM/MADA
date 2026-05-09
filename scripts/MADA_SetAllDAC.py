@@ -11,10 +11,11 @@ from subprocess import PIPE
 MADAHOME    = os.environ['MADAHOME']
 
 #scripts
-FETCHCON    = MADAHOME + "/bin/MADA_fetch_config.py"
+FETCHCON    = MADAHOME + "/scripts/MADA_fetch_config.py"
 
 #configs
-DEFAULT_CONFIG      = MADAHOME + "/config/MADA_config_SKEL.json"
+# DEFAULT_CONFIG      = MADAHOME + "/config/MADA_config_SKEL.json"
+DEFAULT_CONFIG      = "MADA_config.json"
 
 # binary
 LOGPATH     = MADAHOME + "/config/DAClog"
@@ -22,7 +23,7 @@ SETVTH_EXE  = MADAHOME + "/bin/SetVth"
 SETDAC_EXE  = MADAHOME + "/bin/SetDAC"
 READMEM_EXE = MADAHOME + "/bin/read_CtrlMem"
 
-def parser():
+def arg_parser():
     argparser = argparse.ArgumentParser()
     argparser.add_argument("config_file", type=str, nargs='?', const=None, help='config file', default=DEFAULT_CONFIG)
     args = argparser.parse_args()
@@ -32,28 +33,16 @@ def make_logdir():
     if not os.path.exists(LOGPATH):
         os.makedirs(LOGPATH)
 
-def main():
-    print('### MADA_SetAllDAC.py start ###')
+def run_set_all_dac(config_path):
+    if not os.path.exists(config_path):
+        print(f"Error: Config file '{config_path}' does not exist.")
+        return
 
-    make_logdir()
-    args = parser()
-    if args.config_file:
-        config = args.config_file
-
-    # Fetch config file
-    cmd = FETCHCON
-    print('Execute: ' + cmd)
-    ret = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False)
-    print(ret.stdout)
-            
-    #load config file
-    active_ip = []
-    with open(config, 'r') as config_open:
+    with open(config_path, 'r') as config_open:
         config_load = json.load(config_open)
 
     for x in config_load['gigaIwaki']:
         if config_load['gigaIwaki'][x]['active'] == 1:
-            active_ip.append(config_load['gigaIwaki'][x]['IP'])
             name    = x
             IP      = config_load['gigaIwaki'][x]['IP']
             Vth     = config_load['gigaIwaki'][x]['Vth']
@@ -76,7 +65,19 @@ def main():
                 subprocess.run(cmd, shell=True, stdout=log_out)
                 print("Memory check log: " + log_file_name)
 
-    print('### MADA_SetAllDAC.py end ###')
+def main():
+    make_logdir()
+    args = arg_parser()
+    if args.config_file:
+        config = args.config_file
+
+    # get config file
+    cmd = FETCHCON
+    print('Execute: ' + cmd)
+    ret = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False)
+    print(ret.stdout)
+            
+    run_set_all_dac(config)
 
 if __name__ == '__main__':
     main()

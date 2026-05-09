@@ -1,4 +1,4 @@
-#include "RBCP.h"
+#include "../include/RBCP.h"
 #include <unistd.h>
 bool RBCP::Open( const string ip )
 {
