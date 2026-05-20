@@ -1,322 +1,269 @@
 #!/usr/bin/env python3
 
 import os
-import subprocess
-import time
-import datetime
 import argparse
+import subprocess
 import json
-from subprocess import PIPE
+import time
+from datetime import datetime
 
-# import MADA_utils
-HOME = os.environ['HOME']
+from MADA_killmodules import run_kill_modules
+from MADA_killadalms import run_kill_adalms
+from MADA_adalm_control import run_adalm_control, get_adalm_serial
+from MADA_SetAllDAC import run_set_all_dac
+from MADA_DAQkiller import run_daq_killer
+from MADA_SetLatchUpDetect import run_set_latch_up_detect
+from MADA_SetAP import run_set_ap
+
+HOME     = os.environ["HOME"]
+RATEPATH = HOME + "/rate"
+
 MADAHOME = os.environ['MADAHOME']
+MADA_IWAKI = MADAHOME + "/bin/MADA_iwaki"
 
-# PATH
-MADABIN       = MADAHOME + '/bin'
-RATEPATH      = HOME     + '/rate'
-
-# binary
-MADAIWAKI     = 'MADA_iwaki'
-
-# scripts
-SETDAC        = MADABIN + '/MADA_SetAllDAC.py'
-ENABLE        = MADABIN + '/MADA_DAQenable.py'
-DISABLE       = MADABIN + '/MADA_DAQenable.py -d'
-COUNTERRESET  = MADABIN + '/MADA_counterreset.py'
-DAQKILLER     = MADABIN + '/MADA_DAQkiller.py'
-MODULEKILLER  = MADABIN + '/MADA_killmodules.py'
-ADKILLER      = MADABIN + '/MADA_killads.py'
-
-#configs
-CONFIG        = 'MADA_config.json'
-
-FILE_SIZE_MAX = 128
-FILE_NUM_MAX  = 1024
-
-def parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config'   , help='config file path'   , default=CONFIG      )
-    parser.add_argument('-n', '--file_size', help='file size in MByte' , default=10          )
-    parser.add_argument('-f', '--file_num' , help='maximum file number', default=512         )
-    parser.add_argument(      '--remote'   , help='Start DAQ in remote', action='store_true' )
-    args = parser.parse_args()
-    return args
-
-# Search the latest period.
-def make_new_period() -> int:
-    p = 0
-    while os.path.isdir("per"+str(p).zfill(4)):
-        p += 1
-    newper = "per" + str(p).zfill(4)
-    os.makedirs(newper)
-    return p
-
-def make_daq_killer_window(period_num):
-    cmd = 'xterm -geometry 50x5+50+850 -title \'MADA killer\' -background black -foreground green -e ' + DAQKILLER + ' -p ' + str(period_num)
-    prc = subprocess.Popen(cmd, shell=True)
-    return prc
-
-def run_daq_killer(period_num):
-    cmd = DAQKILLER + ' -p ' + str(period_num) + ' -d'
-    prc = subprocess.Popen(cmd, shell=True)
-    return prc
-
-def run_kill_modules():
-    prc = subprocess.run(MODULEKILLER, shell=True)
-    return prc
-
-def run_adalm_killer():
-    prc = subprocess.run(ADKILLER, shell=True)
-    return prc
-
-def run_daq_enable(latchup=False, in_process=False):
-    if latchup:
-        cmd = ENABLE
-    else:
-        cmd = ENABLE + ' -d'
-
-    if in_process:
-        prc = subprocess.Popen(cmd, shell=True)
-    else:
-        prc = subprocess.run(cmd, shell=True)
-    return prc
-
-def run_set_dac():
-    prc = subprocess.run(SETDAC, shell=True)
-    return prc
-
-def run_gigaiwaki(file_size, filename_mada, IP, window_col, is_remote=False):
-    if is_remote:
-        cmd = MADAIWAKI + ' -n ' + str(file_size) + ' -f ' + str(filename_mada) + ' -i ' + IP
-    else:
-        cmd = f"xterm -geometry 50x10+50+{window_col} -e {MADAIWAKI} -n {file_size} -f {filename_mada} -i {IP}"
-    prc = subprocess.Popen(cmd, shell=True, stdout=PIPE, stderr=None)
-    return prc
-
-def run_counter_reset():
-    prc = subprocess.run(COUNTERRESET, shell=True)
-    return prc
-
-def run_kill_command(pid):
-    print('Kill process with PID:', pid)
-    cmd = 'kill -KILL ' + str(pid)
-    prc = subprocess.run(cmd, shell=True)
-    return prc
-
-def run_daq(file_size, file_num, period_num, config_load, is_remote=False):
-    if float(file_size) > FILE_SIZE_MAX:
-        print('File size is too large. Applied ' + str(FILE_SIZE_MAX) + ' Mbyte/file.')
-        file_size = FILE_SIZE_MAX
-
-    if int(file_num) > FILE_NUM_MAX:
-        print('File number is too large. Applied ' + str(FILE_NUM_MAX) + ' files.')
-        file_num = FILE_NUM_MAX
-
-    print('Data size per file        : ' + str(file_size) + ' Mbyte')
-    print('Number of files per period: ' + str(file_num) + ' files')
-        
-    # Get board infomation
-    activeIP = []
-    boardID  = []
-    for id in config_load['gigaIwaki']:
-        if config_load['gigaIwaki'][id]['active']:
-            activeIP.append(config_load['gigaIwaki'][id]['IP'])
-            boardID.append(id)
-            print('Board ID: ' + id)
-            print('Board IP: ' + config_load['gigaIwaki'][id]['IP'])
-            print('---')
-                
-    print('Total number of activated Iwaki boards: ' + str(len(activeIP)))
-
-    if not is_remote:
-        print('Start DAQ killer terminal')
-        make_daq_killer_window(period_num)
-
-    # kill runnning modules
-    print('Kill running modules')
-    run_kill_modules()
-
-    # run DAQ
-    fileID = 0
-    print('--- Start DAQ ---')
-    for fileID in range(int(file_num)):
-        print('#############################')
-        print('File ID: ' + str(fileID) + '/' + str(file_num))
-        print('#############################')
-        print()
-
-        # kill running processes on ADALM
-        print('Kill running processes for ADALM')
-        run_adalm_killer()
-        print()
-
-        # latch down DAQ enable
-        print('Latch down DAQ enable')
-        run_daq_enable(latchup=False)
-        print()
-        
-        # DAC value reset (for latch up)
-        print('Reset DAC values')
-        run_set_dac()
-        print()
-
-        pids = []
-        print('Start GIGAiwaki')
-        for i in range(len(activeIP)):
-            ip = activeIP[i]
-            filename_head = 'per' + str(period_num).zfill(4) + '/' + boardID[i] + '_' + str(fileID).zfill(4)
-            filename_info = filename_head + '.info'
-            filename_mada = filename_head + '.mada'
-            
-            print('Board ' + ip + ' info was written in ' + filename_info)
-            print('IP:', ip)
-
-            window_col = i * 500
-            prc = run_gigaiwaki(file_size, filename_mada, ip, window_col, is_remote)
-            pids.append(prc.pid)
-
-        run_daq_enable(latchup=True, in_process=True)
-
-        start_time = time.time()
-        for i in range(len(activeIP)):
-            ip = activeIP[i]
-            filename_head = 'per' + str(period_num).zfill(4) + '/' + boardID[i] + '_'+str(fileID).zfill(4)
-            filename_info = filename_head + '.info'
-            
-            dict = {}
-            for id in config_load['gigaIwaki']:
-                if (config_load['gigaIwaki'][id]['IP'] == ip):
-                    dict.update(config_load['gigaIwaki'][id])
-                    dd            = {'gigaIwaki':dict}
-                    dmes          = {}
-                    dmes['start'] = start_time
-                    ddmes         = {'runinfo':dmes}
-                    dd.update(ddmes)                
-                    with open(filename_info, mode='wt', encoding='utf-8') as file:
-                        json.dump(dd, file, ensure_ascii=False, indent=2) 
-        print()
-        
-        print('Reset counters')
-        run_counter_reset()
-        print()
-
-        print('GIGAiwaki pids   :', pids)
-        print('working directory:', period_num)
-        print('started at       :', start_time)
-
-        # Kill the current data taking when any board is filled.
-        while True:
-            # count the number of running processes for GIGAiwaki
-            runs = 0
-            for i in range(len(pids)):
-                cmd = 'ps -aux | awk \'$2=='+str(pids[i]) + '\' | wc -l'
-                pnum = (subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True).communicate()[0]).decode('utf-8')
-                if int(pnum) == 1:
-                    runs += 1
-
-            # If any process is not running, kill all processes and break the loop.
-            if runs < len(pids):
-                run_adalm_killer()
-                run_daq_enable(latchup=False)
-                end_time = time.time()
-
-                for pid in pids:
-                    run_kill_command(pid)
-                break
-            time.sleep(1)
-                
-        print('File ' + str(fileID) + ' finished at ' + str(end_time))
-        realtime = end_time - start_time
-        print('Realtime: ' + str(realtime) + ' sec')
-
-        # write log
-        size = []
-        for i in range(len(activeIP)):
-            filename_head = 'per' + str(period_num).zfill(4) + '/' + boardID[i] + '_' + str(fileID).zfill(4)
-            filename_info = filename_head + '.info'
-            filename_mada = filename_head + '.mada'
-            cmd = 'ls -l ' + filename_mada
-            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,shell=True).communicate()[0].decode('utf-8')
-            sizel = str(proc).split()
-            print('size= ', str(sizel[4]), 'byte')
-            dmes={}
-            dmes['end']   = end_time
-            dmes['size']  = sizel[4]
-            size.append(sizel[4])
-            ddmes = {'runinfo':dmes}
-            info_open = open(filename_info,'r')
-            info_load = json.load(info_open)
-            dict_giga = {}
-            dict_info = {}
-            for x in info_load['gigaIwaki']:
-                dict_giga.update(info_load['gigaIwaki'])
-            for x in info_load['runinfo']:
-                dict_info.update(info_load['runinfo'])
-            dict_info.update(dmes)
-            dict={'gigaIwaki':dict_giga,'runinfo':dict_info}
-            with open(filename_info, mode='w', encoding='utf-8') as file:
-                json.dump(dict, file, ensure_ascii=False, indent=2)
-                
-        y     = str(datetime.datetime.fromtimestamp(end_time).year)
-        m     = str(datetime.datetime.fromtimestamp(end_time).month)
-        d     = str(datetime.datetime.fromtimestamp(end_time).day)
-        hh    = str(datetime.datetime.fromtimestamp(end_time).hour)
-        mm    = str(datetime.datetime.fromtimestamp(end_time).minute)
-        ss    = str(datetime.datetime.fromtimestamp(end_time).second)
-        
-        if not os.path.isdir(RATEPATH):
-            print('Create directory: ' + RATEPATH)
-            os.makedirs(RATEPATH)
-
-        rate_file_path = RATEPATH + '/' + y + m.zfill(2) + d.zfill(2)
-        t     = y + '/' + m.zfill(2) + '/' + d.zfill(2) + '/' + hh.zfill(2) + ':'+mm.zfill(2) + ':' + ss.zfill(2)
-
-        with open(rate_file_path, 'a') as f:
-            rate = []
-            for ii in range(len(activeIP)):
-                rate.append(float(size[ii])/realtime)
-            out_list = [t, start_time, end_time] + size + [float(s) / realtime for s in size]
-            out_str = '\t'.join(map(str, out_list)) + '\n'
-            f.write(out_str)
-        
-        fileID += 1
-
-    # close current kill terminal
-    if not is_remote:
-        ps       = 'ps -aux | grep MADA_DAQkiller'
-        process  = (subprocess.Popen(ps, stdout=subprocess.PIPE, shell=True).communicate()[0]).decode('utf-8')
-        pl       = process.split('\n')
-        killpids = []
-        for j in range(len(pl)-1):
-            pll = pl[j].split()
-            killpids.append(pll[1])
-            for i in range(len(killpids)):
-                kill = 'kill -KILL ' + killpids[i]
-                subprocess.run(kill,shell=True)   
-
-
-def main():
+def print_header():
     print('*********************************************************')
     print('*** MADA.py                                           ***')
     print('*** Micacle Argon DAQ (http://github.com/kobeDM/MADA) ***')
     print('*** Author      : R.Namai (2026 Apl.)                 ***')
     print('*********************************************************')
 
-    # read option parameters
-    args   = parser()
-    config_path = args.config
-    file_size   = args.file_size
-    file_num    = args.file_num
-    is_remote   = args.remote
+def arg_parser():
+    parser = argparse.ArgumentParser(description='Micacle Argon DAQ (MADA)')
+    parser.add_argument('-c', '--config', help='config file name', default='MADA_config.json')
+    parser.add_argument('-f', '--file_num', help='File number in a period', default=512, type=int)
+    parser.add_argument('-n', '--event_num', help='Event number in a file', default=1000, type=int)
+    parser.add_argument('--calin', nargs=2, type=str, help='Calibration input: [IP] [channel (0-127)]', default=None)
+    args = parser.parse_args()
+    return args
 
-    print('Config file: ' + config_path)
-    with open(config_path, 'r') as config_open:
-        config_load = json.load(config_open)
+def load_config(config_path):
+    with open(config_path, 'r') as f:
+        config_load = json.load(f)
+    return config_load
+
+def create_new_period() -> int:
+    period = 0
+    while os.path.exists('per' + str(period).zfill(4)):
+        period += 1
+    os.makedirs('per' + str(period).zfill(4))
+    return period
+
+def get_active_boards(config_path):
+    with open(config_path, 'r') as file:
+        config_load = json.load(file)
+
+    active_boards = []
+    for x in config_load['gigaIwaki']:
+        if config_load['gigaIwaki'][x]['active'] == 1:
+            active_boards.append((x, config_load['gigaIwaki'][x]['IP']))
+    return active_boards
+
+def make_info_file(config_path, period_id, file_id, active_boards):
+    start_time = time.time()
+
+    with open(config_path, 'r') as file:
+        config_load = json.load(file)
+
+    for board_id, ip in active_boards:
+        info_file_name = f'per{str(period_id).zfill(4)}/{board_id}_{str(file_id).zfill(4)}.info'
+        config_dict = {}
+
+        for gid in config_load['gigaIwaki']:
+            if config_load['gigaIwaki'][gid]['IP'] == ip:
+                config_dict.update(config_load['gigaIwaki'][gid])
+
+                output_data = {
+                    'gigaIwaki': config_dict,
+                    'runinfo': {
+                        'start': start_time
+                    }
+                }
+
+                with open(info_file_name, mode='wt', encoding='utf-8') as out_file:
+                    json.dump(output_data, out_file, ensure_ascii=False, indent=4)
+
+                break
+
+
+def run_gigaiwaki(period_id, file_id, event_num, active_boards):
+    for board_id, ip in active_boards:
+        mada_file_name = f'per{str(period_id).zfill(4)}/{board_id}_{str(file_id).zfill(4)}.mada'
+        cmd = f'{MADA_IWAKI} -n {event_num} -f {mada_file_name} -i {ip}'
+        subprocess.Popen(cmd, shell=True)
+
+
+def get_gigaiwaki_processes():
+    result = subprocess.run(['pgrep', '-f', 'MADA_iwaki'], stdout=subprocess.PIPE, text=True)
+    pids = result.stdout.strip().split('\n')
+    return [int(pid) for pid in pids if pid.isdigit()]
+
+
+def is_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def check_process_termination(pids):
+    print('Waiting for gigaiwaki processes to finish...')
+    process_num_org = len(pids)
 
     while True:
-        new_period = make_new_period()
-        run_daq(file_size, file_num, new_period, config_load, is_remote)
+        alive_pids = [p for p in pids if is_alive(p)]
+        if len(alive_pids) != process_num_org:
+            break
+        time.sleep(1)
 
-if __name__ == "__main__":
+
+def kill_gigaiwaki_processes(pids):
+    for pid in pids:
+        try:
+            os.kill(pid, 9)
+            print(f'Killed process with PID: {pid}')
+        except ProcessLookupError:
+            print(f'Process with PID {pid} not found. It may have already terminated.')
+
+def update_info_file(period_id, file_id, end_time, active_boards):
+    for board_id, ip in active_boards:
+        info_file_path = f'per{str(period_id).zfill(4)}/{board_id}_{str(file_id).zfill(4)}.info'
+        mada_file_path = f'per{str(period_id).zfill(4)}/{board_id}_{str(file_id).zfill(4)}.mada'
+
+        file_size = os.path.getsize(mada_file_path)
+        print('size= ', file_size, 'byte')
+
+        with open(info_file_path, 'r', encoding='utf-8') as f:
+            info_load = json.load(f)
+
+        info_load.setdefault('runinfo', {})
+        info_load['runinfo'].update({
+            'end': end_time,
+            'size': str(file_size)
+        })
+
+        with open(info_file_path, 'w', encoding='utf-8') as f:
+            json.dump(info_load, f, ensure_ascii=False, indent=4)
+
+    return file_size
+    
+def write_rate_log(rate_file_path, end_time, start_time, event_num):
+    realtime = end_time - start_time
+    dt = datetime.fromtimestamp(end_time)
+
+    t = dt.strftime("%Y/%m/%d/%H:%M:%S")
+
+    rates = [float(event_num) / realtime]
+    out_list = [t, start_time, end_time] + rates
+    out_str = '\t'.join(map(str, out_list)) + '\n'
+
+    with open(rate_file_path, 'a', encoding='utf-8') as f:
+        f.write(out_str)
+
+def run_daq(config_path, period_id, file_num, event_num, calin=None):
+    active_boards = get_active_boards(config_path)
+    if calin:
+        active_boards = [(board_id, ip) for board_id, ip in active_boards if ip == calin[0]]
+    else:
+        for board_id, ip in active_boards:
+            print(f'Starting DAQ for board {board_id} at IP {ip}')
+
+    run_kill_modules()
+    config_load = load_config(config_path)
+    adalm_serial_daq_enable = get_adalm_serial(config_load, adalm_index=0)
+    adalm_serial_counter_reset = get_adalm_serial(config_load, adalm_index=1)
+
+    print('Setting DAC values and Vth...')
+    # run_set_all_dac(config_path, calin)
+    run_set_all_dac(config_path)
+
+    print('Activating Latch Up Detection...')
+    run_set_latch_up_detect(config_path, io=1)
+
+    print('Activating Regulator...')
+    run_set_ap(config_path, io=1)
+
+    print('DAQ is running... Press Ctrl+C to stop.')
+    for file_id in range(file_num):
+        try:
+            print(f'Creating file {file_id} with {event_num} events...')
+
+            print('Killing ADALM processes...')
+            run_kill_adalms()
+
+            print('Latch down DAQ enable...')
+            run_adalm_control(adalm_serial_daq_enable, latch=0)
+            
+
+            print('Running gigaiwaki...')
+            run_gigaiwaki(period_id, file_id, event_num, active_boards)
+
+            pids = get_gigaiwaki_processes()
+
+            print('Latch up DAQ enable...')
+            run_adalm_control(adalm_serial_daq_enable, latch=1)
+
+            print('Resetting counters...') # input pulse-like signal
+            run_adalm_control(adalm_serial_counter_reset, latch=1)
+            time.sleep(0.1)
+            run_adalm_control(adalm_serial_counter_reset, latch=0)
+
+            start_time = time.time()
+
+            print('Creating info files...')
+            make_info_file(config_path, period_id, file_id, active_boards)
+
+            # Wait for gigaiwaki processes to finish
+            check_process_termination(pids)
+
+            print("Kill gigaiwaki processes...")
+            kill_gigaiwaki_processes(pids)
+
+            end_time = time.time()
+            
+            print('Updating info files with end time...')
+            update_info_file(period_id, file_id, end_time, active_boards)
+            dt = datetime.fromtimestamp(end_time)
+            rate_file_path = dt.strftime(f"{RATEPATH}/%Y%m%d")
+            write_rate_log(rate_file_path, start_time, end_time, event_num)
+            
+            file_id += 1
+
+        except KeyboardInterrupt:
+            print('Keyboard interrupt received. Stopping DAQ...')
+            run_daq_killer()
+            break
+
+
+    print('Deactivating Latch Up Detection...')
+    run_set_latch_up_detect(config_path, io=0)
+
+    print('Deactivating Regulator...')
+    run_set_ap(config_path, io=0)
+
+        
+def main():
+    print_header()
+    args = arg_parser()
+    config_path = args.config
+    file_num = args.file_num
+    event_num = args.event_num
+    calin = args.calin
+
+    print('--- Arguments ---')
+    print('Config file name : ' + config_path)
+    print('File number in a period : ' + str(file_num))
+    print('Event number in a file : ' + str(event_num))
+    if calin:
+        print('Calibration input : IP = ' + calin[0] + ', channel = ' + calin[1])
+
+    # Create new period
+    while True:
+        period = create_new_period()
+        print('New period created : per' + str(period).zfill(4))
+        run_daq(config_path, period, file_num, event_num, calin)
+        exit()
+
+if __name__ == '__main__':
     main()

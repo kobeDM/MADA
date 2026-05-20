@@ -8,10 +8,10 @@ from subprocess import PIPE
 
 MADAHOME = os.environ["MADAHOME"]
 
-FETCHCONFIG = MADAHOME + "/bin/MADA_fetch_config.py"
+FETCHCONFIG = MADAHOME + "/scripts/MADA_fetch_config.py"
 EXE_SETDAC  = MADAHOME + "/bin/SetDAC"
 EXE_DAQ     = MADAHOME + "/bin/ScanVth"
-EXE_ANA     = MADAHOME + "/bin/MADA_runVthAna.py"
+EXE_ANA     = MADAHOME + "/scripts/MADA_runVthAna.py"
 EXE_CORR    = MADAHOME + "/rootmacro/DACValueCorrection.cxx"
 
 DEFAULT_DACFILE = MADAHOME + "/config/No00_base_v3.1.dac"

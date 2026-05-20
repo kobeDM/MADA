@@ -78,14 +78,6 @@ int main( int argc, char *argv[] )
     int  trig_count = 0;
     int  max_trig   = numperfile;
 
-    // cout << "Refreshing buffer..." << flush;
-    // while ( true ) {
-    //     num = EtherDAQ.Read( tmp_data );
-    //     if ( num <= 0 )
-    //         break;
-    // }
-    // cout << " done" << endl;
-
     char c_data[4096];
 
     while ( !end_flag ) {

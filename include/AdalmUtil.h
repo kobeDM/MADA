@@ -24,6 +24,7 @@ M2k *ConnectToAdalmWithSerial( const std::string &serialNumber );
 void AnalogDcOut( M2kAnalogOut *aout, int channel, double voltage );
 void DigitalLatchUp( M2kDigital *dout, const int channel[16] );
 void DigitalLatchDown( M2kDigital *dout, const int channel[16] );
+void OutputWaveformSquare( M2kAnalogOut *aout, int channel, double voltage, double frequency );
 
 // Disconnection
 void DisconnectAdalm( M2k *m2k );

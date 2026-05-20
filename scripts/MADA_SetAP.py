@@ -15,27 +15,13 @@ CONFIG = './MADA_config.json'
 
 def arg_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('io', help='0/1')
+    parser.add_argument('io', type=int, choices=[0, 1], help='0/1')
     parser.add_argument('-c', '--config', default=CONFIG)
     args = parser.parse_args()
     return args
 
-def main():
-    print("*** MADA_SetAP.py start ***")
-
-    args = arg_parser()
-    io = args.io
-    config = args.config
-
-    if not os.path.isfile(config):
-        print('Config file was not found. Fetching skelton file...')
-        subprocess.run([FETCHCONFIG])
-        config = CONFIG
-
-    print('Config file: ' + config)
-    print('---')
-
-    with open(config, 'r') as file:
+def run_set_ap(config_path, io):
+    with open(config_path, 'r') as file:
         config_load = json.load(file)
 
     for name, data in config_load.get('gigaIwaki', {}).items():
@@ -46,13 +32,22 @@ def main():
 
         print('GigaIwaki: ' + name)
         print('  IP      : ' + ip)
-        print('  IO      : ' + io)
+        print('  IO      : ' + str(io))
 
-        cmd = [SETAP, ip, io]
+        cmd = [SETAP, ip, str(io)]
         print('Execute : ' + ' '.join(cmd))
         result = subprocess.run(cmd, capture_output=True, text=True)
         print(result.stdout)
         print('---')
+
+def main():
+    print("*** MADA_SetAP.py start ***")
+
+    args = arg_parser()
+    io = args.io
+    config = args.config
+
+    run_set_ap(config, io)
 
     print("*** MADA_SetAP.py end ***")
 

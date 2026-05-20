@@ -9,12 +9,17 @@ using namespace std;
 
 int main( int argc, char *argv[] )
 {
-    if ( argc != 3 ) {
-        cerr << " USAGE> SetDAC [IP address] [DAC data file] " << endl;
+    if ( argc != 3 && argc != 4 ) {
+        cerr << " USAGE> SetDAC [IP address] [DAC data file] [<channel>] " << endl;
         exit( 1 );
     }
     string IPaddr   = argv[1];
     string filename = argv[2];
+
+    int channel = -1;
+    if ( argc == 4 ) {
+        channel = atoi( argv[3] );
+    }
 
     RBCP SlowCtrl;
     SlowCtrl.Open( IPaddr );
@@ -28,7 +33,12 @@ int main( int argc, char *argv[] )
     for ( int i = 0; i < 128; i++ ) {
         int ch, dac;
         DAC_data >> ch >> dac;
-        cmd[ch] = SlowCtrl.convDAC( dac, 0, 0 );
+        if ( channel == -1 || channel != ch ) {
+            cmd[ch] = SlowCtrl.convDAC( dac, 0, 0 );
+        } else {
+            cmd[ch] = SlowCtrl.convDAC( dac, 1, 0 );
+            std::cout << "ch: " << ch << " calin opened " << std::endl;
+        }
     }
     SlowCtrl.WriteRBCP( 0, cmd, 128 );
 
@@ -36,5 +46,6 @@ int main( int argc, char *argv[] )
     SlowCtrl.WriteRBCP( 0xf0, cmd, 1 );
     sleep( 1 );
 
-    SlowCtrl.ReadRBCP( );
+    SlowCtrl.ReadRBCP( 0x00, 0x8f );
+    SlowCtrl.ReadRBCP( 0xf0, 0x0f );
 }

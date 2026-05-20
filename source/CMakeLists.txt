@@ -8,7 +8,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(Targets
     MADA_iwaki
-    readIwaki
     SetVth
     read_CtrlMem
     SetDAC
@@ -23,6 +22,8 @@ set(Targets
     Vth_Analysis
     FindAdalm
     AdalmControl
+    OutputTestPulse
+    SetAllDAC
 )
 
 find_package(Threads REQUIRED)
@@ -36,7 +37,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_executable(MADA_DACScan MADA_DACScan.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(MADA_VthScan MADA_VthScan.cc SiTCP.cc TCPclient.cc RBCP.cc)
-add_executable(readIwaki readIwaki.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(MADA_iwaki MADA_iwaki.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(SetVth SetVth.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(SetDAC SetDAC.cc SiTCP.cc TCPclient.cc RBCP.cc)
@@ -50,8 +50,11 @@ add_executable(ScanVth ScanVth.cc SiTCP.cc RBCP.cc)
 add_executable(Vth_Analysis Vth_Analysis.cc)
 add_executable(FindAdalm FindAdalm.cc)
 add_executable(AdalmControl AdalmControl.cc AdalmUtil.cc)
+add_executable(OutputTestPulse OutputTestPulse.cc AdalmUtil.cc)
+add_executable(SetAllDAC SetAllDAC.cc RBCP.cc)
 
 target_link_libraries(AdalmControl PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
+target_link_libraries(OutputTestPulse PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(MADA_iwaki PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetVth PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetDAC PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
@@ -64,6 +67,7 @@ target_link_libraries(DAC_Survey PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(ScanVth PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(Vth_Analysis PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(FindAdalm PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
+target_link_libraries(SetAllDAC PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/..)
 
 install(TARGETS ${Targets} RUNTIME DESTINATION bin)
