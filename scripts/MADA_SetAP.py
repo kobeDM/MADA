@@ -8,7 +8,6 @@ import argparse
 MADAHOME = os.environ['MADAHOME']
 MADABIN = MADAHOME + '/bin'
 
-FETCHCONFIG = os.path.join(MADABIN, 'MADA_fetch_config.py')
 SETAP = os.path.join(MADABIN, 'SetAP')
 
 CONFIG = './MADA_config.json'

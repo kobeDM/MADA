@@ -14,6 +14,7 @@ from MADA_SetAllDAC import run_set_all_dac
 from MADA_DAQkiller import run_daq_killer
 from MADA_SetLatchUpDetect import run_set_latch_up_detect
 from MADA_SetAP import run_set_ap
+from MADA_ClearDACValues import run_clear_dac_values
 
 HOME     = os.environ["HOME"]
 RATEPATH = HOME + "/rate"
@@ -174,15 +175,15 @@ def run_daq(config_path, period_id, file_num, event_num, calin=None):
     adalm_serial_daq_enable = get_adalm_serial(config_load, adalm_index=0)
     adalm_serial_counter_reset = get_adalm_serial(config_load, adalm_index=1)
 
+    print('Activating Regulator...')
+    run_set_ap(config_path, io=1)
+
     print('Setting DAC values and Vth...')
     # run_set_all_dac(config_path, calin)
     run_set_all_dac(config_path)
 
     print('Activating Latch Up Detection...')
     run_set_latch_up_detect(config_path, io=1)
-
-    print('Activating Regulator...')
-    run_set_ap(config_path, io=1)
 
     print('DAQ is running... Press Ctrl+C to stop.')
     for file_id in range(file_num):
@@ -195,7 +196,6 @@ def run_daq(config_path, period_id, file_num, event_num, calin=None):
             print('Latch down DAQ enable...')
             run_adalm_control(adalm_serial_daq_enable, latch=0)
             
-
             print('Running gigaiwaki...')
             run_gigaiwaki(period_id, file_id, event_num, active_boards)
 
@@ -235,13 +235,11 @@ def run_daq(config_path, period_id, file_num, event_num, calin=None):
             run_daq_killer()
             break
 
-
     print('Deactivating Latch Up Detection...')
     run_set_latch_up_detect(config_path, io=0)
 
     print('Deactivating Regulator...')
     run_set_ap(config_path, io=0)
-
         
 def main():
     print_header()

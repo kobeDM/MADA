@@ -5,5 +5,6 @@ config/DAClog
 
 .vscode
 .clang-format
+.venv
 
 __pycache__
