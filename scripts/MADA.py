@@ -10,10 +10,8 @@ from datetime import datetime
 from MADA_killmodules import run_kill_modules
 from MADA_killadalms import run_kill_adalms
 from MADA_adalm_control import run_adalm_control, get_adalm_serial
-from MADA_SetAllDAC import run_set_all_dac
 from MADA_DAQkiller import run_daq_killer
-from MADA_SetLatchUpDetect import run_set_latch_up_detect
-from MADA_SetAP import run_set_ap
+from MADA_EncoderPower import run_encoder_power_up, run_encoder_power_down
 
 HOME     = os.environ["HOME"]
 RATEPATH = HOME + "/rate"
@@ -174,15 +172,7 @@ def run_daq(config_path, period_id, file_num, event_num, calin=None):
     adalm_serial_daq_enable = get_adalm_serial(config_load, adalm_index=0)
     adalm_serial_counter_reset = get_adalm_serial(config_load, adalm_index=1)
 
-    print('Activating Regulator...')
-    run_set_ap(config_path, io=1)
-
-    print('Setting DAC values and Vth...')
-    # run_set_all_dac(config_path, calin)
-    run_set_all_dac(config_path)
-
-    print('Activating Latch Up Detection...')
-    run_set_latch_up_detect(config_path, io=1)
+    run_encoder_power_up(config_path)
 
     print('DAQ is running... Press Ctrl+C to stop.')
     for file_id in range(file_num):
@@ -234,11 +224,7 @@ def run_daq(config_path, period_id, file_num, event_num, calin=None):
             run_daq_killer()
             break
 
-    print('Deactivating Latch Up Detection...')
-    run_set_latch_up_detect(config_path, io=0)
-
-    print('Deactivating Regulator...')
-    run_set_ap(config_path, io=0)
+    run_encoder_power_down(config_path)
         
 def main():
     print_header()
