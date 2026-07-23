@@ -14,7 +14,6 @@ from MADA_SetAllDAC import run_set_all_dac
 from MADA_DAQkiller import run_daq_killer
 from MADA_SetLatchUpDetect import run_set_latch_up_detect
 from MADA_SetAP import run_set_ap
-from MADA_ClearDACValues import run_clear_dac_values
 
 HOME     = os.environ["HOME"]
 RATEPATH = HOME + "/rate"

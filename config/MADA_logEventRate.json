@@ -17,5 +17,5 @@
         "initial_backoff": 1
     },
     "interval_seconds": 300,
-    "mode": "all"
+    "mode": "single"
 }
