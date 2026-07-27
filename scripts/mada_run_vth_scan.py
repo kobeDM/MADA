@@ -4,15 +4,16 @@ import os
 import subprocess
 import argparse
 import glob
+import shutil
 
 from mada_fetch_config import run_fetch_config
 from mada_run_vth_ana import run_vth_ana
 
 MADAHOME = os.environ["MADAHOME"]
 
-EXE_SETDAC  = MADAHOME + "/bin/SetDAC"
-EXE_DAQ     = MADAHOME + "/bin/ScanVth"
-EXE_CORR    = MADAHOME + "/rootmacro/DACValueCorrection.cxx"
+EXE_SETDAC   = MADAHOME + "/bin/SetDAC"
+EXE_VTH_SCAN = MADAHOME + "/bin/ScanVth"
+EXE_VTH_CORR = MADAHOME + "/rootmacro/DACValueCorrection.cxx"
 
 DEFAULT_DACFILE = MADAHOME + "/config/No00_base_v3.1.dac"
 
@@ -29,9 +30,9 @@ def parser():
     
     return args
 
-def run_command(cmd):
+def run_command(cmd, cwd=None):
     print("Execute: " + cmd)
-    subprocess.run(cmd, shell=True)
+    subprocess.run(cmd, shell=True, cwd=cwd)
 
 def find_newrun():
     dir_header = 'Vth_run'
@@ -70,24 +71,16 @@ def main():
     print("Vth Step:", VthStep)
         
     newrun = find_newrun()
-    cmd = "mkdir " + newrun
-    run_command(cmd)
+    os.makedirs(newrun)
 
-    os.chdir(newrun)
-    cmd = EXE_DAQ + " " + ip + " " + str(VthLow) + " "+str(VthHigh) + " "+str(VthStep)
-    run_command(cmd)
-    os.chdir("../")
+    # Execute Vth scan
+    cmd = EXE_VTH_SCAN + " " + ip + " " + str(VthLow) + " "+str(VthHigh) + " "+str(VthStep)
+    run_command(cmd, cwd=newrun)
 
-    cmd = "cp " + newrun + "/scan_config.out ."
-    run_command(cmd)
-
+    # Analyze 
     run_vth_ana(newrun, batch=batch_mode)
 
-    cmd = "mv Vthcheck.png Vth.root Vth_val.root " + newrun
-    run_command(cmd)
-
-    cmd = "cp " + DACfile + " " + newrun
-    run_command(cmd)
+    shutil.copy(DACfile, newrun)
 
     if args.correct:
         print("--- DAC value correction ---")
@@ -95,8 +88,8 @@ def main():
         dacfile = glob.glob(newrun + "/*.dac")[0]
         print("Corrected DAC file: " + dacfile)
         outputfile = dacfile.replace('.dac', '') + "_correct.dac"
-        cmd = "root -l -b -q \'" + EXE_CORR + "(\"" + rootfile + "\", " + "\"" + dacfile + "\", " + "\"" + outputfile + "\")\'"
-        run_command(cmd) # Correct branch date is not filled to rootfile currently.
+        cmd = "root -l -b -q \'" + EXE_VTH_CORR + "(\"" + rootfile + "\", " + "\"" + dacfile + "\", " + "\"" + outputfile + "\")\'"
+        run_command(cmd)
 
     print('### mada_run_vth_scan.py end ###')
 

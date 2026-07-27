@@ -7,9 +7,8 @@ from csv import reader
 
 MADAHOME  = os.environ['MADAHOME']
 
-EXE       = MADAHOME + '/bin/VthAnalysis'
-SKEL      = MADAHOME + '/rootmacro/ShowVthSkel.cxx'
-SHOW_CODE = MADAHOME + '/rootmacro/ShowVth.cxx'
+EXE_VTH_ANA = MADAHOME + '/bin/VthAnalysis'
+EXE_SHOW    = MADAHOME + '/rootmacro/ShowVth.cxx'
 
 #configs
 CONFIG = "MADA_config.json"
@@ -22,9 +21,9 @@ def parser():
     
     return args
 
-def run_command(cmd):
+def run_command(cmd, cwd=None):
     print("execute: " + cmd)
-    subprocess.run(cmd, shell=True)
+    subprocess.run(cmd, shell=True, cwd=cwd)
 
 def run_vth_ana(run, batch=False):
     print("runID:", run)
@@ -65,24 +64,16 @@ def run_vth_ana(run, batch=False):
         print('Config file is not exits in current directory.')
         print('Used default Vth:', Vth)
 
+    cmd = EXE_VTH_ANA + " ./ " + VthLow + " " + VthHigh + " " + VthStep
+    run_command(cmd, cwd=run)
 
-    EXECOM = EXE + " " + run + "/ " + VthLow + " " + VthHigh + " " + VthStep
-    print("execute:",EXECOM)
-    subprocess.run(EXECOM,shell=True)
-
-    # fetch skelton file
-    with open(SKEL, mode='r') as f:
-        str_list = f.readlines()
-        showcode = [ s.replace("RUNID",run).replace("IP", IP).replace("VTH", str(Vth))  for s in str_list ]
-    with open(SHOW_CODE, mode='w') as f:
-        f.writelines(showcode)
-
+    show_args = '"' + run + '", "' + IP + '", ' + str(Vth)
     if batch:
-        cmd = 'root -b -q -l ' + SHOW_CODE
+        cmd = "root -b -q -l '" + EXE_SHOW + "(" + show_args + ")'"
     else:
-        cmd = 'root ' + SHOW_CODE
+        cmd = "root '" + EXE_SHOW + "(" + show_args + ")'"
 
-    run_command(cmd)
+    run_command(cmd, cwd=run)
 
 def main():
     print('### mada_run_vth_ana.py start ###')

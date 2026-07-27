@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <vector>
+
 // ROOT
 #include "TApplication.h"
 #include "TCanvas.h"
@@ -18,6 +19,7 @@
 #include "TH1F.h"
 #include "TH2F.h"
 #include "TLegend.h"
+#include "TLine.h"
 #include "TPaveText.h"
 #include "TROOT.h"
 #include "TStyle.h"
@@ -29,7 +31,7 @@
 #include "TString.h"
 #include "TText.h"
 
-int ShowVth( )
+int ShowVth( std::string runid, std::string ip, double target_vth )
 {
     TString  s_infile  = "Vth.root";
     TFile   *file_in   = new TFile( s_infile );
@@ -38,10 +40,10 @@ int ShowVth( )
 
     // plot result
     DAC_image->GetZaxis( )->SetRangeUser( 0., 1.2 );
-    DAC_image->SetTitle( "Vth scan ( RUNID, IP)" );
+    DAC_image->SetTitle( Form( "Vth scan ( %s, %s)", runid.c_str( ), ip.c_str( ) ) );
     DAC_image->Draw( "COLZ" );
 
-    TLine *l = new TLine( 0, VTH, 128, VTH );
+    TLine *l = new TLine( 0, target_vth, 128, target_vth );
 
     l->SetLineColor( 2 );
     l->SetLineWidth( 4 );
