@@ -38,10 +38,10 @@ int ShowVth( )
 
     // plot result
     DAC_image->GetZaxis( )->SetRangeUser( 0., 1.2 );
-    DAC_image->SetTitle( "Vth scan ( Vth_run0035, 192.168.100.98)" );
+    DAC_image->SetTitle( "Vth scan ( Vth_run0092, 192.168.100.98)" );
     DAC_image->Draw( "COLZ" );
 
-    TLine *l = new TLine( 0, 10190, 128, 10190 );
+    TLine *l = new TLine( 0, 9580, 128, 9580 );
 
     l->SetLineColor( 2 );
     l->SetLineWidth( 4 );

@@ -1,0 +1,20 @@
+{
+    "rate_path": "~/rate/",
+    "influx": {
+        "host": "10.37.0.216",
+        "port": 8086,
+        "username": "root",
+        "password": "root",
+        "database": "cn1"
+    },
+    "tags": {
+        "host": "na44",
+        "device": "na44"
+    },
+    "retry": {
+        "max_retries": 5,
+        "initial_backoff": 1
+    },
+    "interval_seconds": 300,
+    "mode": "single"
+}

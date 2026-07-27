@@ -1,8 +1,10 @@
-/bin/*
-!bin/*.py
+bin
 
-/build
-/config/DAClog
+build
+config/DAClog
 
 .vscode
 .clang-format
+.venv
+
+__pycache__

@@ -1,4 +1,4 @@
-#include "RBCP.h"
+#include "../include/RBCP.h"
 #include <cstdio>
 #include <cstdlib>
 #include <iomanip>
@@ -32,5 +32,6 @@ int main( int argc, char *argv[] )
     SlowCtrl.WriteRBCP( 0xf2, cmd, 1 );
     sleep( 1 );
 
-    SlowCtrl.ReadRBCP( );
+    SlowCtrl.ReadRBCP( 0x00, 0x8f );
+    SlowCtrl.ReadRBCP( 0xf0, 0x0f );
 }

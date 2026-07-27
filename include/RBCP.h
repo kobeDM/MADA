@@ -26,6 +26,7 @@ class RBCP
         bool Open( const string );
         void Close( );
         int  ReadRBCP( );
+        int  ReadRBCP( int, int );
         int  WriteRBCP( int, char *, int );
 
         char convDAC( int, bool, bool );

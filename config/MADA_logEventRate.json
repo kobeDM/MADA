@@ -1,0 +1,21 @@
+{
+    "eventrate_path": "./",
+    "influx": {
+        "host": "10.37.0.216",
+        "port": 8086,
+        "username": "root",
+        "password": "root",
+        "database": "cn1"
+    },
+    "tags": {
+        "host": "zybo01",
+        "device": "zybo01"
+    },
+    "measurement": "zybo",
+    "retry": {
+        "max_retries": 5,
+        "initial_backoff": 1
+    },
+    "interval_seconds": 300,
+    "mode": "single"
+}

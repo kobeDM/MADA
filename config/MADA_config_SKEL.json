@@ -40,12 +40,14 @@
 	},
 	"ADALM": {
 		"MADALM_0": {
+			"_comment": "Adalm for DAQ enable.",
 			"active": 1,
 			"URI": "N/A",
 			"S/N": "10447384b904001612002500df1edb6193",
 			"Clock_d": 100000000.0
 		},
 		"MADALM_1": {
+			"_comment": "Adalm for counter reset.",
 			"active": 1,
 			"URI": "N/A",
 			"S/N": "10447372c6040002fdff0e00202fd5fcc7",

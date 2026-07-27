@@ -1,4 +1,4 @@
-#include "RBCP.h"
+#include "../include/RBCP.h"
 #include <unistd.h>
 bool RBCP::Open( const string ip )
 {
@@ -50,6 +50,42 @@ int RBCP::ReadRBCP( )
         for ( int i = 0; i < num - 9; i++ ) {
             if ( i % 16 == 0 )
                 cout << hex << setw( 2 ) << setfill( '0' ) << i << '\t';
+            cout << hex << setw( 2 ) << setfill( '0' ) << (unsigned)( reply[i + 9] & 0xff ) << ' ';
+            if ( i % 16 == 15 )
+                cout << endl;
+        }
+        cout << endl;
+
+        return num;
+    } else
+        cerr << " No Reply " << endl;
+
+    return 0;
+}
+
+int RBCP::ReadRBCP( int address, int length )
+{
+    command[1] = 0xc0;
+    command[2] = pack_id & 0xff;
+    command[3] = ( length + 2 ) & 0xff;
+    command[4] = ( address >> 24 ) & 0xff;
+    command[5] = ( address >> 16 ) & 0xff;
+    command[6] = ( address >> 8 ) & 0xff;
+    command[7] = address & 0xff;
+
+    int num = sendto( sock, command, 8, 0, (struct sockaddr *)&param, sizeof( param ) );
+    pack_id++;
+
+    if ( num < 0 ) {
+        cerr << " ERROR(RBCP): Can't send command" << endl;
+        return -1;
+    }
+
+    if ( CheckReply( 8 ) ) {
+        num = recvfrom( sock, reply, 512, 0, NULL, NULL );
+        for ( int i = 0; i < num - 9; i++ ) {
+            if ( i % 16 == 0 )
+                cout << hex << setw( 2 ) << setfill( '0' ) << i + address << '\t';
             cout << hex << setw( 2 ) << setfill( '0' ) << (unsigned)( reply[i + 9] & 0xff ) << ' ';
             if ( i % 16 == 15 )
                 cout << endl;

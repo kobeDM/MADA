@@ -1,5 +1,6 @@
-#include "RBCP.h"
-#include "SiTCP.h"
+#include "../include/RBCP.h"
+#include "../include/SiTCP.h"
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <iomanip>
@@ -54,6 +55,8 @@ int main( int argc, char *argv[] )
 
         int  data_size = 0;
         char c_data[4096];
+        auto start = std::chrono::steady_clock::now( );
+
         while ( 1 ) {
             cout << " refleshing buffer..." << '\r' << flush;
 
@@ -71,7 +74,7 @@ int main( int argc, char *argv[] )
 
         int e_index = 0;
         data_size   = 0;
-        while ( 1 ) {
+        while ( true ) {
             cout << hex;
             cout << " data reading...   " << data_size << '\r' << flush;
 
@@ -83,10 +86,15 @@ int main( int argc, char *argv[] )
             if ( c_data[num - 4] == 'u' && c_data[num - 3] == 'P' && c_data[num - 2] == 'I' && c_data[num - 1] == 'C' )
                 e_index++;
 
-            if ( data_size > 0x400000 || e_index > 1e3 )
+            if ( data_size > 0x400000 )
                 break;
+
+            if ( std::chrono::steady_clock::now( ) - start > std::chrono::seconds( 5 ) ) {
+                std::cout << "passed 5 seconds. stored " << e_index << " events.";
+                break;
+            }
         }
-        cout << "                                            " << '\r' << flush;
+        // cout << "                                            " << '\r' << flush;
         OutData.close( );
     }
 }
