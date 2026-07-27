@@ -11,7 +11,7 @@ using namespace std;
 int main( int argc, char *argv[] )
 {
     if ( argc != 3 ) {
-        cerr << " USAGE> DAC_Survey [IP address] [Vth val.] " << endl;
+        cerr << " USAGE> DACSurvey [IP address] [Vth val.] " << endl;
         cerr << "   Vth: give a decimal number from 0 and 16383 " << endl;
         exit( 1 );
     }

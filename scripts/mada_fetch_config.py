@@ -10,12 +10,12 @@ MADAHOME   = os.environ['MADAHOME']
 BINPATH    = MADAHOME + '/bin'
 CONFIGPATH = MADAHOME + '/config'
 
-findADALM   = 'findADALM2000.py'
+findADALM   = 'find_adalm2000.py'
 CONFIG      = 'MADA_config.json'
 CONFIG_SKEL = 'MADA_config_SKEL.json'
 
 def main():
-    print('### MADA_fetch_config.py start ###')
+    print('### mada_fetch_config.py start ###')
     
     if os.path.isfile(CONFIG):
         print(CONFIG, 'exists.')
@@ -39,7 +39,7 @@ def main():
             with open(CONFIG, mode='wt', encoding='utf-8') as file:
                 json.dump(skel_load, file, ensure_ascii=False, indent=4)
 
-    print('### MADA_fetch_config.py end ###')
+    print('### mada_fetch_config.py end ###')
 
 if __name__ == '__main__':
     main()

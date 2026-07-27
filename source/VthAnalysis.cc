@@ -19,30 +19,32 @@ using namespace std;
 
 int main( int argc, char *argv[] )
 {
-    if ( argc != 3 ) {
-        cerr << " USAGE> DAC_Analysis [data dir.] [Vth val.]" << endl;
-        cerr << "  Vth: give a decimal number from 0 and 16383 " << endl;
+    if ( argc != 4 && argc != 5 ) {
+        cerr << " USAGE> DACAnalysis [data dir.] [start Vth] [end Vth] [delta]" << endl;
         exit( 1 );
     }
     string dirname = argv[1];
-    int    Vth     = atoi( argv[2] ) & 0x3fff;
+    int    s_Vth   = atoi( argv[2] ) & 0x3fff;
+    int    e_Vth   = atoi( argv[3] ) & 0x3fff;
+    int    delta   = 100;
+    if ( argc == 5 )
+        delta = atoi( argv[4] ) & 0x3fff;
 
     TRint app( "app", &argc, argv );
     gStyle->SetOptStat( 0 );
 
-    string   outfile_config_name = "DAC_ana_config.out";
-    ofstream outfile_config;
-    outfile_config.open( outfile_config_name.c_str( ), ios::out );
-    outfile_config << dirname << endl;
-    outfile_config.close( );
+    int     Nbin  = ( e_Vth - s_Vth ) / delta + 1;
+    double *y_bin = new double[Nbin];
+    for ( int i = 0; i < Nbin; i++ ) {
+        y_bin[i] = s_Vth + i * delta;
+        cout << y_bin[i] << endl;
+    }
+    TH2F *DAC_image = new TH2F( "DAC_image", "DAC Survey", 130, -1.5, 128.5, Nbin - 1, y_bin );
 
-    string figtitle = "DAC survey (" + dirname + ")";
-
-    TH2F *DAC_image = new TH2F( "DAC_image", figtitle.c_str( ), 130, -1.5, 128.5, 64, -0.5, 63.5 );
-
-    for ( int fi = 0; fi < 64; fi++ ) {
+    for ( int fi = s_Vth; fi <= e_Vth; fi += delta ) {
         char filename[100];
-        sprintf( filename, "%sDAC_%02d_%04x.srv", dirname.c_str( ), fi, Vth );
+        // sprintf(filename, "Vth_%04x.scn", fi);
+        sprintf( filename, "%sVth_%04x.scn", dirname.c_str( ), fi );
         cout << filename << '\r' << flush;
 
         double   event_num  = 0;
@@ -50,7 +52,7 @@ int main( int argc, char *argv[] )
         ifstream data_file( filename );
         if ( !data_file ) {
             cerr << " Can't find " << filename << endl;
-            exit( 1 );
+            break;
         }
 
         while ( data_file ) {
@@ -110,49 +112,11 @@ int main( int argc, char *argv[] )
         data_file.close( );
 
         if ( event_num )
-            for ( int st = 0; st < 128; st++ ) {
-                double rate = total[st] / event_num;
-                if ( rate > 2 )
-                    rate = 0;
-                DAC_image->Fill( st, fi, rate );
-            }
+            for ( int st = 0; st < 128; st++ )
+                DAC_image->Fill( st, fi, (double)total[st] / event_num );
     }
 
-    TFile *RootFile = new TFile( "DAC.root", "recreate" );
+    TFile *RootFile = new TFile( "Vth.root", "recreate" );
     DAC_image->Write( );
     RootFile->Close( );
-
-    ofstream DacOut( "base_correct.dac", ios::out );
-    TH1F    *proj    = new TH1F( "proj", "", 64, -0.5, 63.5 );
-    TF1     *erf     = new TF1( "erf", "[0] * TMath::Erf((x-[1])/[2])+[3]" );
-    TCanvas *ViewWin = new TCanvas( "ViewWin", "", 0, 0, 800, 600 );
-    ViewWin->SetGridx( );
-    ViewWin->SetGridy( );
-    ViewWin->Draw( );
-    for ( int strip = 0; strip < 128; strip++ ) {
-        for ( int dac = 0; dac < 64; dac++ )
-            proj->SetBinContent( dac + 1, DAC_image->GetBinContent( strip + 2, dac + 1 ) );
-
-        char histname[50];
-        sprintf( histname, "Ch %03d", strip );
-        proj->SetTitle( histname );
-
-        if ( proj->GetBinContent( 4 ) > 0.5 )
-            erf->SetParameters( -0.5, 31, 5, 0.5 );
-        else
-            erf->SetParameters( 0.5, 31, 5, 0.5 );
-
-        proj->Fit( "erf", "", "", 4, 60 );
-
-        proj->Draw( );
-        ViewWin->Update( );
-        int DACval = TMath::FloorNint( proj->GetFunction( "erf" )->GetParameter( 1 ) + 0.5 );
-        if ( DACval < 0 )
-            DACval = 0;
-        if ( DACval > 63 )
-            DACval = 63;
-        DacOut << strip << '\t' << DACval << endl;
-        sprintf( histname, "%s/Ch_%03d.png", dirname.c_str( ), strip );
-        ViewWin->Print( histname );
-    }
 }

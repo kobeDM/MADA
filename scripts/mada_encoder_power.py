@@ -2,9 +2,9 @@
 
 import argparse
 
-from MADA_SetAP import run_set_ap
-from MADA_SetAllDAC import run_set_all_dac
-from MADA_SetLatchUpDetect import run_set_latch_up_detect
+from mada_set_ap import run_set_ap
+from mada_set_all_dac import run_set_all_dac
+from mada_set_latch_up_detect import run_set_latch_up_detect
 
 CONFIG = './MADA_config.json'
 
@@ -39,12 +39,12 @@ def run_encoder_power(config_path, io):
         run_encoder_power_down(config_path)
 
 def main():
-    print('*** MADA_EncoderPower.py start ***')
+    print('*** mada_encoder_power.py start ***')
 
     args = arg_parser()
     run_encoder_power(args.config, args.io)
 
-    print('*** MADA_EncoderPower.py end ***')
+    print('*** mada_encoder_power.py end ***')
 
 if __name__ == '__main__':
     main()

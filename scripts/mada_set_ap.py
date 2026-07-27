@@ -8,20 +8,18 @@ import argparse
 MADAHOME = os.environ['MADAHOME']
 MADABIN = MADAHOME + '/bin'
 
-FETCHCONFIG = os.path.join(MADABIN, 'MADA_fetch_config.py')
-SETLATCHUPDETECT = os.path.join(MADABIN, 'SetLatchUpDetect')
+SETAP = os.path.join(MADABIN, 'SetAP')
 
 CONFIG = './MADA_config.json'
 
 def arg_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('io', help='0/1')
+    parser.add_argument('io', type=int, choices=[0, 1], help='0/1')
     parser.add_argument('-c', '--config', default=CONFIG)
     args = parser.parse_args()
     return args
 
-
-def run_set_latch_up_detect(config_path: str, io : int):
+def run_set_ap(config_path, io):
     with open(config_path, 'r') as file:
         config_load = json.load(file)
 
@@ -35,33 +33,22 @@ def run_set_latch_up_detect(config_path: str, io : int):
         print('  IP      : ' + ip)
         print('  IO      : ' + str(io))
 
-        cmd = [SETLATCHUPDETECT, ip, str(io)]
+        cmd = [SETAP, ip, str(io)]
         print('Execute : ' + ' '.join(cmd))
         result = subprocess.run(cmd, capture_output=True, text=True)
         print(result.stdout)
         print('---')
 
 def main():
-    print("*** MADA_SetLatchUpDetect.py start ***")
+    print("*** mada_set_ap.py start ***")
 
     args = arg_parser()
-    io = int(args.io)
+    io = args.io
     config = args.config
 
-    if not os.path.isfile(config):
-        print('Config file was not found. Fetching skelton file...')
-        subprocess.run([FETCHCONFIG])
-        config = CONFIG
+    run_set_ap(config, io)
 
-    print('Config file: ' + config)
-    print('---')
-
-    with open(config, 'r') as file:
-        config_load = json.load(file)
-
-    run_set_latch_up_detect(config, io)
-
-    print("*** MADA_SetLatchUpDetect.py end ***")
+    print("*** mada_set_ap.py end ***")
 
 if __name__ == "__main__":
     main()

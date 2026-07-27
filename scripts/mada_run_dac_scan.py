@@ -8,8 +8,8 @@ import subprocess
 
 MADAHOME  = os.environ['MADAHOME']
 
-SCAN = MADAHOME + "/bin/DAC_Survey"
-ANA = MADAHOME + "/bin/DAC_Analysis"
+SCAN = MADAHOME + "/bin/DACSurvey"
+ANA = MADAHOME + "/bin/DACAnalysis"
 
 def parser():
     argparser = argparse.ArgumentParser()
@@ -39,7 +39,7 @@ def find_newrun():
 
 
 def main():
-    print('### MADA_runDACScan.py start ###')
+    print('### mada_run_dac_scan.py start ###')
 
     args = parser()
     ip = args.ip
@@ -74,7 +74,7 @@ def main():
     cmd = "mv DACsurvey_config.out DAC_ana_config.out " + newrun
     run_command(cmd)
 
-    print('### MADA_runDACScan.py start ###')
+    print('### mada_run_dac_scan.py start ###')
 
 
 if __name__ == '__main__':

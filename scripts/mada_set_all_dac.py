@@ -11,7 +11,7 @@ from subprocess import PIPE
 MADAHOME    = os.environ['MADAHOME']
 
 #scripts
-FETCHCON    = MADAHOME + "/scripts/MADA_fetch_config.py"
+FETCHCON    = MADAHOME + "/scripts/mada_fetch_config.py"
 
 #configs
 # DEFAULT_CONFIG      = MADAHOME + "/config/MADA_config_SKEL.json"
@@ -22,7 +22,7 @@ LOGPATH        = MADAHOME + "/config/DAClog"
 SETVTH_EXE     = MADAHOME + "/bin/SetVth"
 SETDAC_EXE     = MADAHOME + "/bin/SetDAC"
 SETALLDAC_EXE  = MADAHOME + "/bin/SetAllDAC"
-READMEM_EXE    = MADAHOME + "/bin/read_CtrlMem"
+READMEM_EXE    = MADAHOME + "/bin/ReadCtrlMem"
 
 def arg_parser():
     argparser = argparse.ArgumentParser()

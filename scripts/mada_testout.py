@@ -7,7 +7,7 @@ import subprocess
 from subprocess import PIPE
 
 MADAHOME = os.environ['MADAHOME']
-findADALM = MADAHOME + "/bin/findADALM2000.py"
+findADALM = MADAHOME + "/bin/find_adalm2000.py"
 
 ADSW  = os.environ['ADSW']
 ADOUT   = ADSW  + '/bin/ad_out'

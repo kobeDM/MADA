@@ -5,8 +5,8 @@ import psutil
 target_modules = [
     'MADA_DAQenable',
     'ad_out',
-    'MADA_iwaki',
-    'MADA_DAQkiller'
+    'MadaIwaki',
+    'mada_daq_killer'
 ]
 
 def run_kill_modules():

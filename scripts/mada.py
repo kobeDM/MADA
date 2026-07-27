@@ -7,21 +7,21 @@ import json
 import time
 from datetime import datetime
 
-from MADA_killmodules import run_kill_modules
-from MADA_killadalms import run_kill_adalms
-from MADA_adalm_control import run_adalm_control, get_adalm_serial
-from MADA_DAQkiller import run_daq_killer
-from MADA_EncoderPower import run_encoder_power_up, run_encoder_power_down
+from mada_kill_modules import run_kill_modules
+from mada_kill_adalms import run_kill_adalms
+from mada_adalm_control import run_adalm_control, get_adalm_serial
+from mada_daq_killer import run_daq_killer
+from mada_encoder_power import run_encoder_power_up, run_encoder_power_down
 
 HOME     = os.environ["HOME"]
 RATEPATH = HOME + "/rate"
 
 MADAHOME = os.environ['MADAHOME']
-MADA_IWAKI = MADAHOME + "/bin/MADA_iwaki"
+MADA_IWAKI = MADAHOME + "/bin/MadaIwaki"
 
 def print_header():
     print('*********************************************************')
-    print('*** MADA.py                                           ***')
+    print('*** mada.py                                           ***')
     print('*** Micacle Argon DAQ (http://github.com/kobeDM/MADA) ***')
     print('*** Author      : R.Namai (2026 Apl.)                 ***')
     print('*********************************************************')
@@ -92,7 +92,7 @@ def run_gigaiwaki(period_id, file_id, event_num, active_boards):
 
 
 def get_gigaiwaki_processes():
-    result = subprocess.run(['pgrep', '-f', 'MADA_iwaki'], stdout=subprocess.PIPE, text=True)
+    result = subprocess.run(['pgrep', '-f', 'MadaIwaki'], stdout=subprocess.PIPE, text=True)
     pids = result.stdout.strip().split('\n')
     return [int(pid) for pid in pids if pid.isdigit()]
 

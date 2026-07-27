@@ -8,10 +8,10 @@ from subprocess import PIPE
 
 MADAHOME = os.environ["MADAHOME"]
 
-FETCHCONFIG = MADAHOME + "/scripts/MADA_fetch_config.py"
+FETCHCONFIG = MADAHOME + "/scripts/mada_fetch_config.py"
 EXE_SETDAC  = MADAHOME + "/bin/SetDAC"
 EXE_DAQ     = MADAHOME + "/bin/ScanVth"
-EXE_ANA     = MADAHOME + "/scripts/MADA_runVthAna.py"
+EXE_ANA     = MADAHOME + "/scripts/mada_run_vth_ana.py"
 EXE_CORR    = MADAHOME + "/rootmacro/DACValueCorrection.cxx"
 
 DEFAULT_DACFILE = MADAHOME + "/config/No00_base_v3.1.dac"
@@ -47,7 +47,7 @@ def find_newrun():
 
 
 def main():
-    print('### MADA_runVthScan.py start ###')
+    print('### mada_run_vth_scan.py start ###')
     
     # Default values
     args = parser()
@@ -104,7 +104,7 @@ def main():
         cmd = "root -l -b -q \'" + EXE_CORR + "(\"" + rootfile + "\", " + "\"" + dacfile + "\", " + "\"" + outputfile + "\")\'"
         run_command(cmd) # Correct branch date is not filled to rootfile currently.
 
-    print('### MADA_runVthScan.py end ###')
+    print('### mada_run_vth_scan.py end ###')
 
 
 if __name__ == '__main__':

@@ -13,11 +13,11 @@ MADABIN   = MADAHOME + '/bin'
 
 #scripts
 ADAPATH   = "/home/msgc/cn_tc/adalm/adalm_out"
-FETCHCON  = MADABIN + "/MADA_fetch_config.py"
+FETCHCON  = MADABIN + "/mada_fetch_config.py"
 Enable    = MADABIN + "/MADA_DAQenable.py"
-TestPulse = MADABIN + "/MADA_testout.py -f 1000"
-VthScan   = MADABIN + "/MADA_runVthScan.py"
-KILLER    = MADABIN + "/MADA_killmodules.py"
+TestPulse = MADABIN + "/mada_testout.py -f 1000"
+VthScan   = MADABIN + "/mada_run_vth_scan.py"
+KILLER    = MADABIN + "/mada_kill_modules.py"
 
 #configs
 CONFIG = "MADA_config.json"
@@ -50,7 +50,7 @@ for x in config_load['gigaIwaki']:
         activeIP.append(config_load['gigaIwaki'][x]['IP'])
 
 # kill related programs
-KILLER = MADABIN + "/MADA_killmodules.py"
+KILLER = MADABIN + "/mada_kill_modules.py"
 
 procEnable = subprocess.Popen(Enable,stdout=subprocess.PIPE)
 procTP     = subprocess.Popen(TestPulse,stdout=subprocess.PIPE,shell=True)

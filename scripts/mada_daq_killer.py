@@ -16,7 +16,7 @@ RATEPATH = HOME + "/rate"
 
 target_modules = [
     'MADA_DAQenable.py',
-    'MADA_iwaki'
+    'MadaIwaki'
 ]
 
 #read option parameters

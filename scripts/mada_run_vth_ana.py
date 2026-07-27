@@ -6,12 +6,12 @@ from subprocess import PIPE
 import json
 from csv import reader
 
-print('### MADA_runVthAna.py start ###')
+print('### mada_run_vth_ana.py start ###')
 
 MADAHOME  = os.environ['MADAHOME']
 
-EXE       = MADAHOME + '/bin/Vth_Analysis'
-SKEL      = MADAHOME + '/rootmacro/ShowVth_skel.cxx'
+EXE       = MADAHOME + '/bin/VthAnalysis'
+SKEL      = MADAHOME + '/rootmacro/ShowVthSkel.cxx'
 SHOW_CODE = MADAHOME + '/rootmacro/ShowVth.cxx'
 
 #configs
@@ -94,7 +94,7 @@ def main():
 
     run_command(cmd)
 
-    print('### MADA_runVthAna.py end ###')
+    print('### mada_run_vth_ana.py end ###')
 
 if __name__ == '__main__':
     main()
