@@ -4,21 +4,21 @@ import os
 import subprocess
 import argparse
 import glob
-from subprocess import PIPE
+
+from mada_fetch_config import run_fetch_config
+from mada_run_vth_ana import run_vth_ana
 
 MADAHOME = os.environ["MADAHOME"]
 
-FETCHCONFIG = MADAHOME + "/scripts/mada_fetch_config.py"
 EXE_SETDAC  = MADAHOME + "/bin/SetDAC"
 EXE_DAQ     = MADAHOME + "/bin/ScanVth"
-EXE_ANA     = MADAHOME + "/scripts/mada_run_vth_ana.py"
 EXE_CORR    = MADAHOME + "/rootmacro/DACValueCorrection.cxx"
 
 DEFAULT_DACFILE = MADAHOME + "/config/No00_base_v3.1.dac"
 
 def parser():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("ip", type=str, nargs='?', const=None, help='[IP]')
+    argparser.add_argument("ip", type=str, nargs='?', const=None, help='[IP]', default="192.168.100.64")
     argparser.add_argument("VthLow", type=int, nargs='?', const=None, help='[V thresholod lower bound]', default=0)
     argparser.add_argument("VthHigh", type=int, nargs='?', const=None, help='[V thresholod upper bound]', default=16384)
     argparser.add_argument("VthStep", type=int, nargs='?', const=None, help='[V thresholod step]', default=32)
@@ -58,9 +58,7 @@ def main():
     batch_mode = args.batch
     DACfile = args.dac
 
-    cmd = FETCHCONFIG
-    ret = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False)
-    print(ret.stdout)        
+    run_fetch_config()
 
     # write DAC values
     cmd = EXE_SETDAC + " " + ip + " " + DACfile
@@ -83,11 +81,7 @@ def main():
     cmd = "cp " + newrun + "/scan_config.out ."
     run_command(cmd)
 
-    if batch_mode:
-        cmd = EXE_ANA + " -b " + newrun
-    else:
-        cmd = EXE_ANA + " " + newrun
-    run_command(cmd)
+    run_vth_ana(newrun, batch=batch_mode)
 
     cmd = "mv Vthcheck.png Vth.root Vth_val.root " + newrun
     run_command(cmd)

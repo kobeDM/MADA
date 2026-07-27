@@ -11,9 +11,7 @@ CONFIGPATH = MADAHOME + '/config'
 CONFIG      = 'MADA_config.json'
 CONFIG_SKEL = 'MADA_config_SKEL.json'
 
-def main():
-    print('### mada_fetch_config.py start ###')
-    
+def run_fetch_config():
     if os.path.isfile(CONFIG):
         print(CONFIG, 'exists.')
     else:
@@ -28,11 +26,14 @@ def main():
             SN = skel_load['ADALM'][x]['S/N']
             URI = get_uri_by_serial(SN)
             skel_load['ADALM'][x]['URI'] = URI
-            print('\tS/N:', SN, '-->', skel_load['ADALM'][x]['URI'])    
-        
+            print('\tS/N:', SN, '-->', skel_load['ADALM'][x]['URI'])
+
             with open(CONFIG, mode='wt', encoding='utf-8') as file:
                 json.dump(skel_load, file, ensure_ascii=False, indent=4)
 
+def main():
+    print('### mada_fetch_config.py start ###')
+    run_fetch_config()
     print('### mada_fetch_config.py end ###')
 
 if __name__ == '__main__':

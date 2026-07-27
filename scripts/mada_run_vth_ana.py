@@ -2,11 +2,8 @@
 import os
 import subprocess
 import argparse
-from subprocess import PIPE
 import json
 from csv import reader
-
-print('### mada_run_vth_ana.py start ###')
 
 MADAHOME  = os.environ['MADAHOME']
 
@@ -29,16 +26,9 @@ def run_command(cmd):
     print("execute: " + cmd)
     subprocess.run(cmd, shell=True)
 
-def main():
-    args = parser()
-    if args.runID:
-        run = args.runID
-        print("runID:", run)
-    else:
-        print("Error: RUN ID is not selected.")
-        exit(1)
-
-    if args.batch:
+def run_vth_ana(run, batch=False):
+    print("runID:", run)
+    if batch:
         print("batch mode")
 
     configfile = run + '/scan_config.out'
@@ -87,12 +77,22 @@ def main():
     with open(SHOW_CODE, mode='w') as f:
         f.writelines(showcode)
 
-    if args.batch:
+    if batch:
         cmd = 'root -b -q -l ' + SHOW_CODE
     else:
         cmd = 'root ' + SHOW_CODE
 
     run_command(cmd)
+
+def main():
+    print('### mada_run_vth_ana.py start ###')
+
+    args = parser()
+    if not args.runID:
+        print("Error: RUN ID is not selected.")
+        exit(1)
+
+    run_vth_ana(args.runID, args.batch)
 
     print('### mada_run_vth_ana.py end ###')
 
