@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 
 import os
-import subprocess
 import json
-from subprocess import PIPE
 
+from find_adalm2000 import get_uri_by_serial
 
 MADAHOME   = os.environ['MADAHOME']
-BINPATH    = MADAHOME + '/bin'
 CONFIGPATH = MADAHOME + '/config'
 
-findADALM   = 'find_adalm2000.py'
 CONFIG      = 'MADA_config.json'
 CONFIG_SKEL = 'MADA_config_SKEL.json'
 
@@ -29,10 +26,7 @@ def main():
         #set ADALM URIs by checking S/Ns
         for x in skel_load['ADALM']:
             SN = skel_load['ADALM'][x]['S/N']
-            cmd = BINPATH + '/' + findADALM + ' ' + SN
-            ret = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None,  check=False, capture_output=False)
-            
-            URI = ret.stdout.decode('utf8').replace('\n','')
+            URI = get_uri_by_serial(SN)
             skel_load['ADALM'][x]['URI'] = URI
             print('\tS/N:', SN, '-->', skel_load['ADALM'][x]['URI'])    
         

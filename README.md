@@ -151,7 +151,6 @@ For each entry under `gigaIwaki`, set:
 - **ADALM discovery (S/N → URI)**
     ```bash
     find_adalm2000.py
-    # also importable as a library: get_uri_by_serial(serial)
     ```
 
 - **ADALM digital output control (DAQ enable / counter reset latch)**
