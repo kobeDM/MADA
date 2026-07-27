@@ -144,7 +144,7 @@ For each entry under `gigaIwaki`, set:
     ```bash
     MADA_runDACScan.py [IP] [Vth]
     ```
-    Runs the scan with `bin/DAC_Survey` and analyzes it with `bin/DAC_Analysis` (`runDACAna.py` handles visualization via `rootmacro/ShowDAC*.cxx`).
+    Runs the scan with `bin/DAC_Survey` and analyzes it with `bin/DAC_Analysis`.
 
 ### ADALM2000
 

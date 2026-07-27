@@ -11,8 +11,6 @@ set(Targets
     SetVth
     read_CtrlMem
     SetDAC
-    MADA_VthScan
-    MADA_DACScan
     SetADCBias
     SetAP
     SetLatchUpDetect
@@ -35,8 +33,6 @@ include(${ROOT_USE_FILE})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_executable(MADA_DACScan MADA_DACScan.cc SiTCP.cc TCPclient.cc RBCP.cc)
-add_executable(MADA_VthScan MADA_VthScan.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(MADA_iwaki MADA_iwaki.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(SetVth SetVth.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(SetDAC SetDAC.cc SiTCP.cc TCPclient.cc RBCP.cc)
