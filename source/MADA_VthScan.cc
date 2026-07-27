@@ -71,7 +71,9 @@ int main( int argc, char *argv[] )
 
             int num = EtherData.Read( c_data );
             cout << num << " " << flush;
-            if ( num > 0 )
+            if ( num <= 0 )
+                break;
+            else
                 data_size += num;
 
             if ( data_size > 0x20000 )

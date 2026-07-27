@@ -68,11 +68,11 @@ target_link_libraries(ScanVth PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(Vth_Analysis PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(FindAdalm PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetAllDAC PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
-target_link_libraries(ClearDACValues PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 
-install(TARGETS ${Targets} RUNTIME DESTINATION bin)
-
+install(TARGETS ${Targets}
+    RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/../bin
+)
 add_custom_target(distclean
     COMMAND ${CMAKE_COMMAND} --build . --target clean
-    COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_INSTALL_PREFIX}/bin
+    COMMAND ${CMAKE_COMMAND} -E rm -rf ${PROJECT_SOURCE_DIR}/../bin
 )
