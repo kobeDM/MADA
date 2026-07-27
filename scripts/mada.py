@@ -146,7 +146,7 @@ def update_info_file(period_id, file_id, end_time, active_boards):
 
     return file_size
     
-def write_rate_log(rate_file_path, end_time, start_time, event_num):
+def write_rate_log(rate_file_path, start_time, end_time, event_num):
     realtime = end_time - start_time
     dt = datetime.fromtimestamp(end_time)
 
@@ -217,8 +217,6 @@ def run_daq(config_path, period_id, file_num, event_num, calin=None):
             rate_file_path = dt.strftime(f"{RATEPATH}/%Y%m%d")
             write_rate_log(rate_file_path, start_time, end_time, event_num)
             
-            file_id += 1
-
         except KeyboardInterrupt:
             print('Keyboard interrupt received. Stopping DAQ...')
             run_daq_killer()
@@ -246,7 +244,6 @@ def main():
         period = create_new_period()
         print('New period created : per' + str(period).zfill(4))
         run_daq(config_path, period, file_num, event_num, calin)
-        exit()
 
 if __name__ == '__main__':
     main()
