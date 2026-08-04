@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import argparse
 import subprocess
 import json
@@ -18,6 +19,9 @@ RATEPATH = HOME + "/rate"
 
 MADAHOME = os.environ['MADAHOME']
 MADA_IWAKI = MADAHOME + "/bin/MadaIwaki"
+
+UPIC_FOOTER = b'uPIC'
+PROGRESS_POLL_INTERVAL = 0.2
 
 def print_header():
     print('*********************************************************')
@@ -40,13 +44,6 @@ def load_config(config_path):
         config_load = json.load(f)
     return config_load
 
-def create_new_period() -> int:
-    period = 0
-    while os.path.exists('per' + str(period).zfill(4)):
-        period += 1
-    os.makedirs('per' + str(period).zfill(4))
-    return period
-
 def get_active_boards(config_path):
     with open(config_path, 'r') as file:
         config_load = json.load(file)
@@ -57,38 +54,98 @@ def get_active_boards(config_path):
             active_boards.append((x, config_load['gigaIwaki'][x]['IP']))
     return active_boards
 
-def make_info_file(config_path, period_id, file_id, active_boards):
-    start_time = time.time()
 
-    with open(config_path, 'r') as file:
-        config_load = json.load(file)
+class RunLogger:
+    """Owns per-period file paths and the .info/.mada/rate log bookkeeping."""
 
-    for board_id, ip in active_boards:
-        info_file_name = f'per{str(period_id).zfill(4)}/{board_id}_{str(file_id).zfill(4)}.info'
-        config_dict = {}
+    def __init__(self, config_path, period_id):
+        self.config_path = config_path
+        self.period_id = period_id
 
-        for gid in config_load['gigaIwaki']:
-            if config_load['gigaIwaki'][gid]['IP'] == ip:
-                config_dict.update(config_load['gigaIwaki'][gid])
+    @staticmethod
+    def new_period() -> int:
+        period = 0
+        while os.path.exists('per' + str(period).zfill(4)):
+            period += 1
+        os.makedirs('per' + str(period).zfill(4))
+        return period
 
-                output_data = {
-                    'gigaIwaki': config_dict,
-                    'runinfo': {
-                        'start': start_time
+    def _period_dir(self):
+        return 'per' + str(self.period_id).zfill(4)
+
+    def _info_file_path(self, file_id, board_id):
+        return f'{self._period_dir()}/{board_id}_{str(file_id).zfill(4)}.info'
+
+    def mada_file_paths(self, file_id, active_boards):
+        return {
+            board_id: f'{self._period_dir()}/{board_id}_{str(file_id).zfill(4)}.mada'
+            for board_id, ip in active_boards
+        }
+
+    def write_info_start(self, file_id, active_boards, start_time):
+        with open(self.config_path, 'r') as file:
+            config_load = json.load(file)
+
+        for board_id, ip in active_boards:
+            config_dict = {}
+
+            for gid in config_load['gigaIwaki']:
+                if config_load['gigaIwaki'][gid]['IP'] == ip:
+                    config_dict.update(config_load['gigaIwaki'][gid])
+
+                    output_data = {
+                        'gigaIwaki': config_dict,
+                        'runinfo': {
+                            'start': start_time
+                        }
                     }
-                }
 
-                with open(info_file_name, mode='wt', encoding='utf-8') as out_file:
-                    json.dump(output_data, out_file, ensure_ascii=False, indent=4)
+                    with open(self._info_file_path(file_id, board_id), mode='wt', encoding='utf-8') as out_file:
+                        json.dump(output_data, out_file, ensure_ascii=False, indent=4)
 
-                break
+                    break
+
+    def write_info_end(self, file_id, active_boards, end_time):
+        for board_id, ip in active_boards:
+            info_file_path = self._info_file_path(file_id, board_id)
+            mada_file_path = f'{self._period_dir()}/{board_id}_{str(file_id).zfill(4)}.mada'
+
+            file_size = os.path.getsize(mada_file_path)
+            print('size= ', file_size, 'byte')
+
+            with open(info_file_path, 'r', encoding='utf-8') as f:
+                info_load = json.load(f)
+
+            info_load.setdefault('runinfo', {})
+            info_load['runinfo'].update({
+                'end': end_time,
+                'size': str(file_size)
+            })
+
+            with open(info_file_path, 'w', encoding='utf-8') as f:
+                json.dump(info_load, f, ensure_ascii=False, indent=4)
+
+        return file_size
+
+    def write_rate_log(self, start_time, end_time, event_num):
+        realtime = end_time - start_time
+        dt = datetime.fromtimestamp(end_time)
+
+        t = dt.strftime("%Y/%m/%d/%H:%M:%S")
+
+        rates = [float(event_num) / realtime]
+        out_list = [t, start_time, end_time] + rates
+        out_str = '\t'.join(map(str, out_list)) + '\n'
+
+        rate_file_path = dt.strftime(f"{RATEPATH}/%Y%m%d")
+        with open(rate_file_path, 'a', encoding='utf-8') as f:
+            f.write(out_str)
 
 
-def run_gigaiwaki(period_id, file_id, event_num, active_boards):
+def run_gigaiwaki(event_num, active_boards, mada_files):
     for board_id, ip in active_boards:
-        mada_file_name = f'per{str(period_id).zfill(4)}/{board_id}_{str(file_id).zfill(4)}.mada'
-        cmd = f'{MADA_IWAKI} -n {event_num} -f {mada_file_name} -i {ip}'
-        subprocess.Popen(cmd, shell=True)
+        cmd = f'{MADA_IWAKI} -n {event_num} -f {mada_files[board_id]} -i {ip}'
+        subprocess.Popen(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def get_gigaiwaki_processes():
@@ -105,15 +162,78 @@ def is_alive(pid):
         return False
 
 
-def check_process_termination(pids):
-    print('Waiting for gigaiwaki processes to finish...')
-    process_num_org = len(pids)
+class ProgressMonitor:
+    """Tracks and displays each board's live event count during acquisition,
+    by tailing the growing .mada files for the 'uPIC' footer marker."""
 
-    while True:
-        alive_pids = [p for p in pids if is_alive(p)]
-        if len(alive_pids) != process_num_org:
-            break
-        time.sleep(1)
+    def __init__(self, mada_files, event_num, poll_interval=PROGRESS_POLL_INTERVAL):
+        self.mada_files = mada_files
+        self.event_num = event_num
+        self.poll_interval = poll_interval
+
+        self.board_ids = list(mada_files.keys())
+        self.offsets = {board_id: 0 for board_id in self.board_ids}
+        self.carries = {board_id: b'' for board_id in self.board_ids}
+        self.counts = {board_id: 0 for board_id in self.board_ids}
+        self.is_tty = sys.stdout.isatty()
+        self._drawn = False
+
+    @staticmethod
+    def _count_new_footers(data, carry):
+        # Prepend the tail of the previous chunk so a footer split across
+        # two polls (e.g. "...uPI" | "C...") is still detected.
+        buf = carry + data
+        return buf.count(UPIC_FOOTER), buf[-(len(UPIC_FOOTER) - 1):]
+
+    def poll(self):
+        for board_id, path in self.mada_files.items():
+            try:
+                with open(path, 'rb') as f:
+                    f.seek(self.offsets[board_id])
+                    chunk = f.read()
+            except FileNotFoundError:
+                continue
+
+            if not chunk:
+                continue
+
+            found, self.carries[board_id] = self._count_new_footers(chunk, self.carries[board_id])
+            self.counts[board_id] += found
+            self.offsets[board_id] += len(chunk)
+
+    def render(self):
+        if self.is_tty and self._drawn:
+            sys.stdout.write(f'\x1b[{len(self.board_ids)}A')
+
+        for board_id in self.board_ids:
+            line = f'  {board_id}: {self.counts[board_id]:>6}/{self.event_num:<6} events stored'
+            if self.is_tty:
+                sys.stdout.write('\x1b[2K' + line + '\n')
+            else:
+                print(line)
+
+        sys.stdout.flush()
+        self._drawn = True
+
+    def wait_for_any_exit(self, pids):
+        """Poll and render while waiting for at least one gigaiwaki process
+        to exit (matching the intended 'one board done -> stop all' policy)."""
+        print('Waiting for gigaiwaki processes to finish...')
+        process_num_org = len(pids)
+
+        while True:
+            self.poll()
+            self.render()
+
+            alive_pids = [p for p in pids if is_alive(p)]
+            if len(alive_pids) != process_num_org:
+                break
+            time.sleep(self.poll_interval)
+
+        # Catch any events written just before the processes were found to
+        # have stopped.
+        self.poll()
+        self.render()
 
 
 def kill_gigaiwaki_processes(pids):
@@ -123,41 +243,6 @@ def kill_gigaiwaki_processes(pids):
             print(f'Killed process with PID: {pid}')
         except ProcessLookupError:
             print(f'Process with PID {pid} not found. It may have already terminated.')
-
-def update_info_file(period_id, file_id, end_time, active_boards):
-    for board_id, ip in active_boards:
-        info_file_path = f'per{str(period_id).zfill(4)}/{board_id}_{str(file_id).zfill(4)}.info'
-        mada_file_path = f'per{str(period_id).zfill(4)}/{board_id}_{str(file_id).zfill(4)}.mada'
-
-        file_size = os.path.getsize(mada_file_path)
-        print('size= ', file_size, 'byte')
-
-        with open(info_file_path, 'r', encoding='utf-8') as f:
-            info_load = json.load(f)
-
-        info_load.setdefault('runinfo', {})
-        info_load['runinfo'].update({
-            'end': end_time,
-            'size': str(file_size)
-        })
-
-        with open(info_file_path, 'w', encoding='utf-8') as f:
-            json.dump(info_load, f, ensure_ascii=False, indent=4)
-
-    return file_size
-    
-def write_rate_log(rate_file_path, start_time, end_time, event_num):
-    realtime = end_time - start_time
-    dt = datetime.fromtimestamp(end_time)
-
-    t = dt.strftime("%Y/%m/%d/%H:%M:%S")
-
-    rates = [float(event_num) / realtime]
-    out_list = [t, start_time, end_time] + rates
-    out_str = '\t'.join(map(str, out_list)) + '\n'
-
-    with open(rate_file_path, 'a', encoding='utf-8') as f:
-        f.write(out_str)
 
 def run_daq(config_path, period_id, file_num, event_num, calin=None):
     active_boards = get_active_boards(config_path)
@@ -173,6 +258,7 @@ def run_daq(config_path, period_id, file_num, event_num, calin=None):
     adalm_serial_counter_reset = get_adalm_serial(config_load, adalm_index=1)
 
     run_encoder_power_up(config_path)
+    logger = RunLogger(config_path, period_id)
 
     print('DAQ is running... Press Ctrl+C to stop.')
     for file_id in range(file_num):
@@ -184,9 +270,10 @@ def run_daq(config_path, period_id, file_num, event_num, calin=None):
 
             print('Latch down DAQ enable...')
             run_adalm_control(adalm_serial_daq_enable, latch=0)
-            
+
             print('Running gigaiwaki...')
-            run_gigaiwaki(period_id, file_id, event_num, active_boards)
+            mada_files = logger.mada_file_paths(file_id, active_boards)
+            run_gigaiwaki(event_num, active_boards, mada_files)
 
             pids = get_gigaiwaki_processes()
 
@@ -201,29 +288,28 @@ def run_daq(config_path, period_id, file_num, event_num, calin=None):
             start_time = time.time()
 
             print('Creating info files...')
-            make_info_file(config_path, period_id, file_id, active_boards)
+            logger.write_info_start(file_id, active_boards, start_time)
 
             # Wait for gigaiwaki processes to finish
-            check_process_termination(pids)
+            ProgressMonitor(mada_files, event_num).wait_for_any_exit(pids)
 
             print("Kill gigaiwaki processes...")
             kill_gigaiwaki_processes(pids)
 
             end_time = time.time()
-            
+
             print('Updating info files with end time...')
-            update_info_file(period_id, file_id, end_time, active_boards)
-            dt = datetime.fromtimestamp(end_time)
-            rate_file_path = dt.strftime(f"{RATEPATH}/%Y%m%d")
-            write_rate_log(rate_file_path, start_time, end_time, event_num)
-            
+            logger.write_info_end(file_id, active_boards, end_time)
+            logger.write_rate_log(start_time, end_time, event_num)
+
         except KeyboardInterrupt:
             print('Keyboard interrupt received. Stopping DAQ...')
             run_daq_killer()
-            break
+            run_encoder_power_down(config_path)
+            raise
 
     run_encoder_power_down(config_path)
-        
+
 def main():
     print_header()
     args = arg_parser()
@@ -239,11 +325,13 @@ def main():
     if calin:
         print('Calibration input : IP = ' + calin[0] + ', channel = ' + calin[1])
 
-    # Create new period
-    while True:
-        period = create_new_period()
-        print('New period created : per' + str(period).zfill(4))
-        run_daq(config_path, period, file_num, event_num, calin)
+    try:
+        while True:
+            period = RunLogger.new_period()
+            print('New period created : per' + str(period).zfill(4))
+            run_daq(config_path, period, file_num, event_num, calin)
+    except KeyboardInterrupt:
+        print('DAQ stopped by user.')
 
 if __name__ == '__main__':
     main()
