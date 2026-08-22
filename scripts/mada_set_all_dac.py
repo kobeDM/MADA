@@ -35,46 +35,7 @@ def make_logdir():
     if not os.path.exists(LOGPATH):
         os.makedirs(LOGPATH)
 
-# def run_set_all_dac(config_path, calin=None):
-#     if not os.path.exists(config_path):
-#         print(f"Error: Config file '{config_path}' does not exist.")
-#         return
-
-#     with open(config_path, 'r') as config_open:
-#         config_load = json.load(config_open)
-
-#     for x in config_load['gigaIwaki']:
-#         if config_load['gigaIwaki'][x]['active'] == 1:
-#             name    = x
-#             ip      = config_load['gigaIwaki'][x]['IP']
-#             Vth     = config_load['gigaIwaki'][x]['Vth']
-#             DACfile = config_load['gigaIwaki'][x]['DACfile']
-
-#             if calin and ip != calin[0]:
-#                 continue
-
-#             # Apply DAC
-#             if calin:
-#                 cmd = SETDAC_EXE + " " + ip + " " + DACfile + " " + calin[1]
-#             else:
-#                 cmd = SETDAC_EXE + " " + ip + " " + DACfile
-#             print('Execute: ' + cmd)
-#             subprocess.run(cmd, shell=True)
-
-#             # Apply Vth
-#             cmd = SETVTH_EXE + " " + ip + " " + str(Vth)
-#             print('Execute: ' + cmd)
-#             subprocess.run(cmd, shell=True)
-
-#             dt   = datetime.datetime.now()
-#             log_file_name = LOGPATH + '/' + str(dt.year) + str(dt.month).zfill(2) + str(dt.day).zfill(2) + "-" + str(dt.hour).zfill(2) + str(dt.minute).zfill(2) + str(dt.second).zfill(2) + "-" + name
-#             with open(log_file_name, 'w') as log_out:
-#                 cmd = READMEM_EXE + " " + ip
-#                 subprocess.run(cmd, shell=True, stdout=log_out)
-#                 print("Memory check log: " + log_file_name)
-
-
-def run_set_all_dac(config_path):
+def run_set_all_dac(config_path, calin=None):
     if not os.path.exists(config_path):
         print(f"Error: Config file '{config_path}' does not exist.")
         return
@@ -88,15 +49,54 @@ def run_set_all_dac(config_path):
             ip      = config_load['gigaIwaki'][x]['IP']
             Vth     = config_load['gigaIwaki'][x]['Vth']
             DACfile = config_load['gigaIwaki'][x]['DACfile']
-            bias    = config_load['gigaIwaki'][x]['bias']
 
-            print(f"Processing {name} (IP: {ip})")
-            print(f"  Vth: {Vth}, DACfile: {DACfile}, bias: {bias}")
+            if calin and ip != calin[0]:
+                continue
 
             # Apply DAC
-            cmd = f"{SETALLDAC_EXE} {ip} {Vth} {DACfile} {bias}"
+            if calin:
+                cmd = SETDAC_EXE + " " + ip + " " + DACfile + " " + calin[1]
+            else:
+                cmd = SETDAC_EXE + " " + ip + " " + DACfile
             print('Execute: ' + cmd)
             subprocess.run(cmd, shell=True)
+
+            # Apply Vth
+            cmd = SETVTH_EXE + " " + ip + " " + str(Vth)
+            print('Execute: ' + cmd)
+            subprocess.run(cmd, shell=True)
+
+            dt   = datetime.datetime.now()
+            log_file_name = LOGPATH + '/' + str(dt.year) + str(dt.month).zfill(2) + str(dt.day).zfill(2) + "-" + str(dt.hour).zfill(2) + str(dt.minute).zfill(2) + str(dt.second).zfill(2) + "-" + name
+            with open(log_file_name, 'w') as log_out:
+                cmd = READMEM_EXE + " " + ip
+                subprocess.run(cmd, shell=True, stdout=log_out)
+                print("Memory check log: " + log_file_name)
+
+
+# def run_set_all_dac(config_path):
+#     if not os.path.exists(config_path):
+#         print(f"Error: Config file '{config_path}' does not exist.")
+#         return
+
+#     with open(config_path, 'r') as config_open:
+#         config_load = json.load(config_open)
+
+#     for x in config_load['gigaIwaki']:
+#         if config_load['gigaIwaki'][x]['active'] == 1:
+#             name    = x
+#             ip      = config_load['gigaIwaki'][x]['IP']
+#             Vth     = config_load['gigaIwaki'][x]['Vth']
+#             DACfile = config_load['gigaIwaki'][x]['DACfile']
+#             bias    = config_load['gigaIwaki'][x]['bias']
+
+#             print(f"Processing {name} (IP: {ip})")
+#             print(f"  Vth: {Vth}, DACfile: {DACfile}, bias: {bias}")
+
+#             # Apply DAC
+#             cmd = f"{SETALLDAC_EXE} {ip} {Vth} {DACfile} {bias}"
+#             print('Execute: ' + cmd)
+#             subprocess.run(cmd, shell=True)
 
 
 def main():

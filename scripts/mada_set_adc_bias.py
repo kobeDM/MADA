@@ -19,21 +19,8 @@ def arg_parser():
     args = parser.parse_args()
     return args
 
-def main():
-    print("### mada_set_adc_bias.py start ###")
-
-    args = arg_parser()
-    config = args.config
-
-    if not os.path.isfile(config):
-        print('Config file was not found. Fetching skelton file...')
-        subprocess.run([FETCHCONFIG])
-        config = CONFIG
-
-    print('Config file: ' + config)
-    print('---')
-
-    with open(config, 'r') as file:
+def run_set_adc_bias(config_path):
+    with open(config_path, 'r') as file:
         config_load = json.load(file)
 
     for name, data in config_load.get('gigaIwaki', {}).items():
@@ -52,6 +39,22 @@ def main():
         result = subprocess.run(cmd, capture_output=True, text=True)
         print(result.stdout)
         print('---')
+
+def main():
+    print("### mada_set_adc_bias.py start ###")
+
+    args = arg_parser()
+    config = args.config
+
+    if not os.path.isfile(config):
+        print('Config file was not found. Fetching skelton file...')
+        subprocess.run([FETCHCONFIG])
+        config = CONFIG
+
+    print('Config file: ' + config)
+    print('---')
+
+    run_set_adc_bias(config)
 
     print("### mada_set_adc_bias.py end ###")
 

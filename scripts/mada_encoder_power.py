@@ -3,6 +3,7 @@
 import argparse
 
 from mada_set_ap import run_set_ap
+from mada_set_adc_bias import run_set_adc_bias
 from mada_set_all_dac import run_set_all_dac
 from mada_set_latch_up_detect import run_set_latch_up_detect
 
@@ -15,12 +16,16 @@ def arg_parser():
     args = parser.parse_args()
     return args
 
-def run_encoder_power_up(config_path):
+def run_encoder_power_up(config_path, calin=None):
     print('Activating Regulator...')
     run_set_ap(config_path, io=1)
 
+    print('Setting ADC bias...')
+    run_set_adc_bias(config_path)
+
     print('Setting DAC values and Vth...')
-    run_set_all_dac(config_path)
+    # run_set_all_dac(config_path)
+    run_set_all_dac(config_path, calin=calin)
 
     print('Activating Latch Up Detection...')
     run_set_latch_up_detect(config_path, io=1)
