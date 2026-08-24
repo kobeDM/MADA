@@ -3,7 +3,6 @@
 import psutil
 
 target_modules = [
-    'MADA_DAQenable',
     'ad_out',
     'MadaIwaki',
     'mada_daq_killer'

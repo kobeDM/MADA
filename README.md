@@ -89,11 +89,11 @@ For each entry under `gigaIwaki`, set:
     ```bash
     mada_daq_killer.py [-c config]
     ```
-    Terminates any running `MadaIwaki` / `MADA_DAQenable.py` processes, updates the latest `.info` file with the final file size and end time, and appends a rate-log entry to `~/rate/YYYYMMDD`. This is also called internally when `mada.py` is interrupted with Ctrl+C.
+    Terminates any running `MadaIwaki` processes, updates the latest `.info` file with the final file size and end time, and appends a rate-log entry to `~/rate/YYYYMMDD`. This is also called internally when `mada.py` is interrupted with Ctrl+C.
 
 - **Kill related processes only**
     ```bash
-    mada_kill_modules.py   # terminates MADA_DAQenable / ad_out / MadaIwaki / mada_daq_killer
+    mada_kill_modules.py   # terminates ad_out / MadaIwaki / mada_daq_killer
     mada_kill_adalms.py    # terminates AdalmControl processes
     ```
 

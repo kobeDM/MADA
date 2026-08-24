@@ -15,7 +15,6 @@ HOME     = os.environ["HOME"]
 RATEPATH = HOME + "/rate"
 
 target_modules = [
-    'MADA_DAQenable.py',
     'MadaIwaki'
 ]
 
