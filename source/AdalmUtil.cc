@@ -55,6 +55,9 @@ void DigitalLatchUp( M2kDigital *dout, const int channel[16] )
     dout->setSampleRateOut( dfreq );
 
     for ( int i = 0; i < 16; i++ ) {
+        if ( !channel[i] )
+            continue;
+
         dout->setOutputMode( i, DIO_MODE( dmode ) );
         dout->setDirection( i, DIO_DIRECTION( ddir ) );
     }
@@ -62,6 +65,9 @@ void DigitalLatchUp( M2kDigital *dout, const int channel[16] )
     dout->setCyclic( false );
 
     for ( int i = 0; i < 16; i++ ) {
+        if ( !channel[i] )
+            continue;
+
         dout->setValueRaw( i, DIO_LEVEL( 1 ) );
     }
 }
@@ -75,6 +81,9 @@ void DigitalLatchDown( M2kDigital *dout, const int channel[16] )
     dout->setSampleRateOut( dfreq );
 
     for ( int i = 0; i < 16; i++ ) {
+        if ( !channel[i] )
+            continue;
+
         dout->setOutputMode( i, DIO_MODE( dmode ) );
         dout->setDirection( i, DIO_DIRECTION( ddir ) );
     }
@@ -82,6 +91,9 @@ void DigitalLatchDown( M2kDigital *dout, const int channel[16] )
     dout->setCyclic( false );
 
     for ( int i = 0; i < 16; i++ ) {
+        if ( !channel[i] )
+            continue;
+
         dout->setValueRaw( i, DIO_LEVEL( 0 ) );
     }
 }
