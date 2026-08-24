@@ -284,10 +284,11 @@ def run_daq(config_path, period_id, file_num, event_num, calin=None):
             print('Latch up DAQ enable...')
             run_adalm_control(adalm_serial_daq_enable, latch=1)
 
-            print('Resetting counters...') # input pulse-like signal
-            run_adalm_control(adalm_serial_counter_reset, latch=1)
-            time.sleep(0.1)
-            run_adalm_control(adalm_serial_counter_reset, latch=0)
+            print('Waiting data flushing...')
+            time.sleep(1)
+
+            print('Resetting counters...')
+            run_adalm_control(adalm_serial_counter_reset, latch=1, width=0.1)
 
             start_time = time.time()
 

@@ -1,5 +1,8 @@
 #include <getopt.h>
 
+#include <chrono>
+#include <thread>
+
 #include "../include/AdalmUtil.h"
 
 using namespace libm2k;
@@ -35,6 +38,7 @@ int main( int argc, char *argv[] )
         {"help",   no_argument,       NULL, 'h'},
         {"serial", required_argument, NULL, 's'},
         {"latch",  required_argument, NULL, 'l'},
+        {"width",  required_argument, NULL, 'w'},
         {0,        0,                 0,    0  },
     };
 
@@ -42,8 +46,9 @@ int main( int argc, char *argv[] )
     int         opt;
     std::string serialNumber = "";
     int         latch        = 0;
+    double      width        = -1.0;  // <0: single latch (default), >=0: pulse mode (sec.)
 
-    while ( ( opt = getopt_long( argc, argv, "hs:l:", longopts, &longindex ) ) != -1 ) {
+    while ( ( opt = getopt_long( argc, argv, "hs:l:w:", longopts, &longindex ) ) != -1 ) {
         switch ( opt ) {
         case 's':
             serialNumber = optarg;
@@ -51,6 +56,10 @@ int main( int argc, char *argv[] )
 
         case 'l':
             latch = std::stoi( optarg );
+            break;
+
+        case 'w':
+            width = std::stod( optarg );
             break;
 
         case '?':
@@ -63,7 +72,8 @@ int main( int argc, char *argv[] )
             std::cerr << "Options:" << std::endl;
             std::cerr << "  -h, --help             Show this help message" << std::endl;
             std::cerr << "  -s, --serial=SERIAL    Serial number" << std::endl;
-            std::cerr << "  -l, --latch=LATCH      Latch" << std::endl;
+            std::cerr << "  -l, --latch=LATCH      Latch (ignored if --width is given)" << std::endl;
+            std::cerr << "  -w, --width=SECONDS    Output a single latch-up/down pulse of this width instead of a static latch" << std::endl;
             return 1;
         }
     }
@@ -84,41 +94,44 @@ int main( int argc, char *argv[] )
     std::cout << "ADALM found: S/N: " << m2k->getSerialNumber( ) << std::endl;
     std::cout << "             URI: " << m2k->getUri( ) << std::endl;
 
-    // *** Analog power output control *** //
-    double voltage = 0.0;
-    if ( latch ) {
-        std::cout << "**** Latch up is selected. ****" << std::endl;
-    } else {
-        std::cout << "**** Latch down is selected. ****" << std::endl;
-    }
-    voltage = ANALOG_VOLTAGE;
-
-    // set analog power output
+    // set analog power output (kept on regardless of digital latch state)
     M2kAnalogOut *aout    = m2k->getAnalogOut( );
     const int     channel = 0;
-    AnalogDcOut( aout, channel, voltage );
+    AnalogDcOut( aout, channel, ANALOG_VOLTAGE );
 
     // *** Digital output control *** //
     M2kDigital *dout = m2k->getDigital( );  // for digial io
 
-    if ( latch ) {
-        std::cout << "**** Latch up is selected. ****" << std::endl;
-        DigitalLatchUp( dout, channels );
+    auto printDigitalOutput = []( const char *level ) {
         std::cout << "Digital output: " << std::endl;
         for ( int i = 0; i < 16; i++ ) {
             if ( channels[i] ) {
-                std::cout << "D" << i << ": HIGH" << std::endl;
+                std::cout << "D" << i << ": " << level << std::endl;
             }
         }
+    };
+
+    if ( width >= 0.0 ) {
+        // *** Pulse mode: single latch-up/down cycle of the given width *** //
+        std::cout << "**** Pulse mode: width " << width << " sec. ****" << std::endl;
+
+        std::cout << "**** Latch up. ****" << std::endl;
+        DigitalLatchUp( dout, channels );
+        printDigitalOutput( "HIGH" );
+
+        std::this_thread::sleep_for( std::chrono::duration<double>( width ) );
+
+        std::cout << "**** Latch down. ****" << std::endl;
+        DigitalLatchDown( dout, channels );
+        printDigitalOutput( "LOW" );
+    } else if ( latch ) {
+        std::cout << "**** Latch up is selected. ****" << std::endl;
+        DigitalLatchUp( dout, channels );
+        printDigitalOutput( "HIGH" );
     } else {
         std::cout << "**** Latch down is selected. ****" << std::endl;
         DigitalLatchDown( dout, channels );
-        std::cout << "Digital output: " << std::endl;
-        for ( int i = 0; i < 16; i++ ) {
-            if ( channels[i] ) {
-                std::cout << "D" << i << ": LOW" << std::endl;
-            }
-        }
+        printDigitalOutput( "LOW" );
     }
 
     return 0;
