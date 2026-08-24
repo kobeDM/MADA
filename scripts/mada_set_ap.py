@@ -19,7 +19,7 @@ def arg_parser():
     args = parser.parse_args()
     return args
 
-def run_set_ap(config_path, io):
+def run_set_ap(config_path, io, target_ip=None):
     with open(config_path, 'r') as file:
         config_load = json.load(file)
 
@@ -28,6 +28,8 @@ def run_set_ap(config_path, io):
             continue
 
         ip = data.get('IP')
+        if target_ip and ip != target_ip:
+            continue
 
         print('GigaIwaki: ' + name)
         print('  IP      : ' + ip)

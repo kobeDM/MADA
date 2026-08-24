@@ -13,6 +13,7 @@ from mada_kill_adalms import run_kill_adalms
 from mada_adalm_control import run_adalm_control, get_adalm_serial
 from mada_daq_killer import run_daq_killer
 from mada_encoder_power import run_encoder_power_up, run_encoder_power_down
+from mada_regulator_autoreset import RegulatorAutoresetMonitor
 
 HOME     = os.environ["HOME"]
 RATEPATH = HOME + "/rate"
@@ -258,6 +259,9 @@ def run_daq(config_path, period_id, file_num, event_num, calin=None):
     adalm_serial_counter_reset = get_adalm_serial(config_load, adalm_index=1)
 
     run_encoder_power_up(config_path)
+    regulator_monitor = RegulatorAutoresetMonitor(config_path)
+    regulator_monitor.start()
+
     logger = RunLogger(config_path, period_id)
 
     print('DAQ is running... Press Ctrl+C to stop.')
@@ -304,10 +308,12 @@ def run_daq(config_path, period_id, file_num, event_num, calin=None):
 
         except KeyboardInterrupt:
             print('Keyboard interrupt received. Stopping DAQ...')
+            regulator_monitor.stop()
             run_daq_killer()
             run_encoder_power_down(config_path)
             raise
 
+    regulator_monitor.stop()
     run_encoder_power_down(config_path)
 
 def main():

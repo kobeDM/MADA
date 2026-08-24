@@ -6,6 +6,7 @@
 			"connection": "c2",
 			"pitch": "400",
 			"IP": "192.168.100.97",
+			"module": 2,
 			"Vth": 10190,
 			"bias": 8000,
 			"DACfile": "/home/msgc/repo/MADA/config/No00_base_v3.1.dac"
@@ -15,6 +16,7 @@
 			"connection": "c3",
 			"pitch": "400",
 			"IP": "192.168.100.98",
+			"module": 2,
 			"Vth": 10190,
 			"bias": 8000,
 			"DACfile": "/home/msgc/repo/MADA/config/No00_base_v3.1.dac"
@@ -24,6 +26,7 @@
 			"connection": "a2",
 			"pitch": "400",
 			"IP": "192.168.100.65",
+			"module": 2,
 			"Vth": 9220,
 			"bias": 8000,
 			"DACfile": "/home/msgc/repo/MADA/config/No00_base_v3.1.dac"
@@ -33,6 +36,7 @@
 			"connection": "a3",
 			"pitch": "400",
 			"IP": "192.168.100.66",
+			"module": 2,
 			"Vth": 9220,
 			"bias": 8000,
 			"DACfile": "/home/msgc/repo/MADA/config/No00_base_v3.1.dac"

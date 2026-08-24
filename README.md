@@ -67,6 +67,7 @@ For each entry under `gigaIwaki`, set:
 
 - `active`: `1` to include the board in DAQ
 - `IP`: the board's IP address
+- `module`: the MPOD module number that supplies the board's regulator (used for over-current auto-reset)
 - `Vth`, `bias`: threshold / bias values
 - `DACfile`: path to the DAC file to apply
 
@@ -78,7 +79,7 @@ For each entry under `gigaIwaki`, set:
     ```bash
     mada.py [-c config] [-f file_num] [-n event_num] [--calin IP ch]
     ```
-    Creates a new `perNNNN/` run directory and, for every board with `active: 1` in `MADA_config.json`, runs the following in sequence: enable the regulator → set DAC/Vth → enable latch-up detection → collect `file_num` files of `event_num` events each via `MadaIwaki` (controlling DAQ enable / counter reset through the ADALM units) → write a `.info` log for each file. Ctrl+C stops the run safely, disabling latch-up detection and the regulator on the way out.
+    Creates a new `perNNNN/` run directory and, for every board with `active: 1` in `MADA_config.json`, runs the following in sequence: enable the regulator → set DAC/Vth → enable latch-up detection → collect `file_num` files of `event_num` events each via `MadaIwaki` (controlling DAQ enable / counter reset through the ADALM units) → write a `.info` log for each file. While the regulator is enabled, a background thread watches the MPOD over-current logs and auto-resets the regulator for any affected board (see below). Ctrl+C stops the run safely, disabling latch-up detection and the regulator on the way out.
     - `-c/--config`: config file name (default `MADA_config.json`)
     - `-f/--file_num`: number of files per period (default 512)
     - `-n/--event_num`: number of events per file (default 1000)
@@ -130,6 +131,12 @@ For each entry under `gigaIwaki`, set:
     mada_set_latch_up_detect.py {0|1} [-c config]    # disable(0)/enable(1) latch-up detection
     ```
     Each of these runs `bin/SetADCBias` / `bin/SetAP` / `bin/SetLatchUpDetect` against every board with `active: 1`.
+
+- **Regulator over-current auto-reset**
+    ```bash
+    mada_regulator_autoreset.py [-c config]
+    ```
+    Watches `Module-<N>_YYYYMMDD.log` under `/nadb/nadb65/status/mpod/regulator_autoreset/` for the MPOD module numbers listed in each `gigaIwaki` entry's `module` field. That log only ever gets a new line appended when the module goes over its current limit, so any new line is itself the trigger: the affected boards' regulators are reset (AP 0→1, via `mada_set_ap.py`'s `target_ip` filter). `mada.py` starts this monitor as a background thread right after enabling the regulator and stops it right before disabling it, so it runs automatically for the lifetime of each DAQ period; run this script directly only for standalone testing.
 
 ### Scanning and analysis
 
