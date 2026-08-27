@@ -252,7 +252,53 @@ def kill_gigaiwaki_processes(pids):
         except ProcessLookupError:
             print(f'Process with PID {pid} not found. It may have already terminated.')
 
-def run_daq(config_path, period_id, file_num, event_num, calin=None):
+def run_period(config_path, period_id, file_num, event_num, active_boards,
+               adalm_serial_daq_enable, adalm_serial_counter_reset):
+    logger = RunLogger(config_path, period_id)
+
+    for file_id in range(file_num):
+        print(f'Creating file {file_id} with {event_num} events...')
+
+        print('Killing ADALM processes...')
+        run_kill_adalms()
+
+        print('Latch down DAQ enable...')
+        run_adalm_control(adalm_serial_daq_enable, latch=0)
+
+        print('Running gigaiwaki...')
+        mada_files = logger.mada_file_paths(file_id, active_boards)
+        run_gigaiwaki(event_num, active_boards, mada_files)
+
+        pids = get_gigaiwaki_processes()
+
+        print('Latch up DAQ enable...')
+        run_adalm_control(adalm_serial_daq_enable, latch=1)
+
+        print('Waiting data flushing...')
+        time.sleep(1)
+
+        print('Resetting counters...')
+        run_adalm_control(adalm_serial_counter_reset, latch=1, width=0.1)
+
+        start_time = time.time()
+
+        print('Creating info files...')
+        logger.write_info_start(file_id, active_boards, start_time)
+
+        # Wait for gigaiwaki processes to finish
+        ProgressMonitor(mada_files, event_num).wait_for_any_exit(pids)
+
+        print("Kill gigaiwaki processes...")
+        kill_gigaiwaki_processes(pids)
+
+        end_time = time.time()
+
+        print('Updating info files with end time...')
+        logger.write_info_end(file_id, active_boards, end_time)
+        logger.write_rate_log(start_time, end_time, event_num)
+
+
+def run_daq(config_path, file_num, event_num, calin=None):
     active_boards = get_active_boards(config_path)
     if calin:
         active_boards = [(board_id, ip) for board_id, ip in active_boards if ip == calin[0]]
@@ -269,60 +315,20 @@ def run_daq(config_path, period_id, file_num, event_num, calin=None):
     regulator_monitor = RegulatorAutoresetMonitor(config_path)
     regulator_monitor.start()
 
-    logger = RunLogger(config_path, period_id)
-
     print('DAQ is running... Press Ctrl+C to stop.')
-    for file_id in range(file_num):
-        try:
-            print(f'Creating file {file_id} with {event_num} events...')
-
-            print('Killing ADALM processes...')
-            run_kill_adalms()
-
-            print('Latch down DAQ enable...')
-            run_adalm_control(adalm_serial_daq_enable, latch=0)
-
-            print('Running gigaiwaki...')
-            mada_files = logger.mada_file_paths(file_id, active_boards)
-            run_gigaiwaki(event_num, active_boards, mada_files)
-
-            pids = get_gigaiwaki_processes()
-
-            print('Latch up DAQ enable...')
-            run_adalm_control(adalm_serial_daq_enable, latch=1)
-
-            print('Waiting data flushing...')
-            time.sleep(1)
-
-            print('Resetting counters...')
-            run_adalm_control(adalm_serial_counter_reset, latch=1, width=0.1)
-
-            start_time = time.time()
-
-            print('Creating info files...')
-            logger.write_info_start(file_id, active_boards, start_time)
-
-            # Wait for gigaiwaki processes to finish
-            ProgressMonitor(mada_files, event_num).wait_for_any_exit(pids)
-
-            print("Kill gigaiwaki processes...")
-            kill_gigaiwaki_processes(pids)
-
-            end_time = time.time()
-
-            print('Updating info files with end time...')
-            logger.write_info_end(file_id, active_boards, end_time)
-            logger.write_rate_log(start_time, end_time, event_num)
-
-        except KeyboardInterrupt:
-            print('Keyboard interrupt received. Stopping DAQ...')
-            regulator_monitor.stop()
-            run_daq_killer()
-            run_encoder_power_down(config_path)
-            raise
-
-    regulator_monitor.stop()
-    run_encoder_power_down(config_path)
+    try:
+        while True:
+            period = RunLogger.new_period()
+            print('New period created : per' + str(period).zfill(4))
+            run_period(config_path, period, file_num, event_num, active_boards,
+                       adalm_serial_daq_enable, adalm_serial_counter_reset)
+    except KeyboardInterrupt:
+        print('Keyboard interrupt received. Stopping DAQ...')
+        run_daq_killer()
+        raise
+    finally:
+        regulator_monitor.stop()
+        run_encoder_power_down(config_path)
 
 def main():
     print_header()
@@ -340,10 +346,7 @@ def main():
         print('Calibration input : IP = ' + calin[0] + ', channel = ' + calin[1])
 
     try:
-        while True:
-            period = RunLogger.new_period()
-            print('New period created : per' + str(period).zfill(4))
-            run_daq(config_path, period, file_num, event_num, calin)
+        run_daq(config_path, file_num, event_num, calin)
     except KeyboardInterrupt:
         print('DAQ stopped by user.')
 

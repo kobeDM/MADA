@@ -79,7 +79,7 @@ For each entry under `gigaIwaki`, set:
     ```bash
     mada.py [-c config] [-f file_num] [-n event_num] [--calin IP ch]
     ```
-    Creates a new `perNNNN/` run directory and, for every board with `active: 1` in `MADA_config.json`, runs the following in sequence: enable the regulator → set DAC/Vth → enable latch-up detection → collect `file_num` files of `event_num` events each via `MadaIwaki` (controlling DAQ enable / counter reset through the ADALM units) → write a `.info` log for each file. While the regulator is enabled, a background thread watches the MPOD over-current logs and auto-resets the regulator for any affected board (see below). Ctrl+C stops the run safely, disabling latch-up detection and the regulator on the way out.
+    For every board with `active: 1` in `MADA_config.json`, enables the regulator → sets DAC/Vth → enables latch-up detection once at startup. It then repeatedly creates a new `perNNNN/` run directory and collects `file_num` files of `event_num` events each via `MadaIwaki` (controlling DAQ enable / counter reset through the ADALM units), writing a `.info` log for each file, moving on to a new period once `file_num` files have been collected. While the regulator is enabled, a background thread watches the MPOD over-current logs and auto-resets the regulator for any affected board (see below). Ctrl+C stops the run safely, disabling latch-up detection and the regulator on the way out.
     - `-c/--config`: config file name (default `MADA_config.json`)
     - `-f/--file_num`: number of files per period (default 512)
     - `-n/--event_num`: number of events per file (default 1000)
