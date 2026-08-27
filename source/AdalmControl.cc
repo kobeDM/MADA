@@ -16,17 +16,17 @@ const int channels[16] = {
     1,  // D2
     1,  // D3
     1,  // D4
-    0,  // D5
-    0,  // D6
-    0,  // D7
-    0,  // D8
-    0,  // D9
-    0,  // D10
-    0,  // D11
-    0,  // D12
-    0,  // D13
-    0,  // D14
-    0   // D15
+    1,  // D5
+    1,  // D6
+    1,  // D7
+    1,  // D8
+    1,  // D9
+    1,  // D10
+    1,  // D11
+    1,  // D12
+    1,  // D13
+    1,  // D14
+    1   // D15
 };
 const double ANALOG_VOLTAGE = 3.3;
 
@@ -46,7 +46,8 @@ int main( int argc, char *argv[] )
     int         opt;
     std::string serialNumber = "";
     int         latch        = 0;
-    double      width        = -1.0;  // <0: single latch (default), >=0: pulse mode (sec.)
+    bool        latchGiven   = false;
+    double      width        = -1.0;  // <0: single latch, >=0: pulse mode (sec.)
 
     while ( ( opt = getopt_long( argc, argv, "hs:l:w:", longopts, &longindex ) ) != -1 ) {
         switch ( opt ) {
@@ -56,6 +57,11 @@ int main( int argc, char *argv[] )
 
         case 'l':
             latch = std::stoi( optarg );
+            if ( latch != 0 && latch != 1 ) {
+                std::cerr << "Error: --latch must be 0 or 1." << std::endl;
+                return 1;
+            }
+            latchGiven = true;
             break;
 
         case 'w':
@@ -72,7 +78,7 @@ int main( int argc, char *argv[] )
             std::cerr << "Options:" << std::endl;
             std::cerr << "  -h, --help             Show this help message" << std::endl;
             std::cerr << "  -s, --serial=SERIAL    Serial number" << std::endl;
-            std::cerr << "  -l, --latch=LATCH      Latch (ignored if --width is given)" << std::endl;
+            std::cerr << "  -l, --latch=LATCH      Latch: 0 or 1 (required unless --width is given)" << std::endl;
             std::cerr << "  -w, --width=SECONDS    Output a single latch-up/down pulse of this width instead of a static latch" << std::endl;
             return 1;
         }
@@ -80,6 +86,11 @@ int main( int argc, char *argv[] )
 
     if ( serialNumber.empty( ) ) {
         std::cerr << "Error: serial number is required." << std::endl;
+        return 1;
+    }
+
+    if ( width < 0.0 && !latchGiven ) {
+        std::cerr << "Error: --latch (0 or 1) is required unless --width is given." << std::endl;
         return 1;
     }
 
