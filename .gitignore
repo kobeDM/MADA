@@ -2,6 +2,7 @@ bin
 
 build
 config/DAClog
+run
 
 .vscode
 .clang-format

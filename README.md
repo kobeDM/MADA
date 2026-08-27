@@ -77,13 +77,20 @@ For each entry under `gigaIwaki`, set:
 
 - **Start DAQ**
     ```bash
-    mada.py [-c config] [-f file_num] [-n event_num] [--calin IP ch]
+    mada.py [-c config] [-f file_num] [-n event_num] [-d] [--calin IP ch]
     ```
     For every board with `active: 1` in `MADA_config.json`, enables the regulator → sets DAC/Vth → enables latch-up detection once at startup. It then repeatedly creates a new `perNNNN/` run directory and collects `file_num` files of `event_num` events each via `MadaIwaki` (controlling DAQ enable / counter reset through the ADALM units), writing a `.info` log for each file, moving on to a new period once `file_num` files have been collected. While the regulator is enabled, a background thread watches the MPOD over-current logs and auto-resets the regulator for any affected board (see below). Ctrl+C stops the run safely, disabling latch-up detection and the regulator on the way out.
     - `-c/--config`: config file name (default `MADA_config.json`)
     - `-f/--file_num`: number of files per period (default 512)
     - `-n/--event_num`: number of events per file (default 1000)
+    - `-d/--daemon`: detach from the terminal and run in the background, redirecting output to `$MADAHOME/run/<run_dir_name>_<period>.log` — one log file per period, named after the launch directory (e.g. a date-named data directory) and the zero-padded period number, so files never collide even across repeated runs on the same day (PID written to `$MADAHOME/run/mada_daemon.pid`). Stop it with `mada_stop_daq.py` (see below)
     - `--calin IP ch`: use a calibration input, restricting the run to the board at `IP` and specifying the channel (0–127)
+
+- **Stop a background DAQ run**
+    ```bash
+    mada_stop_daq.py
+    ```
+    Reads the PID from `$MADAHOME/run/mada_daemon.pid` (written by `mada.py -d`) and sends it SIGTERM, which runs the same shutdown as Ctrl+C (regulator/latch-up detection teardown, `MadaIwaki` processes stopped). If the pidfile is stale (process already gone), it is removed instead.
 
 - **Force-stop DAQ / cleanup**
     ```bash

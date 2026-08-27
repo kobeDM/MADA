@@ -14,6 +14,7 @@ from mada_adalm_control import run_adalm_control, get_adalm_serial
 from mada_daq_killer import run_daq_killer
 from mada_encoder_power import run_encoder_power_up, run_encoder_power_down
 from mada_regulator_autoreset import RegulatorAutoresetMonitor
+from mada_daemon import daemonize, install_sigterm_handler, remove_pidfile, switch_log
 
 HOME     = os.environ["HOME"]
 RATEPATH = HOME + "/rate"
@@ -36,6 +37,7 @@ def arg_parser():
     parser.add_argument('-c', '--config', help='config file name', default='MADA_config.json')
     parser.add_argument('-f', '--file_num', help='File number in a period', default=512, type=int)
     parser.add_argument('-n', '--event_num', help='Event number in a file', default=1000, type=int)
+    parser.add_argument('-d', '--daemon', action='store_true', help='Run in the background, detached from the terminal')
     parser.add_argument('--calin', nargs=2, type=str, help='Calibration input: [IP] [channel (0-127)]', default=None)
     args = parser.parse_args()
     return args
@@ -209,19 +211,24 @@ class ProgressMonitor:
             self.counts[board_id] += found
             self.offsets[board_id] += len(chunk)
 
-    def render(self):
-        if self.is_tty and self._drawn:
-            sys.stdout.write(f'\x1b[{len(self.board_ids)}A')
-
-        for board_id in self.board_ids:
-            line = f'  {board_id}: {self.counts[board_id]:>6}/{self.event_num:<6} events stored'
-            if self.is_tty:
+    def render(self, final=False):
+        # On a TTY, redraw the same lines in place every poll (cheap, bounded
+        # size). Off a TTY (redirected to a file, e.g. --daemon), each poll
+        # would otherwise append a fresh line and blow up the log file, so
+        # only print once the counts are final.
+        if self.is_tty:
+            if self._drawn:
+                sys.stdout.write(f'\x1b[{len(self.board_ids)}A')
+            for board_id in self.board_ids:
+                line = f'  {board_id}: {self.counts[board_id]:>6}/{self.event_num:<6} events stored'
                 sys.stdout.write('\x1b[2K' + line + '\n')
-            else:
+            sys.stdout.flush()
+            self._drawn = True
+        elif final:
+            for board_id in self.board_ids:
+                line = f'  {board_id}: {self.counts[board_id]:>6}/{self.event_num:<6} events stored'
                 print(line)
-
-        sys.stdout.flush()
-        self._drawn = True
+            sys.stdout.flush()
 
     def wait_for_any_exit(self, pids):
         """Poll and render while waiting for at least one gigaiwaki process
@@ -239,9 +246,9 @@ class ProgressMonitor:
             time.sleep(self.poll_interval)
 
         # Catch any events written just before the processes were found to
-        # have stopped.
+        # have stopped, and print the final per-board counts.
         self.poll()
-        self.render()
+        self.render(final=True)
 
 
 def kill_gigaiwaki_processes(pids):
@@ -298,7 +305,7 @@ def run_period(config_path, period_id, file_num, event_num, active_boards,
         logger.write_rate_log(start_time, end_time, event_num)
 
 
-def run_daq(config_path, file_num, event_num, calin=None):
+def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
     active_boards = get_active_boards(config_path)
     if calin:
         active_boards = [(board_id, ip) for board_id, ip in active_boards if ip == calin[0]]
@@ -317,11 +324,14 @@ def run_daq(config_path, file_num, event_num, calin=None):
 
     print('DAQ is running... Press Ctrl+C to stop.')
     try:
+        period = first_period
         while True:
-            period = RunLogger.new_period()
             print('New period created : per' + str(period).zfill(4))
             run_period(config_path, period, file_num, event_num, active_boards,
                        adalm_serial_daq_enable, adalm_serial_counter_reset)
+            period = RunLogger.new_period()
+            if daemon:
+                switch_log(period)
     except KeyboardInterrupt:
         print('Keyboard interrupt received. Stopping DAQ...')
         run_daq_killer()
@@ -331,12 +341,21 @@ def run_daq(config_path, file_num, event_num, calin=None):
         run_encoder_power_down(config_path)
 
 def main():
-    print_header()
     args = arg_parser()
     config_path = args.config
     file_num = args.file_num
     event_num = args.event_num
     calin = args.calin
+
+    # Allocate the starting period before daemonizing, since the per-period
+    # log file name (<run_name>_<period>.log) needs to be known up front.
+    first_period = RunLogger.new_period()
+
+    if args.daemon:
+        daemonize(first_period)
+
+    print_header()
+    install_sigterm_handler()
 
     print('--- Arguments ---')
     print('Config file name : ' + config_path)
@@ -346,9 +365,12 @@ def main():
         print('Calibration input : IP = ' + calin[0] + ', channel = ' + calin[1])
 
     try:
-        run_daq(config_path, file_num, event_num, calin)
+        run_daq(config_path, file_num, event_num, first_period, args.daemon, calin)
     except KeyboardInterrupt:
         print('DAQ stopped by user.')
+    finally:
+        if args.daemon:
+            remove_pidfile()
 
 if __name__ == '__main__':
     main()
