@@ -111,7 +111,12 @@ class RunLogger:
             info_file_path = self._info_file_path(file_id, board_id)
             mada_file_path = f'{self._period_dir()}/{board_id}_{str(file_id).zfill(4)}.mada'
 
-            file_size = os.path.getsize(mada_file_path)
+            mada_file_missing = not os.path.exists(mada_file_path)
+            if mada_file_missing:
+                file_size = 0
+                print(f'WARNING: {mada_file_path} not found (connection failure suspected on {board_id})')
+            else:
+                file_size = os.path.getsize(mada_file_path)
             print('size= ', file_size, 'byte')
 
             with open(info_file_path, 'r', encoding='utf-8') as f:
@@ -122,6 +127,8 @@ class RunLogger:
                 'end': end_time,
                 'size': str(file_size)
             })
+            if mada_file_missing:
+                info_load['runinfo']['error'] = 'mada file not found (connection failure suspected)'
 
             with open(info_file_path, 'w', encoding='utf-8') as f:
                 json.dump(info_load, f, ensure_ascii=False, indent=4)
