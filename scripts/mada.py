@@ -6,7 +6,6 @@ import argparse
 import subprocess
 import json
 import time
-from datetime import datetime
 
 from mada_kill_modules import run_kill_modules
 from mada_kill_adalms import run_kill_adalms
@@ -15,6 +14,7 @@ from mada_daq_killer import run_daq_killer
 from mada_encoder_power import run_encoder_power_up, run_encoder_power_down
 from mada_regulator_autoreset import RegulatorAutoresetMonitor
 from mada_daemon import daemonize, install_sigterm_handler, remove_pidfile, switch_log
+from mada_rate_log import write_rate_log
 
 HOME     = os.environ["HOME"]
 RATEPATH = HOME + "/rate"
@@ -109,6 +109,7 @@ class RunLogger:
                     break
 
     def write_info_end(self, file_id, active_boards, end_time):
+        sizes_by_board = {}
         for board_id, ip in active_boards:
             info_file_path = self._info_file_path(file_id, board_id)
             mada_file_path = f'{self._period_dir()}/{board_id}_{str(file_id).zfill(4)}.mada'
@@ -120,6 +121,7 @@ class RunLogger:
             else:
                 file_size = os.path.getsize(mada_file_path)
             print('size= ', file_size, 'byte')
+            sizes_by_board[board_id] = file_size
 
             with open(info_file_path, 'r', encoding='utf-8') as f:
                 info_load = json.load(f)
@@ -135,21 +137,10 @@ class RunLogger:
             with open(info_file_path, 'w', encoding='utf-8') as f:
                 json.dump(info_load, f, ensure_ascii=False, indent=4)
 
-        return file_size
+        return sizes_by_board
 
-    def write_rate_log(self, start_time, end_time, event_num):
-        realtime = end_time - start_time
-        dt = datetime.fromtimestamp(end_time)
-
-        t = dt.strftime("%Y/%m/%d/%H:%M:%S")
-
-        rates = [float(event_num) / realtime]
-        out_list = [t, start_time, end_time] + rates
-        out_str = '\t'.join(map(str, out_list)) + '\n'
-
-        rate_file_path = dt.strftime(f"{RATEPATH}/%Y%m%d")
-        with open(rate_file_path, 'a', encoding='utf-8') as f:
-            f.write(out_str)
+    def write_rate_log(self, start_time, end_time, sizes):
+        write_rate_log(RATEPATH, start_time, end_time, sizes)
 
 
 def run_gigaiwaki(event_num, active_boards, mada_files):
@@ -301,8 +292,9 @@ def run_period(config_path, period_id, file_num, event_num, active_boards,
         end_time = time.time()
 
         print('Updating info files with end time...')
-        logger.write_info_end(file_id, active_boards, end_time)
-        logger.write_rate_log(start_time, end_time, event_num)
+        sizes_by_board = logger.write_info_end(file_id, active_boards, end_time)
+        sizes = [sizes_by_board[board_id] for board_id, ip in active_boards]
+        logger.write_rate_log(start_time, end_time, sizes)
 
 
 def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):

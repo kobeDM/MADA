@@ -13,6 +13,9 @@ import datetime
 from pathlib import Path
 from influxdb import InfluxDBClient
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("MADA_logScaler")
+
 # Load configuration
 DEFAULT_CONFIG = Path(__file__).resolve().parents[1] / "config" / "MADA_logDataSize.json"
 config_path = os.environ.get("MADA_LOGSCALER_CONFIG", str(DEFAULT_CONFIG))
@@ -35,6 +38,34 @@ client = InfluxDBClient(
 # Tags to attach to each point
 TAGS = cfg.get("tags", {})
 
+# Board order, read from the DAQ's own MADA_config.json. This must match the
+# active-board order used by mada.py's get_active_boards() at the time the
+# rate log line was written, since board identity is not encoded in the line
+# itself (see mada_rate_log.write_rate_log).
+DAQ_CONFIG_PATH = cfg.get("daq_config")
+BOARD_IDS = []
+if DAQ_CONFIG_PATH:
+    try:
+        with open(DAQ_CONFIG_PATH, "r") as f:
+            daq_cfg = json.load(f)
+        BOARD_IDS = [
+            board_id
+            for board_id, board_cfg in daq_cfg.get("gigaIwaki", {}).items()
+            if board_cfg.get("active") == 1
+        ]
+    except Exception:
+        logger.exception("Failed to load DAQ config %s for board IDs", DAQ_CONFIG_PATH)
+else:
+    logger.warning("No 'daq_config' set; rate log points will be tagged with a positional index instead of a board ID")
+
+
+def device_tag(board_index):
+    """Map a rate-log column position to its board ID (e.g. 'GBKB-34')."""
+    if board_index < len(BOARD_IDS):
+        return BOARD_IDS[board_index]
+    logger.warning("No board ID known for position %d (BOARD_IDS has %d entries)", board_index, len(BOARD_IDS))
+    return f"unknown-{board_index}"
+
 # Retry policy
 RETRY_CFG = cfg.get("retry", {})
 MAX_RETRIES = int(RETRY_CFG.get("max_retries", 3))
@@ -43,9 +74,6 @@ INITIAL_BACKOFF = float(RETRY_CFG.get("initial_backoff", 1.0))
 # Polling interval and mode
 INTERVAL_SECONDS = int(cfg.get("interval_seconds", 10))
 MODE = cfg.get("mode", "latest").lower()
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger("MADA_logScaler")
 
 
 def process_file(target_filepath, index=None, total=None):
@@ -70,40 +98,43 @@ def process_file(target_filepath, index=None, total=None):
         if not line:
             continue
 
+        # Columns: t, start, end, size_1..size_N, rate_1..rate_N (N = active
+        # board count for that run; see mada_rate_log.write_rate_log).
         parts = line.split()
-        if len(parts) < 7:
+        if len(parts) < 5 or (len(parts) - 3) % 2 != 0:
             logger.warning("Unexpected line format in %s line %d: %s", target_filepath, line_no, line)
             continue
 
-        # Parse expected columns (robust to whitespace)
+        num_boards = (len(parts) - 3) // 2
         try:
             startunixtime = float(parts[1])
-            realrate_cathode = float(parts[5])
-            realrate_anode = float(parts[6])
+            sizes = [float(p) for p in parts[3:3 + num_boards]]
+            rates = [float(p) for p in parts[3 + num_boards:3 + 2 * num_boards]]
         except Exception:
             logger.exception("Failed to parse numeric fields from %s line %d: %s", target_filepath, line_no, line)
             continue
 
         scalertime = datetime.datetime.utcfromtimestamp(startunixtime)
-        json_data.append(
-            {
-                "measurement": "file_size",
-                "tags": TAGS,
-                "time": scalertime.isoformat() + "Z",
-                "fields": {
-                    "trigger_rate_real_anode": realrate_anode,
-                    "trigger_rate_real_cathode": realrate_cathode,
-                },
-            }
-        )
+        for board_index, (size, rate) in enumerate(zip(sizes, rates)):
+            json_data.append(
+                {
+                    "measurement": "file_size",
+                    "tags": {**TAGS, "device": device_tag(board_index)},
+                    "time": scalertime.isoformat() + "Z",
+                    "fields": {
+                        "size": size,
+                        "data_rate": rate,
+                    },
+                }
+            )
         valid_lines += 1
         logger.info(
-            "Parsed line %d/%d from %s: cathode=%s, anode=%s",
+            "Parsed line %d/%d from %s: %d board(s), rates=%s",
             line_no,
             len(lines),
             target_filepath,
-            realrate_cathode,
-            realrate_anode,
+            num_boards,
+            rates,
         )
 
     if not json_data:

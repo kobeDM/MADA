@@ -7,7 +7,8 @@ import psutil
 
 import glob
 import time
-import datetime
+
+from mada_rate_log import write_rate_log
 
 CONFIG   = "MADA_config.json"
 
@@ -110,20 +111,10 @@ def run_daq_killer(config=CONFIG):
             "runinfo":dict_info
         }
         
-        # write rate file
         with open(info_file_path, mode='w', encoding='utf-8') as file:
             json.dump(dict, file, ensure_ascii=False, indent=4)
 
-        dt = datetime.datetime.fromtimestamp(endtime)
-
-        rate_file_path = dt.strftime(f"{RATEPATH}/%Y%m%d")
-        t = dt.strftime("%Y/%m/%d/%H:%M:%S")
-        
-        realtime = endtime - starttime
-        rate     = float(size) / realtime
-            
-        with open(rate_file_path, 'a') as file:
-            file.write(f"{t} {starttime} {endtime} {realtime} {rate}\n")
+    write_rate_log(RATEPATH, starttime, endtime, size_list)
 
     run_kill_daq()
 

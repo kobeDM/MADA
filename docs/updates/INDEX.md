@@ -5,3 +5,4 @@
 - [2026-08-27.md](2026-08-27.md) — ボードセットアップがperiodごとに再実行される不具合を修正(mada.py、DAQ開始時1回のみに変更)
 - [2026-08-28.md](2026-08-28.md) — mada.pyにバックグラウンド実行機能を追加(mada_daemon.py/mada_stop_daq.py新規、-d/--daemon・-l/--log・-p/--pidfile追加)
 - [2026-08-28_2.md](2026-08-28_2.md) — SIGKILL時にMadaIwakiの書き込みバッファが未flushでデータ欠落する不具合を修正(MadaIwaki.cc)
+- [2026-09-07.md](2026-09-07.md) — rateログのフォーマット不整合を修正(mada_rate_log.py新規、mada.py/mada_daq_killer.py/mada_log_data_size.pyを共通フォーマットに統一)

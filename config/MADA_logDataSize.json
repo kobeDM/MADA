@@ -7,9 +7,9 @@
         "password": "root",
         "database": "cn1"
     },
+    "daq_config": "/home/msgc/nadb61/cn_tc/data/20260817/MADA_config.json",
     "tags": {
-        "host": "na44",
-        "device": "na44"
+        "host": "na44"
     },
     "retry": {
         "max_retries": 5,
