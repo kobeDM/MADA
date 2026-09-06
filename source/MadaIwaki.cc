@@ -83,8 +83,10 @@ int main( int argc, char *argv[] )
     while ( !end_flag ) {
         num = EtherDAQ.Read( c_data );
 
-        if ( num > 0 )
+        if ( num > 0 ) {
             OutData.write( c_data, num );
+            OutData.flush( );
+        }
 
         if ( num > 4096 ) {
             cout << "warning: data overflow..." << endl;
