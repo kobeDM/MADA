@@ -57,8 +57,10 @@ int RBCP::ReadRBCP( )
         cout << endl;
 
         return num;
-    } else
-        cerr << " No Reply " << endl;
+    } else {
+        cerr << " ERROR(RBCP): No Reply from Iwaki board" << endl;
+        exit( EXIT_FAILURE );
+    }
 
     return 0;
 }
@@ -93,8 +95,10 @@ int RBCP::ReadRBCP( int address, int length )
         cout << endl;
 
         return num;
-    } else
-        cerr << " No Reply " << endl;
+    } else {
+        cerr << " ERROR(RBCP): No Reply from Iwaki board" << endl;
+        exit( EXIT_FAILURE );
+    }
 
     return 0;
 }
@@ -111,8 +115,9 @@ int RBCP::WriteRBCP( int address, char *cmd, int length )
     for ( int i = 0; i < length; i++ )
         command[8 + i] = cmd[i];
 
-    int num;
-    int flag;
+    int  num;
+    int  flag;
+    bool success = false;
     for ( int act = 0; act < 10; act++ ) {
         flag = 1;
         num  = sendto( sock, command, length + 8, 0, (struct sockaddr *)&param, sizeof( param ) );
@@ -132,12 +137,18 @@ int RBCP::WriteRBCP( int address, char *cmd, int length )
                 } else if ( (unsigned)( reply[i] & 0xff ) != 0x88 )
                     flag = 0;
             }
-            if ( flag )
+            if ( flag ) {
+                success = true;
                 break;
-            else
+            } else
                 cerr << " ERROR(RBCP): Not match reply" << endl;
         } else
             cerr << " No Reply " << endl;
+    }
+
+    if ( !success ) {
+        cerr << " ERROR(RBCP): No Reply from Iwaki board" << endl;
+        exit( EXIT_FAILURE );
     }
 
     return num;
