@@ -83,10 +83,20 @@ int main( int argc, char *argv[] )
     while ( !end_flag ) {
         num = EtherDAQ.Read( c_data );
 
-        if ( num > 0 ) {
-            OutData.write( c_data, num );
-            OutData.flush( );
+        if ( num == 0 ) {
+            cerr << "ERROR: connection closed by Iwaki board" << endl;
+            OutData.close( );
+            exit( EXIT_FAILURE );
         }
+
+        if ( num < 0 ) {
+            cerr << "ERROR: failed to read from Iwaki board" << endl;
+            OutData.close( );
+            exit( EXIT_FAILURE );
+        }
+
+        OutData.write( c_data, num );
+        OutData.flush( );
 
         if ( num > 4096 ) {
             cout << "warning: data overflow..." << endl;

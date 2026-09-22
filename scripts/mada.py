@@ -143,24 +143,23 @@ class RunLogger:
         write_rate_log(RATEPATH, start_time, end_time, sizes)
 
 
+class GigaIwakiError(RuntimeError):
+    """Raised when a gigaiwaki process exits with a non-zero status (e.g.
+    lost connection to the board), so the caller can stop the DAQ instead
+    of treating the exit as a normal 'file complete' event."""
+
+
 def run_gigaiwaki(event_num, active_boards, mada_files):
+    procs = {}
     for board_id, ip in active_boards:
-        cmd = f'{MADA_IWAKI} -n {event_num} -f {mada_files[board_id]} -i {ip}'
-        subprocess.Popen(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-
-def get_gigaiwaki_processes():
-    result = subprocess.run(['pgrep', '-f', 'MadaIwaki'], stdout=subprocess.PIPE, text=True)
-    pids = result.stdout.strip().split('\n')
-    return [int(pid) for pid in pids if pid.isdigit()]
-
-
-def is_alive(pid):
-    try:
-        os.kill(pid, 0)
-        return True
-    except OSError:
-        return False
+        cmd = [MADA_IWAKI, '-n', str(event_num), '-f', mada_files[board_id], '-i', ip]
+        # stdout carries a per-event progress line (up to event_num times per
+        # file) that would bloat the log, so it's discarded; stderr carries
+        # only error diagnostics and is left to flow into mada.py's own
+        # stderr (the period log file when daemonized) so failures are
+        # traceable.
+        procs[board_id] = subprocess.Popen(cmd, stdout=subprocess.DEVNULL)
+    return procs
 
 
 class ProgressMonitor:
@@ -221,18 +220,20 @@ class ProgressMonitor:
                 print(line)
             sys.stdout.flush()
 
-    def wait_for_any_exit(self, pids):
+    def wait_for_any_exit(self, procs):
         """Poll and render while waiting for at least one gigaiwaki process
-        to exit (matching the intended 'one board done -> stop all' policy)."""
+        to exit (matching the intended 'one board done -> stop all' policy).
+        Raises GigaIwakiError if any process exited with a non-zero status
+        (e.g. MadaIwaki lost its connection to the board)."""
         print('Waiting for gigaiwaki processes to finish...')
-        process_num_org = len(pids)
+        process_num_org = len(procs)
 
         while True:
             self.poll()
             self.render()
 
-            alive_pids = [p for p in pids if is_alive(p)]
-            if len(alive_pids) != process_num_org:
+            alive = [p for p in procs.values() if p.poll() is None]
+            if len(alive) != process_num_org:
                 break
             time.sleep(self.poll_interval)
 
@@ -241,14 +242,18 @@ class ProgressMonitor:
         self.poll()
         self.render(final=True)
 
+        for board_id, proc in procs.items():
+            if proc.poll() is not None and proc.returncode != 0:
+                raise GigaIwakiError(
+                    f'gigaiwaki for {board_id} exited with error (code {proc.returncode})'
+                )
 
-def kill_gigaiwaki_processes(pids):
-    for pid in pids:
-        try:
-            os.kill(pid, 9)
-            print(f'Killed process with PID: {pid}')
-        except ProcessLookupError:
-            print(f'Process with PID {pid} not found. It may have already terminated.')
+
+def kill_gigaiwaki_processes(procs):
+    for board_id, proc in procs.items():
+        if proc.poll() is None:
+            proc.kill()
+            print(f'Killed process for {board_id} (PID: {proc.pid})')
 
 def run_period(config_path, period_id, file_num, event_num, active_boards,
                adalm_serial_daq_enable, adalm_serial_counter_reset):
@@ -265,9 +270,7 @@ def run_period(config_path, period_id, file_num, event_num, active_boards,
 
         print('Running gigaiwaki...')
         mada_files = logger.mada_file_paths(file_id, active_boards)
-        run_gigaiwaki(event_num, active_boards, mada_files)
-
-        pids = get_gigaiwaki_processes()
+        procs = run_gigaiwaki(event_num, active_boards, mada_files)
 
         print('Latch up DAQ enable...')
         run_adalm_control(adalm_serial_daq_enable, latch=1)
@@ -284,10 +287,10 @@ def run_period(config_path, period_id, file_num, event_num, active_boards,
         logger.write_info_start(file_id, active_boards, start_time)
 
         # Wait for gigaiwaki processes to finish
-        ProgressMonitor(mada_files, event_num).wait_for_any_exit(pids)
+        ProgressMonitor(mada_files, event_num).wait_for_any_exit(procs)
 
         print("Kill gigaiwaki processes...")
-        kill_gigaiwaki_processes(pids)
+        kill_gigaiwaki_processes(procs)
 
         end_time = time.time()
 
@@ -328,6 +331,10 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
         print('Keyboard interrupt received. Stopping DAQ...')
         run_daq_killer()
         raise
+    except GigaIwakiError as e:
+        print(f'FATAL: {e}. Stopping DAQ...')
+        run_daq_killer()
+        raise
     finally:
         regulator_monitor.stop()
         run_encoder_power_down(config_path)
@@ -360,6 +367,9 @@ def main():
         run_daq(config_path, file_num, event_num, first_period, args.daemon, calin)
     except KeyboardInterrupt:
         print('DAQ stopped by user.')
+    except GigaIwakiError as e:
+        print(f'DAQ stopped due to error: {e}')
+        sys.exit(1)
     finally:
         if args.daemon:
             remove_pidfile()
