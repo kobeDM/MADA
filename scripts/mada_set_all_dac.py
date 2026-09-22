@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import argparse
 import json
 import datetime
@@ -19,10 +20,13 @@ DEFAULT_CONFIG      = "MADA_config.json"
 
 # binary
 LOGPATH        = MADAHOME + "/config/DAClog"
-SETVTH_EXE     = MADAHOME + "/bin/SetVth"
-SETDAC_EXE     = MADAHOME + "/bin/SetDAC"
 SETALLDAC_EXE  = MADAHOME + "/bin/SetAllDAC"
 READMEM_EXE    = MADAHOME + "/bin/ReadCtrlMem"
+
+
+class SetAllDacError(RuntimeError):
+    """Raised when SetAllDAC gets no reply from one or more boards."""
+
 
 def arg_parser():
     argparser = argparse.ArgumentParser()
@@ -43,60 +47,51 @@ def run_set_all_dac(config_path, calin=None):
     with open(config_path, 'r') as config_open:
         config_load = json.load(config_open)
 
+    targets = []
     for x in config_load['gigaIwaki']:
         if config_load['gigaIwaki'][x]['active'] == 1:
-            name    = x
-            ip      = config_load['gigaIwaki'][x]['IP']
-            Vth     = config_load['gigaIwaki'][x]['Vth']
-            DACfile = config_load['gigaIwaki'][x]['DACfile']
-
+            ip = config_load['gigaIwaki'][x]['IP']
             if calin and ip != calin[0]:
                 continue
+            targets.append((x, config_load['gigaIwaki'][x]))
 
-            # Apply DAC
-            if calin:
-                cmd = SETDAC_EXE + " " + ip + " " + DACfile + " " + calin[1]
-            else:
-                cmd = SETDAC_EXE + " " + ip + " " + DACfile
-            print('Execute: ' + cmd)
-            subprocess.run(cmd, shell=True)
+    # Launch every board's SetAllDAC first so the commands go out together,
+    # then collect results, rather than waiting on each board in turn.
+    procs = {}
+    for name, data in targets:
+        ip, Vth, DACfile, bias = data['IP'], data['Vth'], data['DACfile'], data['bias']
 
-            # Apply Vth
-            cmd = SETVTH_EXE + " " + ip + " " + str(Vth)
-            print('Execute: ' + cmd)
-            subprocess.run(cmd, shell=True)
+        # Apply Vth, DAC values and bias in one shot
+        cmd = f"{SETALLDAC_EXE} {ip} {Vth} {DACfile} {bias}"
+        if calin:
+            cmd += " " + calin[1]
+        print('Execute: ' + cmd)
+        procs[name] = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 
-            dt   = datetime.datetime.now()
-            log_file_name = LOGPATH + '/' + str(dt.year) + str(dt.month).zfill(2) + str(dt.day).zfill(2) + "-" + str(dt.hour).zfill(2) + str(dt.minute).zfill(2) + str(dt.second).zfill(2) + "-" + name
-            with open(log_file_name, 'w') as log_out:
-                cmd = READMEM_EXE + " " + ip
-                subprocess.run(cmd, shell=True, stdout=log_out)
-                print("Memory check log: " + log_file_name)
+    failed = []
+    for name, proc in procs.items():
+        stdout, _ = proc.communicate()
+        print(stdout)
+        if proc.returncode != 0:
+            failed.append(name)
 
+    # Memory-check logs are diagnostic, so still collect them for every
+    # board (including ones that failed above) before raising.
+    log_entries = []
+    for name, data in targets:
+        dt = datetime.datetime.now()
+        log_file_name = LOGPATH + '/' + str(dt.year) + str(dt.month).zfill(2) + str(dt.day).zfill(2) + "-" + str(dt.hour).zfill(2) + str(dt.minute).zfill(2) + str(dt.second).zfill(2) + "-" + name
+        log_out = open(log_file_name, 'w')
+        cmd = READMEM_EXE + " " + data['IP']
+        log_entries.append((log_file_name, log_out, subprocess.Popen(cmd, shell=True, stdout=log_out)))
 
-# def run_set_all_dac(config_path):
-#     if not os.path.exists(config_path):
-#         print(f"Error: Config file '{config_path}' does not exist.")
-#         return
+    for log_file_name, log_out, proc in log_entries:
+        proc.wait()
+        log_out.close()
+        print("Memory check log: " + log_file_name)
 
-#     with open(config_path, 'r') as config_open:
-#         config_load = json.load(config_open)
-
-#     for x in config_load['gigaIwaki']:
-#         if config_load['gigaIwaki'][x]['active'] == 1:
-#             name    = x
-#             ip      = config_load['gigaIwaki'][x]['IP']
-#             Vth     = config_load['gigaIwaki'][x]['Vth']
-#             DACfile = config_load['gigaIwaki'][x]['DACfile']
-#             bias    = config_load['gigaIwaki'][x]['bias']
-
-#             print(f"Processing {name} (IP: {ip})")
-#             print(f"  Vth: {Vth}, DACfile: {DACfile}, bias: {bias}")
-
-#             # Apply DAC
-#             cmd = f"{SETALLDAC_EXE} {ip} {Vth} {DACfile} {bias}"
-#             print('Execute: ' + cmd)
-#             subprocess.run(cmd, shell=True)
+    if failed:
+        raise SetAllDacError(f'SetAllDAC got no reply from: {", ".join(failed)}')
 
 
 def main():
@@ -113,7 +108,11 @@ def main():
     print(ret.stdout)
             
     # run_set_all_dac(config, calin)
-    run_set_all_dac(config)
+    try:
+        run_set_all_dac(config)
+    except SetAllDacError as e:
+        print(f'ERROR: {e}')
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()

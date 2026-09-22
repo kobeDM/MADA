@@ -12,7 +12,7 @@
 using namespace std;
 
 const int    channel_num = 128;
-const double interval    = 1.0;  // seconds
+const double interval    = 0.1;  // seconds
 
 void sleep_ms( double seconds )
 {
@@ -21,8 +21,8 @@ void sleep_ms( double seconds )
 
 int main( int argc, char *argv[] )
 {
-    if ( argc != 5 ) {
-        cerr << " USAGE> SetDAC [IP address] [Vth value] [DAC data file] [bias value] " << endl;
+    if ( argc != 5 && argc != 6 ) {
+        cerr << " USAGE> SetAllDAC [IP address] [Vth value] [DAC data file] [bias value] [<calin channel>] " << endl;
         exit( 1 );
     }
 
@@ -36,26 +36,24 @@ int main( int argc, char *argv[] )
     int bias = atoi( argv[4] );
     bias     = bias & 0x3fff;
 
+    int calin_channel = -1;
+    if ( argc == 6 ) {
+        calin_channel = atoi( argv[5] );
+    }
+
     RBCP SlowCtrl;
     SlowCtrl.Open( IPaddr );
 
+    // DAC channels (0x00-0x7f), Vth (0x80-0x81) and bias (0x82-0x83) are
+    // contiguous shadow registers with no side effects on write, so they
+    // are staged in one buffer and sent as a single RBCP transaction. Only
+    // the apply strobes below (0xf0) actually take effect, and the
+    // firmware requires exactly one of them at a time (RBCP_REG.vhd),
+    // so those stay as three separate writes.
     char cmd[256];
 
     // =====================================================
-    // Set Vth
-    // =====================================================
-
-    cmd[0] = ( vth >> 8 ) & 0x3f;
-    cmd[1] = vth & 0xff;
-
-    cout << "Set Vth : " << vth << endl;
-
-    SlowCtrl.WriteRBCP( 0x80, cmd, 2 );
-
-    sleep_ms( interval );
-
-    // =====================================================
-    // Set DAC values
+    // Stage DAC values
     // =====================================================
 
     ifstream DAC_data( filename.c_str( ) );
@@ -72,25 +70,26 @@ int main( int argc, char *argv[] )
 
         DAC_data >> ch >> dac;
 
-        cmd[ch] = SlowCtrl.convDAC( dac, 0, 0 );
+        if ( ch == calin_channel ) {
+            cmd[ch] = SlowCtrl.convDAC( dac, 1, 0 );
+            cout << "ch: " << ch << " calin opened " << endl;
+        } else {
+            cmd[ch] = SlowCtrl.convDAC( dac, 0, 0 );
+        }
     }
 
-    cout << "Set DAC values" << endl;
-
-    SlowCtrl.WriteRBCP( 0x00, cmd, channel_num );
-
-    sleep_ms( interval );
-
     // =====================================================
-    // Set bias
+    // Stage Vth and bias
     // =====================================================
 
-    cmd[0] = ( bias >> 8 ) & 0x3f;
-    cmd[1] = bias & 0xff;
+    cmd[channel_num + 0] = ( vth >> 8 ) & 0x3f;
+    cmd[channel_num + 1] = vth & 0xff;
+    cmd[channel_num + 2] = ( bias >> 8 ) & 0x3f;
+    cmd[channel_num + 3] = bias & 0xff;
 
-    cout << "Set bias : " << bias << endl;
+    cout << "Set DAC values, Vth : " << vth << ", bias : " << bias << endl;
 
-    SlowCtrl.WriteRBCP( 0x82, cmd, 2 );
+    SlowCtrl.WriteRBCP( 0x00, cmd, channel_num + 4 );
 
     sleep_ms( interval );
 
