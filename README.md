@@ -79,7 +79,7 @@ For each entry under `gigaIwaki`, set:
     ```bash
     mada.py [-c config] [-f file_num] [-n event_num] [-d] [--calin IP ch]
     ```
-    For every board with `active: 1` in `MADA_config.json`, enables the regulator → sets DAC/Vth → enables latch-up detection once at startup. It then repeatedly creates a new `perNNNN/` run directory and collects `file_num` files of `event_num` events each via `MadaIwaki` (controlling DAQ enable / counter reset through the ADALM units), writing a `.info` log for each file, moving on to a new period once `file_num` files have been collected. While the regulator is enabled, a background thread watches the MPOD over-current logs and auto-resets the regulator for any affected board (see below). Ctrl+C stops the run safely, disabling latch-up detection and the regulator on the way out.
+    For every board with `active: 1` in `MADA_config.json`, enables the regulator → sets DAC/Vth/bias → enables latch-up detection once at startup (each step is sent to all boards concurrently). It then repeatedly creates a new `perNNNN/` run directory and collects `file_num` files of `event_num` events each via `MadaIwaki` (controlling DAQ enable / counter reset through the ADALM units), writing a `.info` log for each file, moving on to a new period once `file_num` files have been collected. While the regulator is enabled, a background thread watches the MPOD over-current logs and auto-resets the regulator for any affected board (see below). Ctrl+C stops the run safely, disabling latch-up detection and the regulator on the way out. If a board never replies to a slow-control command, or a `MadaIwaki` process loses its data connection to a board, mada.py stops the run rather than continuing silently.
     - `-c/--config`: config file name (default `MADA_config.json`)
     - `-f/--file_num`: number of files per period (default 512)
     - `-n/--event_num`: number of events per file (default 1000)
@@ -111,19 +111,22 @@ For each entry under `gigaIwaki`, set:
     mada_fetch_config.py
     ```
 
-- **Apply DAC/Vth to all boards at once**
+- **Apply DAC/Vth/bias to all boards at once**
     ```bash
     mada_set_all_dac.py [config_file] [--calin IP ch]
     ```
-    Applies `SetDAC` / `SetVth` to every board listed in `MADA_config.json` (or the given config file) and records the applied settings under `config/DAClog/`.
+    Applies `SetAllDAC` (DAC values, Vth and bias in a single command) to every board listed in `MADA_config.json` (or the given config file) concurrently, and records the applied settings under `config/DAClog/`.
 
-- **Set DAC/Vth on a single board (low level)**
+- **Set DAC/Vth/bias on a single board (low level)**
     ```bash
+    SetAllDAC [IP] [Vth] [DACfile] [bias] [calin channel]
+    # e.g. SetAllDAC 192.168.100.24 8000 DAC_run0006/base_correct.dac 3000
     SetDAC [IP] [DACfile]
     # e.g. SetDAC 192.168.100.24 DAC_run0006/base_correct.dac
     SetVth [IP] [Vth]
     # e.g. SetVth 192.168.100.24 8000
     ```
+    `SetAllDAC` is what `mada_set_all_dac.py` calls; `SetDAC`/`SetVth` remain as standalone tools (used e.g. by `mada_run_vth_scan.py`) for setting just one of the two.
 
 - **Check Vth across all boards**
     ```bash
@@ -137,7 +140,7 @@ For each entry under `gigaIwaki`, set:
     mada_set_ap.py {0|1} [-c config]              # disable(0)/enable(1) the regulator
     mada_set_latch_up_detect.py {0|1} [-c config]    # disable(0)/enable(1) latch-up detection
     ```
-    Each of these runs `bin/SetADCBias` / `bin/SetAP` / `bin/SetLatchUpDetect` against every board with `active: 1`.
+    Each of these runs `bin/SetADCBias` / `bin/SetAP` / `bin/SetLatchUpDetect` against every board with `active: 1`. `mada_set_ap.py` and `mada_set_latch_up_detect.py` run all boards concurrently and exit non-zero if any board never replies; `mada_set_adc_bias.py` still runs one board at a time. `mada_set_adc_bias.py` is kept as a standalone tool; `mada.py`'s own startup sequence sets bias via `mada_set_all_dac.py` instead (see above) and no longer calls it separately.
 
 - **Regulator over-current auto-reset**
     ```bash
