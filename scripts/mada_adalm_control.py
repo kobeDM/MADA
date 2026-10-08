@@ -31,8 +31,13 @@ class AdalmError(RuntimeError):
     """Raised when AdalmControl keeps failing after all retries."""
 
 
-def run_adalm_control(serial, latch, bg=False, width=None, retries=3, retry_wait=1.0):
+def get_adalm_mask(config_load, adalm_index=0):
+    return config_load['ADALM']['MADALM_' + str(adalm_index)].get('DIO_mask', '0xFFFF')
+
+def run_adalm_control(serial, latch, bg=False, width=None, retries=3, retry_wait=1.0, mask=None):
     cmd = ADALM_CTRL + " -s " + serial + " -l " + str(latch)
+    if mask is not None:
+        cmd += " -m " + str(mask)
     if width is not None:
         cmd += " -w " + str(width)
     print('Execute: ' + cmd)
@@ -63,9 +68,10 @@ def main():
 
     config_load = load_config(config_path)
     serial = get_adalm_serial(config_load, adalm_index)
+    mask = get_adalm_mask(config_load, adalm_index)
 
     try:
-        run_adalm_control(serial, latch, width=width)
+        run_adalm_control(serial, latch, width=width, mask=mask)
     except AdalmError as e:
         print(f'Error: {e}')
         sys.exit(1)

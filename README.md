@@ -174,7 +174,7 @@ For each entry under `gigaIwaki`, set:
     ```bash
     mada_adalm_control.py [-c config] [-l latch(0/1)] [-i idx(0=DAQ enable,1=counter reset)]
     ```
-    Uses `bin/AdalmControl -s [S/N] -l [0/1]` at the low level. `AdalmControl` exits non-zero on libm2k errors; the wrapper retries up to 3 times and then raises `AdalmError`, which makes `mada.py` stop the DAQ safely.
+    Uses `bin/AdalmControl -s [S/N] -l [0/1]` at the low level. `-m [mask]` selects the DIO lines (bit i = Di, default 0xFFFF); `MADALM_n.DIO_mask` in the config sets it per role, so DAQ enable (D0-D4) and counter reset (D5-D8) can share one ADALM by giving both the same S/N. `AdalmControl` exits non-zero on libm2k errors; the wrapper retries up to 3 times and then raises `AdalmError`, which makes `mada.py` stop the DAQ safely.
 
 - **Test pulse output**
     ```bash

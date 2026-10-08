@@ -44,17 +44,19 @@
 	},
 	"ADALM": {
 		"MADALM_0": {
-			"_comment": "Adalm for DAQ enable.",
+			"_comment": "Adalm for DAQ enable (DIO_mask: bit i = Di; D0-D4).",
 			"active": 1,
 			"URI": "N/A",
 			"S/N": "10447384b904001612002500df1edb6193",
+			"DIO_mask": "0x001F",
 			"Clock_d": 100000000.0
 		},
 		"MADALM_1": {
-			"_comment": "Adalm for counter reset.",
+			"_comment": "Counter reset on the same Adalm as MADALM_0 (DIO_mask: D5-D8).",
 			"active": 1,
 			"URI": "N/A",
-			"S/N": "10447372c6040002fdff0e00202fd5fcc7",
+			"S/N": "10447384b904001612002500df1edb6193",
+			"DIO_mask": "0x01E0",
 			"Clock_d": 100000000.0
 		}
 	}

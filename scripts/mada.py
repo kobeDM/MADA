@@ -9,7 +9,7 @@ import time
 
 from mada_kill_modules import run_kill_modules
 from mada_kill_adalms import run_kill_adalms
-from mada_adalm_control import run_adalm_control, get_adalm_serial, AdalmError
+from mada_adalm_control import run_adalm_control, get_adalm_serial, get_adalm_mask, AdalmError
 from mada_daq_killer import run_daq_killer
 from mada_encoder_power import run_encoder_power_up, run_encoder_power_down
 from mada_regulator_autoreset import RegulatorAutoresetMonitor
@@ -256,7 +256,8 @@ def kill_gigaiwaki_processes(procs):
             print(f'Killed process for {board_id} (PID: {proc.pid})')
 
 def run_period(config_path, period_id, file_num, event_num, active_boards,
-               adalm_serial_daq_enable, adalm_serial_counter_reset):
+               adalm_serial_daq_enable, adalm_serial_counter_reset,
+               adalm_mask_daq_enable, adalm_mask_counter_reset):
     logger = RunLogger(config_path, period_id)
 
     for file_id in range(file_num):
@@ -266,20 +267,21 @@ def run_period(config_path, period_id, file_num, event_num, active_boards,
         run_kill_adalms()
 
         print('Latch down DAQ enable...')
-        run_adalm_control(adalm_serial_daq_enable, latch=0)
+        run_adalm_control(adalm_serial_daq_enable, latch=0, mask=adalm_mask_daq_enable)
 
         print('Running gigaiwaki...')
         mada_files = logger.mada_file_paths(file_id, active_boards)
         procs = run_gigaiwaki(event_num, active_boards, mada_files)
 
         print('Latch up DAQ enable...')
-        run_adalm_control(adalm_serial_daq_enable, latch=1)
+        run_adalm_control(adalm_serial_daq_enable, latch=1, mask=adalm_mask_daq_enable)
 
         print('Waiting data flushing...')
         time.sleep(1)
 
         print('Resetting counters...')
-        run_adalm_control(adalm_serial_counter_reset, latch=1, width=0.1)
+        run_adalm_control(adalm_serial_counter_reset, latch=1, width=0.1,
+                          mask=adalm_mask_counter_reset)
 
         start_time = time.time()
 
@@ -312,6 +314,8 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
     config_load = load_config(config_path)
     adalm_serial_daq_enable = get_adalm_serial(config_load, adalm_index=0)
     adalm_serial_counter_reset = get_adalm_serial(config_load, adalm_index=1)
+    adalm_mask_daq_enable = get_adalm_mask(config_load, adalm_index=0)
+    adalm_mask_counter_reset = get_adalm_mask(config_load, adalm_index=1)
 
     run_encoder_power_up(config_path)
     regulator_monitor = RegulatorAutoresetMonitor(config_path)
@@ -323,7 +327,8 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
         while True:
             print('New period created : per' + str(period).zfill(4))
             run_period(config_path, period, file_num, event_num, active_boards,
-                       adalm_serial_daq_enable, adalm_serial_counter_reset)
+                       adalm_serial_daq_enable, adalm_serial_counter_reset,
+                       adalm_mask_daq_enable, adalm_mask_counter_reset)
             period = RunLogger.new_period()
             if daemon:
                 switch_log(period)
