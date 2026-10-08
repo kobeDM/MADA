@@ -9,7 +9,7 @@ import time
 
 from mada_kill_modules import run_kill_modules
 from mada_kill_adalms import run_kill_adalms
-from mada_adalm_control import run_adalm_control, get_adalm_serial
+from mada_adalm_control import run_adalm_control, get_adalm_serial, AdalmError
 from mada_daq_killer import run_daq_killer
 from mada_encoder_power import run_encoder_power_up, run_encoder_power_down
 from mada_regulator_autoreset import RegulatorAutoresetMonitor
@@ -331,7 +331,7 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
         print('Keyboard interrupt received. Stopping DAQ...')
         run_daq_killer()
         raise
-    except GigaIwakiError as e:
+    except (GigaIwakiError, AdalmError) as e:
         print(f'FATAL: {e}. Stopping DAQ...')
         run_daq_killer()
         raise
@@ -367,7 +367,7 @@ def main():
         run_daq(config_path, file_num, event_num, first_period, args.daemon, calin)
     except KeyboardInterrupt:
         print('DAQ stopped by user.')
-    except GigaIwakiError as e:
+    except (GigaIwakiError, AdalmError) as e:
         print(f'DAQ stopped due to error: {e}')
         sys.exit(1)
     finally:

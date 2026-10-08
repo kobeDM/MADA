@@ -4,6 +4,8 @@ import os
 import subprocess
 import json
 import argparse
+import sys
+import time
 
 MADAHOME = os.environ['MADAHOME']
 ADALM_CTRL = MADAHOME + '/bin/AdalmControl'
@@ -25,15 +27,27 @@ def load_config(config_path):
 def get_adalm_serial(config_load, adalm_index=0):
     return config_load['ADALM']['MADALM_' + str(adalm_index)]['S/N']
 
-def run_adalm_control(serial, latch, bg=False, width=None):
+class AdalmError(RuntimeError):
+    """Raised when AdalmControl keeps failing after all retries."""
+
+
+def run_adalm_control(serial, latch, bg=False, width=None, retries=3, retry_wait=1.0):
     cmd = ADALM_CTRL + " -s " + serial + " -l " + str(latch)
     if width is not None:
         cmd += " -w " + str(width)
     print('Execute: ' + cmd)
     if bg:
-        subprocess.Popen(cmd, shell=True)
-    else:
-        subprocess.run(cmd, shell=True)
+        return subprocess.Popen(cmd, shell=True)
+
+    for attempt in range(1, retries + 1):
+        ret = subprocess.run(cmd, shell=True).returncode
+        if ret == 0:
+            return
+        print(f'WARNING: AdalmControl failed (code {ret}), attempt {attempt}/{retries}')
+        if attempt < retries:
+            time.sleep(retry_wait)
+
+    raise AdalmError(f'AdalmControl failed {retries} times for {serial} (latch={latch})')
 
 def main():
     args = arg_parser()
@@ -50,7 +64,11 @@ def main():
     config_load = load_config(config_path)
     serial = get_adalm_serial(config_load, adalm_index)
 
-    run_adalm_control(serial, latch, width=width)
+    try:
+        run_adalm_control(serial, latch, width=width)
+    except AdalmError as e:
+        print(f'Error: {e}')
+        sys.exit(1)
 
 
 if __name__ == '__main__':

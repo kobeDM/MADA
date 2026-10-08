@@ -174,7 +174,7 @@ For each entry under `gigaIwaki`, set:
     ```bash
     mada_adalm_control.py [-c config] [-l latch(0/1)] [-i idx(0=DAQ enable,1=counter reset)]
     ```
-    Uses `bin/AdalmControl -s [S/N] -l [0/1]` at the low level.
+    Uses `bin/AdalmControl -s [S/N] -l [0/1]` at the low level. `AdalmControl` exits non-zero on libm2k errors; the wrapper retries up to 3 times and then raises `AdalmError`, which makes `mada.py` stop the DAQ safely.
 
 - **Test pulse output**
     ```bash

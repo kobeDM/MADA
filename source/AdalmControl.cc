@@ -1,6 +1,7 @@
 #include <getopt.h>
 
 #include <chrono>
+#include <exception>
 #include <thread>
 
 #include "../include/AdalmUtil.h"
@@ -29,6 +30,8 @@ const int channels[16] = {
     1   // D15
 };
 const double ANALOG_VOLTAGE = 3.3;
+
+static int ControlAdalm( M2k *&m2k, const std::string &serialNumber, int latch, double width );
 
 int main( int argc, char *argv[] )
 {
@@ -94,9 +97,28 @@ int main( int argc, char *argv[] )
         return 1;
     }
 
+    // libm2k reports failures as exceptions; exit non-zero so the caller can retry
+    M2k *m2k = nullptr;
+    try {
+        return ControlAdalm( m2k, serialNumber, latch, width );
+    } catch ( const std::exception &e ) {
+        std::cerr << "ERROR: libm2k exception: " << e.what( ) << std::endl;
+    } catch ( ... ) {
+        std::cerr << "ERROR: unknown exception." << std::endl;
+    }
+
+    try {
+        DisconnectAdalm( m2k );
+    } catch ( ... ) {
+    }
+    return 2;
+}
+
+static int ControlAdalm( M2k *&m2k, const std::string &serialNumber, int latch, double width )
+{
     // serch for target ADALM
     std::cout << "Searching for ADALM" << std::endl;
-    M2k *m2k = ConnectToAdalmWithSerial( serialNumber );
+    m2k = ConnectToAdalmWithSerial( serialNumber );
     if ( !m2k ) {
         std::cerr << serialNumber << " not found." << std::endl;
         return 1;

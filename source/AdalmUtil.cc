@@ -29,9 +29,9 @@ M2k *ConnectToAdalmWithSerial( const std::string &serialNumber )
         return nullptr;
     }
 
-    selected->calibrateADC( );
-    selected->calibrateDAC( );
-
+    // calibrateADC/DAC are intentionally not called: with another ADALM latched
+    // up, the calibration load resets the shared USB hub and every ADALM drops
+    // off the bus for ~5 s. Only digital levels and a DC level are driven here.
     return selected;
 }
 
