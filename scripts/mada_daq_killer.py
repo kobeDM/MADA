@@ -66,57 +66,53 @@ def run_kill_daq():
 
     return killed_pids
 
-def run_daq_killer(config=CONFIG):
-
+def update_latest_info(config):
     period = get_latest_period()
     period_name = 'per' + str(period-1).zfill(4)
 
-    #load config file
     active_boards = get_active_boards(config)
-
     endtime = time.time()
 
-    # find the latest info file
-    latest_file_id  = get_latest_file_id(period_name)
+    latest_file_id = get_latest_file_id(period_name)
+    if latest_file_id < 0:
+        print(f'No info file in {period_name}; nothing to finalize.')
+        return
 
-    size_list=[]
-    for i in range(len(active_boards)):
-        board_id, board_ip = active_boards[i]        
-        info_file_path = period_name + "/" + board_id + "_" + str(latest_file_id).zfill(4) + ".info"
-        mada_file_path = period_name + "/" + board_id + "_" + str(latest_file_id).zfill(4) + ".mada"
-        
-        size = os.path.getsize(mada_file_path)
-        
-        dmes = {}
-        dmes['end'] = endtime
-        dmes['size'] = size
-        
+    size_list = []
+    starttime = None
+    for board_id, board_ip in active_boards:
+        base = period_name + "/" + board_id + "_" + str(latest_file_id).zfill(4)
+        info_file_path = base + ".info"
+        mada_file_path = base + ".mada"
+
+        if not os.path.exists(info_file_path):
+            print(f'WARNING: {info_file_path} not found; skipped.')
+            size_list.append(0)
+            continue
+
+        size = os.path.getsize(mada_file_path) if os.path.exists(mada_file_path) else 0
         size_list.append(size)
 
-        # update info file
         with open(info_file_path, 'r') as file:
             info_load = json.load(file)
 
-        dict_giga = {}
-        dict_info = {}
-        for x in info_load['gigaIwaki']:
-            dict_giga.update(info_load['gigaIwaki'])
-        for x in info_load['runinfo']:
-            dict_info.update(info_load['runinfo'])
+        dict_info = dict(info_load['runinfo'])
         starttime = dict_info["start"]
-        dict_info.update(dmes)
-        
-        dict = {
-            "gigaIwaki":dict_giga,
-            "runinfo":dict_info
-        }
-        
+        dict_info.update({'end': endtime, 'size': size})
+
         with open(info_file_path, mode='w', encoding='utf-8') as file:
-            json.dump(dict, file, ensure_ascii=False, indent=4)
+            json.dump({"gigaIwaki": info_load['gigaIwaki'], "runinfo": dict_info},
+                      file, ensure_ascii=False, indent=4)
 
-    write_rate_log(RATEPATH, starttime, endtime, size_list)
+    if starttime is not None:
+        write_rate_log(RATEPATH, starttime, endtime, size_list)
 
-    run_kill_daq()
+def run_daq_killer(config=CONFIG):
+    # Always stop the DAQ processes, even if finalizing the info files fails.
+    try:
+        update_latest_info(config)
+    finally:
+        run_kill_daq()
 
 def main():
     args   = arg_parser()
