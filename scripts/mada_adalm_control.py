@@ -4,6 +4,7 @@ import os
 import subprocess
 import json
 import argparse
+import fcntl
 import sys
 import time
 
@@ -14,7 +15,7 @@ def arg_parser():
     parser = argparse.ArgumentParser(description='Reset the counter of ADALM2000.')
     parser.add_argument('-c', '--config', default='MADA_config.json', help='Path to the configuration file (default: MADA_config.json).')
     parser.add_argument('-l', '--latch', type=int, default=1, help='Latch value (default: 1).')
-    parser.add_argument('-i', '--idx', type=int, default=0, help='ADALM index (0: DAQ enable, 1: counter reset).')
+    parser.add_argument('-i', '--idx', type=int, default=0, help='ADALM index (0: DAQ enable, 1: counter reset, 2: software veto).')
     parser.add_argument('-w', '--width', type=float, default=None, help='Output a single latch-up/down pulse of this width in seconds, instead of a static latch.')
     args = parser.parse_args()
     return args
@@ -34,16 +35,23 @@ class AdalmError(RuntimeError):
 def get_adalm_mask(config_load, adalm_index=0):
     return config_load['ADALM']['MADALM_' + str(adalm_index)].get('DIO_mask', '0xFFFF')
 
-def run_adalm_control(serial, latch, bg=False, width=None, retries=3, retry_wait=1.0, mask=None):
-    cmd = ADALM_CTRL + " -s " + serial + " -l " + str(latch)
-    if mask is not None:
-        cmd += " -m " + str(mask)
-    if width is not None:
-        cmd += " -w " + str(width)
-    print('Execute: ' + cmd)
-    if bg:
-        return subprocess.Popen(cmd, shell=True)
+ADALM_LOCK_PATH = MADAHOME + '/run/adalm.lock'
 
+def check_adalm_masks(*roles):
+    """roles: (serial, mask) pairs. Refuse to start when roles sharing one
+    ADALM have a missing (all-lines) or overlapping DIO mask."""
+    for i in range(len(roles)):
+        for j in range(i + 1, len(roles)):
+            (sa, ma), (sb, mb) = roles[i], roles[j]
+            if sa != sb:
+                continue
+            ma, mb = int(str(ma), 0), int(str(mb), 0)
+            if ma == 0xFFFF or mb == 0xFFFF or (ma & mb):
+                raise AdalmError(
+                    f'Roles share ADALM {sa} but DIO_mask is missing or overlaps '
+                    f'({hex(ma)}, {hex(mb)}); set disjoint DIO_mask in the config')
+
+def _run_with_retry(cmd, serial, latch, retries, retry_wait):
     for attempt in range(1, retries + 1):
         ret = subprocess.run(cmd, shell=True).returncode
         if ret == 0:
@@ -53,6 +61,24 @@ def run_adalm_control(serial, latch, bg=False, width=None, retries=3, retry_wait
             time.sleep(retry_wait)
 
     raise AdalmError(f'AdalmControl failed {retries} times for {serial} (latch={latch})')
+
+def run_adalm_control(serial, latch, bg=False, width=None, retries=3, retry_wait=1.0, mask=None, analog=True):
+    cmd = ADALM_CTRL + " -s " + serial + " -l " + str(latch)
+    if mask is not None:
+        cmd += " -m " + str(mask)
+    if not analog:
+        cmd += " --no-analog"
+    if width is not None:
+        cmd += " -w " + str(width)
+    print('Execute: ' + cmd)
+    if bg:
+        return subprocess.Popen(cmd, shell=True)
+
+    # Serialize all callers (threads and processes): two processes opening
+    # the same ADALM at once makes the device appear busy or missing.
+    with open(ADALM_LOCK_PATH, 'w') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        _run_with_retry(cmd, serial, latch, retries, retry_wait)
 
 def main():
     args = arg_parser()
@@ -71,7 +97,7 @@ def main():
     mask = get_adalm_mask(config_load, adalm_index)
 
     try:
-        run_adalm_control(serial, latch, width=width, mask=mask)
+        run_adalm_control(serial, latch, width=width, mask=mask, analog=(adalm_index != 2))
     except AdalmError as e:
         print(f'Error: {e}')
         sys.exit(1)

@@ -14,7 +14,7 @@ using namespace libm2k::context;
 int channels[16];  // 1: drive this DIO line (set from --mask)
 const double ANALOG_VOLTAGE = 3.3;
 
-static int ControlAdalm( M2k *&m2k, const std::string &serialNumber, int latch, double width );
+static int ControlAdalm( M2k *&m2k, const std::string &serialNumber, int latch, double width, bool noAnalog );
 
 int main( int argc, char *argv[] )
 {
@@ -26,6 +26,7 @@ int main( int argc, char *argv[] )
         {"latch",  required_argument, NULL, 'l'},
         {"width",  required_argument, NULL, 'w'},
         {"mask",   required_argument, NULL, 'm'},
+        {"no-analog", no_argument,    NULL, 'a'},
         {0,        0,                 0,    0  },
     };
 
@@ -36,8 +37,9 @@ int main( int argc, char *argv[] )
     bool        latchGiven   = false;
     double      width        = -1.0;  // <0: single latch, >=0: pulse mode (sec.)
     unsigned    mask         = 0xFFFF;  // bit i set: control DIO line Di
+    bool        noAnalog     = false;   // skip the analog DC output setup
 
-    while ( ( opt = getopt_long( argc, argv, "hs:l:w:m:", longopts, &longindex ) ) != -1 ) {
+    while ( ( opt = getopt_long( argc, argv, "hs:l:w:m:a", longopts, &longindex ) ) != -1 ) {
         switch ( opt ) {
         case 's':
             serialNumber = optarg;
@@ -56,6 +58,10 @@ int main( int argc, char *argv[] )
             width = std::stod( optarg );
             break;
 
+        case 'a':
+            noAnalog = true;
+            break;
+
         case 'm':
             mask = std::stoul( optarg, nullptr, 0 );
             break;
@@ -72,6 +78,7 @@ int main( int argc, char *argv[] )
             std::cerr << "  -s, --serial=SERIAL    Serial number" << std::endl;
             std::cerr << "  -l, --latch=LATCH      Latch: 0 or 1 (required unless --width is given)" << std::endl;
             std::cerr << "  -m, --mask=MASK        DIO lines to control, bit i = Di (default 0xFFFF)" << std::endl;
+            std::cerr << "  -a, --no-analog        Do not touch the analog DC output" << std::endl;
             std::cerr << "  -w, --width=SECONDS    Output a single latch-up/down pulse of this width instead of a static latch" << std::endl;
             return 1;
         }
@@ -98,7 +105,7 @@ int main( int argc, char *argv[] )
     // libm2k reports failures as exceptions; exit non-zero so the caller can retry
     M2k *m2k = nullptr;
     try {
-        return ControlAdalm( m2k, serialNumber, latch, width );
+        return ControlAdalm( m2k, serialNumber, latch, width, noAnalog );
     } catch ( const std::exception &e ) {
         std::cerr << "ERROR: libm2k exception: " << e.what( ) << std::endl;
     } catch ( ... ) {
@@ -112,7 +119,7 @@ int main( int argc, char *argv[] )
     return 2;
 }
 
-static int ControlAdalm( M2k *&m2k, const std::string &serialNumber, int latch, double width )
+static int ControlAdalm( M2k *&m2k, const std::string &serialNumber, int latch, double width, bool noAnalog )
 {
     // serch for target ADALM
     std::cout << "Searching for ADALM" << std::endl;
@@ -126,9 +133,11 @@ static int ControlAdalm( M2k *&m2k, const std::string &serialNumber, int latch, 
     std::cout << "             URI: " << m2k->getUri( ) << std::endl;
 
     // set analog power output (kept on regardless of digital latch state)
-    M2kAnalogOut *aout    = m2k->getAnalogOut( );
-    const int     channel = 0;
-    AnalogDcOut( aout, channel, ANALOG_VOLTAGE );
+    if ( !noAnalog ) {
+        M2kAnalogOut *aout    = m2k->getAnalogOut( );
+        const int     channel = 0;
+        AnalogDcOut( aout, channel, ANALOG_VOLTAGE );
+    }
 
     // *** Digital output control *** //
     M2kDigital *dout = m2k->getDigital( );  // for digial io

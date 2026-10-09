@@ -13,6 +13,7 @@ CONFIG = './MADA_config.json'
 MONITOR_DIR = '/nadb/nadb65/status/mpod/regulator_autoreset'
 POLL_INTERVAL = 1.0
 RESET_SETTLE = 1.0  # AP off-time before turning back on, for hardware settling
+VETO_MARGIN = 0.5   # sec, veto hold time after AP on (ASIC can measure immediately)
 
 def arg_parser():
     parser = argparse.ArgumentParser(description='Watch MPOD over-current logs and reset the regulator (AP 0->1) on any board mapped to the module that reports a new over-limit line.')
@@ -43,11 +44,12 @@ class RegulatorAutoresetMonitor:
     over-limit line is appended (the log only ever records over-limit
     samples, so any new line is itself the trigger)."""
 
-    def __init__(self, config_path, monitor_dir=MONITOR_DIR, poll_interval=POLL_INTERVAL):
+    def __init__(self, config_path, monitor_dir=MONITOR_DIR, poll_interval=POLL_INTERVAL, veto=None):
         self.config_path = config_path
         self.monitor_dir = monitor_dir
         self.poll_interval = poll_interval
         self.module_boards = get_module_boards(config_path)
+        self.veto = veto
 
         self._tracked = {}
         self._stop_event = threading.Event()
@@ -101,12 +103,30 @@ class RegulatorAutoresetMonitor:
             time.sleep(RESET_SETTLE)
             run_set_ap(self.config_path, io=1, target_ip=ip)
 
+    def _fired_modules(self):
+        return [module for module in self.module_boards if self._new_lines(module)]
+
+    def _handle_over_limit(self, fired):
+        # AP off starts at once; the veto assert runs in parallel (slower)
+        # and is held until no new over-limit line appears after the margin.
+        if self.veto:
+            self.veto.begin('lv-reset module=' + ','.join(str(m) for m in fired))
+
+        while fired:
+            for module in fired:
+                self._reset_module(module)
+            self._stop_event.wait(VETO_MARGIN)
+            fired = self._fired_modules()
+
+        if self.veto:
+            self.veto.end()
+
     def _run(self):
         self._prime()
         while not self._stop_event.is_set():
-            for module in self.module_boards:
-                if self._new_lines(module):
-                    self._reset_module(module)
+            fired = self._fired_modules()
+            if fired:
+                self._handle_over_limit(fired)
             self._stop_event.wait(self.poll_interval)
 
     def start(self):
