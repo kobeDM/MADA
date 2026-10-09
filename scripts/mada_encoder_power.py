@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 
 from mada_set_ap import run_set_ap
 from mada_set_all_dac import run_set_all_dac
@@ -15,6 +16,11 @@ def arg_parser():
     args = parser.parse_args()
     return args
 
+def latch_up_detect_enabled(config_path):
+    with open(config_path, 'r') as f:
+        config_load = json.load(f)
+    return config_load.get('general', {}).get('latch_up_detect', 0) == 1
+
 def run_encoder_power_up(config_path, calin=None):
     print('Activating Regulator...')
     run_set_ap(config_path, io=1)
@@ -22,12 +28,16 @@ def run_encoder_power_up(config_path, calin=None):
     print('Setting DAC values, Vth and ADC bias...')
     run_set_all_dac(config_path, calin=calin)
 
-    print('Activating Latch Up Detection...')
-    run_set_latch_up_detect(config_path, io=1)
+    if latch_up_detect_enabled(config_path):
+        print('Activating Latch Up Detection...')
+        run_set_latch_up_detect(config_path, io=1)
+    else:
+        print('Latch Up Detection is disabled in the config.')
 
 def run_encoder_power_down(config_path):
-    print('Deactivating Latch Up Detection...')
-    run_set_latch_up_detect(config_path, io=0)
+    if latch_up_detect_enabled(config_path):
+        print('Deactivating Latch Up Detection...')
+        run_set_latch_up_detect(config_path, io=0)
 
     print('Deactivating Regulator...')
     run_set_ap(config_path, io=0)

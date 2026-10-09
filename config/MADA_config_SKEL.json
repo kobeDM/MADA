@@ -1,5 +1,8 @@
 {
-	"general": {},
+	"general": {
+		"_comment_latch_up_detect": "1: enable the board latch-up detection. A run with it enabled leaves the boards in a bad state (all-hit / no-hit) until power cycled, so keep it 0.",
+		"latch_up_detect": 0
+	},
 	"gigaIwaki": {
 		"GBKB-34": {
 			"active": 1,
