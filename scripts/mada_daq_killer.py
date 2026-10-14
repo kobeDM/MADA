@@ -3,12 +3,12 @@
 import os
 import json
 import argparse
-import psutil
 
 import glob
 import time
 
 from mada_config import load_config, active_boards
+from mada_process import stop_processes
 from mada_rate_log import write_rate_log
 
 CONFIG   = "MADA_config.json"
@@ -16,9 +16,6 @@ CONFIG   = "MADA_config.json"
 HOME     = os.environ["HOME"]
 RATEPATH = HOME + "/rate"
 
-target_modules = [
-    'MadaIwaki'
-]
 
 #read option parameters
 def arg_parser():
@@ -40,22 +37,6 @@ def get_latest_file_id(period_name):
         file_id += 1
         file = period_name + "/*_" + str(file_id).zfill(4) + ".info"
     return file_id - 1
-
-def run_kill_daq():
-    killed_pids = set()
-
-    for proc in psutil.process_iter(['pid', 'cmdline']):
-        cmdline = ' '.join(proc.info['cmdline'] or [])
-
-        if any(module in cmdline for module in target_modules):
-            print(f"Killing PID {proc.pid}: {cmdline}")
-            proc.terminate()
-            killed_pids.add(proc.pid)
-        
-    if not killed_pids:
-        print("No MADA-related processes found to kill.")
-
-    return killed_pids
 
 def update_latest_info(config):
     period = get_latest_period()
@@ -103,7 +84,7 @@ def run_daq_killer(config=CONFIG):
     try:
         update_latest_info(config)
     finally:
-        run_kill_daq()
+        stop_processes(['MadaIwaki'], 'MadaIwaki processes')
 
 def main():
     args   = arg_parser()
