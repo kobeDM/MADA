@@ -25,6 +25,8 @@ MADA_IWAKI = MADAHOME + "/bin/MadaIwaki"
 
 UPIC_FOOTER = b'uPIC'
 PROGRESS_POLL_INTERVAL = 0.2
+FLUSH_WAIT = 1.0  # sec, let events left in the board buffers be read before the counter reset
+DRAIN_WAIT = 0.2  # sec, keep readers attached after DAQ enable falls, then kill them
 
 def print_header():
     print('*********************************************************')
@@ -271,22 +273,22 @@ def run_period(config_path, period_id, file_num, event_num, active_boards,
         print('Killing ADALM processes...')
         run_kill_adalms()
 
-        print('Latch down DAQ enable...')
-        run_adalm_control(adalm_serial_daq_enable, latch=0, mask=adalm_mask_daq_enable)
-
+        # DAQ enable is low here: it was lowered when the previous file ended
+        # (or by run_daq before the first file), so nothing is acquired
+        # while the readers start and the counters are reset.
         print('Running gigaiwaki...')
         mada_files = logger.mada_file_paths(file_id, active_boards)
         procs = run_gigaiwaki(event_num, active_boards, mada_files)
 
-        print('Latch up DAQ enable...')
-        run_adalm_control(adalm_serial_daq_enable, latch=1, mask=adalm_mask_daq_enable)
-
         print('Waiting data flushing...')
-        time.sleep(1)
+        time.sleep(FLUSH_WAIT)
 
         print('Resetting counters...')
         run_adalm_control(adalm_serial_counter_reset, latch=1, width=0.1,
                           mask=adalm_mask_counter_reset)
+
+        print('Latch up DAQ enable...')
+        run_adalm_control(adalm_serial_daq_enable, latch=1, mask=adalm_mask_daq_enable)
 
         start_time = time.time()
 
@@ -296,10 +298,16 @@ def run_period(config_path, period_id, file_num, event_num, active_boards,
         # Wait for gigaiwaki processes to finish
         ProgressMonitor(mada_files, event_num).wait_for_any_exit(procs)
 
+        # Lower DAQ enable before anything else so no event is taken while
+        # the readers are being stopped.
+        print('Latch down DAQ enable...')
+        run_adalm_control(adalm_serial_daq_enable, latch=0, mask=adalm_mask_daq_enable)
+        end_time = time.time()
+
+        time.sleep(DRAIN_WAIT)
+
         print("Kill gigaiwaki processes...")
         kill_gigaiwaki_processes(procs)
-
-        end_time = time.time()
 
         print('Updating info files with end time...')
         sizes_by_board = logger.write_info_end(file_id, active_boards, end_time)
@@ -332,6 +340,9 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
 
     print('DAQ is running... Press Ctrl+C to stop.')
     try:
+        print('Latch down DAQ enable (initial)...')
+        run_adalm_control(adalm_serial_daq_enable, latch=0, mask=adalm_mask_daq_enable)
+
         period = first_period
         while True:
             print('New period created : per' + str(period).zfill(4))
@@ -350,6 +361,11 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
         run_daq_killer()
         raise
     finally:
+        # Close the scaler period: it is updated on the falling edge of DAQ enable.
+        try:
+            run_adalm_control(adalm_serial_daq_enable, latch=0, mask=adalm_mask_daq_enable)
+        except AdalmError as e:
+            print(f'WARNING: could not latch down DAQ enable on exit ({e}).')
         run_encoder_power_down(config_path)
 
 def main():
