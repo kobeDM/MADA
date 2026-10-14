@@ -1,5 +1,9 @@
 #include "../include/AdalmUtil.h"
 
+#include <algorithm>
+#include <chrono>
+#include <thread>
+
 M2k *ConnectToAdalmWithSerial( const std::string &serialNumber )
 {
     auto contexts = libm2k::context::getAllContexts( );
@@ -46,56 +50,105 @@ void AnalogDcOut( M2kAnalogOut *aout, int channel, double voltage )
     std::cout << "Analog DC output: channel " << channel << ", voltage " << voltage << " V" << std::endl;
 }
 
+// Writing the lines one by one with setValueRaw spreads the edges over about
+// 1.2 ms per line, so lines that must change together (e.g. the four counter
+// reset lines) are instead moved by a short buffer, which changes every line on
+// the same sample. The buffer only drives the lines of this call (the TX of all
+// other lines is disabled, so they keep their level), and after it ends a line
+// falls back to its static value, which is therefore written during the buffer.
+namespace {
+const int    DIO_MODE_PUSHPULL = 1;     // 0 for opendrain, 1 for pushpull
+const int    DIO_DIR_OUTPUT    = 1;     // 0 for input, 1 for output
+const double BUFFER_RATE       = 1e6;   // Hz
+const double STATIC_WINDOW     = 0.05;  // s, must exceed the per-line static writes (about 1.2 ms each)
+const double PULSE_TAIL        = 0.05;  // s, extra wait for the buffer to drain
+
+unsigned short ChannelMask( const int channel[16] )
+{
+    unsigned short mask = 0;
+    for ( int i = 0; i < 16; i++ ) {
+        if ( channel[i] )
+            mask |= static_cast<unsigned short>( 1u << i );
+    }
+    return mask;
+}
+
+void SetLinesToOutput( M2kDigital *dout, const int channel[16] )
+{
+    for ( int i = 0; i < 16; i++ ) {
+        if ( !channel[i] )
+            continue;
+
+        dout->setOutputMode( i, DIO_MODE( DIO_MODE_PUSHPULL ) );
+        dout->setDirection( i, DIO_DIRECTION( DIO_DIR_OUTPUT ) );
+    }
+}
+
+void EnableBufferOnly( M2kDigital *dout, const int channel[16] )
+{
+    dout->setCyclic( false );
+    dout->setSampleRateOut( BUFFER_RATE );
+    for ( int i = 0; i < 16; i++ )
+        dout->enableChannel( i, channel[i] != 0 );
+}
+
+void DisableBuffer( M2kDigital *dout )
+{
+    for ( int i = 0; i < 16; i++ )
+        dout->enableChannel( i, false );
+}
+
+void DigitalWrite( M2kDigital *dout, const int channel[16], int level )
+{
+    const unsigned short mask = ChannelMask( channel );
+
+    SetLinesToOutput( dout, channel );
+    EnableBufferOnly( dout, channel );
+
+    std::vector<unsigned short> buffer( static_cast<size_t>( STATIC_WINDOW * BUFFER_RATE ), level ? mask : 0 );
+    dout->push( buffer );
+
+    for ( int i = 0; i < 16; i++ ) {
+        if ( channel[i] )
+            dout->setValueRaw( i, DIO_LEVEL( level ) );
+    }
+
+    std::this_thread::sleep_for( std::chrono::duration<double>( STATIC_WINDOW ) );
+    DisableBuffer( dout );
+}
+}  // namespace
+
 void DigitalLatchUp( M2kDigital *dout, const int channel[16] )
 {
-    const int    dmode = 1;  // 0 for opendrain, 1 for pushpull
-    const int    ddir  = 1;  // 0 for input, 1 for output
-    const double dfreq = 7.5e7;
-
-    dout->setSampleRateOut( dfreq );
-
-    for ( int i = 0; i < 16; i++ ) {
-        if ( !channel[i] )
-            continue;
-
-        dout->setOutputMode( i, DIO_MODE( dmode ) );
-        dout->setDirection( i, DIO_DIRECTION( ddir ) );
-    }
-
-    dout->setCyclic( false );
-
-    for ( int i = 0; i < 16; i++ ) {
-        if ( !channel[i] )
-            continue;
-
-        dout->setValueRaw( i, DIO_LEVEL( 1 ) );
-    }
+    DigitalWrite( dout, channel, 1 );
 }
 
 void DigitalLatchDown( M2kDigital *dout, const int channel[16] )
 {
-    const int    dmode = 1;  // 0 for opendrain, 1 for pushpull
-    const int    ddir  = 1;  // 0 for input, 1 for output
-    const double dfreq = 7.5e7;
+    DigitalWrite( dout, channel, 0 );
+}
 
-    dout->setSampleRateOut( dfreq );
+void DigitalPulse( M2kDigital *dout, const int channel[16], double width )
+{
+    const unsigned short mask = ChannelMask( channel );
 
+    // The static value (LOW) is what the lines return to after the buffer.
+    SetLinesToOutput( dout, channel );
     for ( int i = 0; i < 16; i++ ) {
-        if ( !channel[i] )
-            continue;
-
-        dout->setOutputMode( i, DIO_MODE( dmode ) );
-        dout->setDirection( i, DIO_DIRECTION( ddir ) );
+        if ( channel[i] )
+            dout->setValueRaw( i, DIO_LEVEL( 0 ) );
     }
 
-    dout->setCyclic( false );
+    EnableBufferOnly( dout, channel );
 
-    for ( int i = 0; i < 16; i++ ) {
-        if ( !channel[i] )
-            continue;
+    size_t high = static_cast<size_t>( width * BUFFER_RATE );
+    high        = ( ( high + 3 ) / 4 ) * 4;
+    std::vector<unsigned short> buffer( high + 64, 0 );
+    std::fill( buffer.begin( ), buffer.begin( ) + high, mask );
+    dout->push( buffer );
 
-        dout->setValueRaw( i, DIO_LEVEL( 0 ) );
-    }
+    std::this_thread::sleep_for( std::chrono::duration<double>( width + PULSE_TAIL ) );
+    DisableBuffer( dout );
 }
 
 void OutputWaveformSquare( M2kAnalogOut *aout, int channel, double voltage, double frequency )

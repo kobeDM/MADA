@@ -156,13 +156,8 @@ static int ControlAdalm( M2k *&m2k, const std::string &serialNumber, int latch, 
         std::cout << "**** Pulse mode: width " << width << " sec. ****" << std::endl;
 
         std::cout << "**** Latch up. ****" << std::endl;
-        DigitalLatchUp( dout, channels );
-        printDigitalOutput( "HIGH" );
-
-        std::this_thread::sleep_for( std::chrono::duration<double>( width ) );
-
+        DigitalPulse( dout, channels, width );
         std::cout << "**** Latch down. ****" << std::endl;
-        DigitalLatchDown( dout, channels );
         printDigitalOutput( "LOW" );
     } else if ( latch ) {
         std::cout << "**** Latch up is selected. ****" << std::endl;
