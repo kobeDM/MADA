@@ -31,11 +31,6 @@ def install_sigterm_handler():
     signal.signal(signal.SIGTERM, _handle_sigterm)
 
 
-def write_pidfile(pid):
-    with open(PIDFILE_PATH, 'w') as f:
-        f.write(str(pid))
-
-
 def remove_pidfile():
     try:
         os.remove(PIDFILE_PATH)
@@ -64,29 +59,10 @@ def switch_log(period):
 
 
 def daemonize(first_period):
-    """Detach the current process from the controlling terminal and
-    redirect stdout/stderr to first_period's log file. The parent process
-    exits after writing PIDFILE_PATH, which mada_stop_daq.py uses to
-    signal the child."""
-    os.makedirs(RUN_DIR, exist_ok=True)
-    log_file = log_path(first_period)
-
-    pid = os.fork()
-    if pid > 0:
-        write_pidfile(pid)
-        print(f'Started DAQ in background (PID {pid}). Log: {log_file}')
-        os._exit(0)
-
-    # No os.chdir('/') here: mada.py resolves perNNNN/ and the config path
-    # relative to the launch directory, so the working directory must stay.
-    os.setsid()
-
-    devnull_fd = os.open(os.devnull, os.O_RDONLY)
-    os.dup2(devnull_fd, sys.stdin.fileno())
-    os.close(devnull_fd)
-
-    _redirect_stdio(log_file)
-
+    """Run in the background with stdout/stderr in first_period's log file.
+    The parent exits after writing PIDFILE_PATH, which mada_stop_daq.py uses
+    to signal the child."""
+    detach(log_path(first_period), PIDFILE_PATH)
 
 
 def detach(log_file, pidfile_path=None):
@@ -102,6 +78,8 @@ def detach(log_file, pidfile_path=None):
         print(f'Started in background (PID {pid}). Log: {log_file}')
         os._exit(0)
 
+    # No os.chdir('/') here: callers resolve perNNNN/ and the config path
+    # relative to the launch directory, so the working directory must stay.
     os.setsid()
     devnull_fd = os.open(os.devnull, os.O_RDONLY)
     os.dup2(devnull_fd, sys.stdin.fileno())
