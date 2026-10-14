@@ -1,95 +1,50 @@
 #!/usr/bin/env python3
 
-import os
-import json
-import argparse
+"""Close the file that was being acquired when the DAQ stopped (end time and
+size into the .info files, rate log) and stop the readers."""
 
-import glob
+import argparse
 import time
 
 from mada_config import load_config, active_boards
 from mada_process import stop_processes
-from mada_rate_log import write_rate_log
+from mada_run_logger import RunLogger
 
-CONFIG   = "MADA_config.json"
-
-HOME     = os.environ["HOME"]
-RATEPATH = HOME + "/rate"
+CONFIG = "MADA_config.json"
 
 
-#read option parameters
 def arg_parser():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='Finalize the latest DAQ file and stop its readers.')
     parser.add_argument("-c", "--config", help="config file name", default=CONFIG)
-    args = parser.parse_args( )
-    return args
+    return parser.parse_args()
 
-def get_latest_period():
-    period = 0
-    while os.path.exists('per' + str(period).zfill(4)):
-        period += 1
-    return period
 
-def get_latest_file_id(period_name):
-    file_id = 0
-    file = period_name + "/*_" + str(file_id).zfill(4) + ".info"
-    while len(glob.glob(file)):
-        file_id += 1
-        file = period_name + "/*_" + str(file_id).zfill(4) + ".info"
-    return file_id - 1
-
-def update_latest_info(config):
-    period = get_latest_period()
-    period_name = 'per' + str(period-1).zfill(4)
-
-    boards = active_boards(load_config(config))
-    endtime = time.time()
-
-    latest_file_id = get_latest_file_id(period_name)
-    if latest_file_id < 0:
-        print(f'No info file in {period_name}; nothing to finalize.')
+def finalize_latest_file(config_path):
+    boards = active_boards(load_config(config_path))
+    logger = RunLogger.latest(config_path)
+    if logger is None:
+        print('No period directory found; nothing to finalize.')
         return
 
-    size_list = []
-    starttime = None
-    for board_id, board_ip in boards:
-        base = period_name + "/" + board_id + "_" + str(latest_file_id).zfill(4)
-        info_file_path = base + ".info"
-        mada_file_path = base + ".mada"
+    file_id = logger.latest_file_id()
+    if file_id < 0:
+        print(f'No info file in period {logger.period_id}; nothing to finalize.')
+        return
 
-        if not os.path.exists(info_file_path):
-            print(f'WARNING: {info_file_path} not found; skipped.')
-            size_list.append(0)
-            continue
+    logger.finalize_file(file_id, boards, time.time())
 
-        size = os.path.getsize(mada_file_path) if os.path.exists(mada_file_path) else 0
-        size_list.append(size)
 
-        with open(info_file_path, 'r') as file:
-            info_load = json.load(file)
-
-        dict_info = dict(info_load['runinfo'])
-        starttime = dict_info["start"]
-        dict_info.update({'end': endtime, 'size': size})
-
-        with open(info_file_path, mode='w', encoding='utf-8') as file:
-            json.dump({"gigaIwaki": info_load['gigaIwaki'], "runinfo": dict_info},
-                      file, ensure_ascii=False, indent=4)
-
-    if starttime is not None:
-        write_rate_log(RATEPATH, starttime, endtime, size_list)
-
-def run_daq_killer(config=CONFIG):
-    # Always stop the DAQ processes, even if finalizing the info files fails.
+def run_daq_killer(config_path=CONFIG):
+    # Always stop the readers, even if finalizing the files fails.
     try:
-        update_latest_info(config)
+        finalize_latest_file(config_path)
     finally:
         stop_processes(['MadaIwaki'], 'MadaIwaki processes')
 
+
 def main():
-    args   = arg_parser()
-    config = args.config
-    run_daq_killer(config=config)
+    run_daq_killer(arg_parser().config)
+
 
 if __name__ == "__main__":
     main()

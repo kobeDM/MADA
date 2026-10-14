@@ -12,6 +12,9 @@ since the board identity itself is not encoded in the line.
 """
 
 import datetime
+import os
+
+RATE_ROOT = os.path.join(os.environ['HOME'], 'rate')
 
 
 def write_rate_log(rate_root, start_time, end_time, sizes):
@@ -19,10 +22,11 @@ def write_rate_log(rate_root, start_time, end_time, sizes):
     dt = datetime.datetime.fromtimestamp(end_time)
 
     t = dt.strftime("%Y/%m/%d/%H:%M:%S")
-    rates = [size / realtime for size in sizes]
+    rates = [size / realtime if realtime > 0 else 0.0 for size in sizes]
     out_list = [t, start_time, end_time] + list(sizes) + rates
     out_str = '\t'.join(map(str, out_list)) + '\n'
 
+    os.makedirs(rate_root, exist_ok=True)
     rate_file_path = dt.strftime(f"{rate_root}/%Y%m%d")
     with open(rate_file_path, 'a', encoding='utf-8') as f:
         f.write(out_str)

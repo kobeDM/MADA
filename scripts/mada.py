@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 
-import os
 import sys
 import argparse
-import subprocess
-import json
 import time
 
 from mada_kill_modules import run_kill_modules
 from mada_kill_adalms import run_kill_adalms
-from mada_config import load_config, active_boards, board_entry_by_ip, ConfigError
+from mada_config import load_config, active_boards, ConfigError
 from mada_adalm_roles import daq_roles, ROLE_DAQ_ENABLE, ROLE_COUNTER_RESET
 from mada_adalm_runner import run_adalm_control, AdalmError
 from mada_daq_killer import run_daq_killer
@@ -17,17 +14,10 @@ from mada_encoder_power import run_encoder_power_up, run_encoder_power_down
 from mada_software_veto import veto_failed
 from mada_daemon import daemonize, install_sigterm_handler, remove_pidfile, switch_log
 from mada_autoreset_ctl import ensure_autoreset_running, MonitorError
-from mada_rate_log import write_rate_log
+from mada_run_logger import RunLogger
+from mada_gigaiwaki import start_readers, kill_readers, GigaIwakiError
+from mada_progress import ProgressMonitor
 
-HOME     = os.environ["HOME"]
-RATEPATH = HOME + "/rate"
-
-MADAHOME = os.environ['MADAHOME']
-MADA_IWAKI = MADAHOME + "/bin/MadaIwaki"
-
-UPIC_FOOTER = b'uPIC'
-PROGRESS_POLL_INTERVAL = 0.2
-FLUSH_WAIT = 1.0  # sec, let events left in the board buffers be read before the counter reset
 DRAIN_WAIT = 0.2  # sec, keep readers attached after DAQ enable falls, then kill them
 
 def print_header():
@@ -47,199 +37,6 @@ def arg_parser():
     args = parser.parse_args()
     return args
 
-class RunLogger:
-    """Owns per-period file paths and the .info/.mada/rate log bookkeeping."""
-
-    def __init__(self, config_path, period_id):
-        self.config_path = config_path
-        self.period_id = period_id
-
-    @staticmethod
-    def new_period() -> int:
-        period = 0
-        while os.path.exists('per' + str(period).zfill(4)):
-            period += 1
-        os.makedirs('per' + str(period).zfill(4))
-        return period
-
-    def _period_dir(self):
-        return 'per' + str(self.period_id).zfill(4)
-
-    def _info_file_path(self, file_id, board_id):
-        return f'{self._period_dir()}/{board_id}_{str(file_id).zfill(4)}.info'
-
-    def mada_file_paths(self, file_id, active_boards):
-        return {
-            board_id: f'{self._period_dir()}/{board_id}_{str(file_id).zfill(4)}.mada'
-            for board_id, ip in active_boards
-        }
-
-    def write_info_start(self, file_id, active_boards, start_time):
-        config_load = load_config(self.config_path)
-
-        for board_id, ip in active_boards:
-            entry = board_entry_by_ip(config_load, ip)
-            if entry is None:
-                print(f'WARNING: no config entry for {board_id} (IP {ip}); its .info file is not written')
-                continue
-
-            output_data = {
-                'gigaIwaki': dict(entry),
-                'runinfo': {
-                    'start': start_time
-                }
-            }
-
-            with open(self._info_file_path(file_id, board_id), mode='wt', encoding='utf-8') as out_file:
-                json.dump(output_data, out_file, ensure_ascii=False, indent=4)
-
-    def write_info_end(self, file_id, active_boards, end_time):
-        sizes_by_board = {}
-        for board_id, ip in active_boards:
-            info_file_path = self._info_file_path(file_id, board_id)
-            mada_file_path = f'{self._period_dir()}/{board_id}_{str(file_id).zfill(4)}.mada'
-
-            mada_file_missing = not os.path.exists(mada_file_path)
-            if mada_file_missing:
-                file_size = 0
-                print(f'WARNING: {mada_file_path} not found (connection failure suspected on {board_id})')
-            else:
-                file_size = os.path.getsize(mada_file_path)
-            print('size= ', file_size, 'byte')
-            sizes_by_board[board_id] = file_size
-
-            with open(info_file_path, 'r', encoding='utf-8') as f:
-                info_load = json.load(f)
-
-            info_load.setdefault('runinfo', {})
-            info_load['runinfo'].update({
-                'end': end_time,
-                'size': str(file_size)
-            })
-            if mada_file_missing:
-                info_load['runinfo']['error'] = 'mada file not found (connection failure suspected)'
-
-            with open(info_file_path, 'w', encoding='utf-8') as f:
-                json.dump(info_load, f, ensure_ascii=False, indent=4)
-
-        return sizes_by_board
-
-    def write_rate_log(self, start_time, end_time, sizes):
-        write_rate_log(RATEPATH, start_time, end_time, sizes)
-
-
-class GigaIwakiError(RuntimeError):
-    """Raised when a gigaiwaki process exits with a non-zero status (e.g.
-    lost connection to the board), so the caller can stop the DAQ instead
-    of treating the exit as a normal 'file complete' event."""
-
-
-def run_gigaiwaki(event_num, active_boards, mada_files):
-    procs = {}
-    for board_id, ip in active_boards:
-        cmd = [MADA_IWAKI, '-n', str(event_num), '-f', mada_files[board_id], '-i', ip]
-        # stdout carries a per-event progress line (up to event_num times per
-        # file) that would bloat the log, so it's discarded; stderr carries
-        # only error diagnostics and is left to flow into mada.py's own
-        # stderr (the period log file when daemonized) so failures are
-        # traceable.
-        procs[board_id] = subprocess.Popen(cmd, stdout=subprocess.DEVNULL)
-    return procs
-
-
-class ProgressMonitor:
-    """Tracks and displays each board's live event count during acquisition,
-    by tailing the growing .mada files for the 'uPIC' footer marker."""
-
-    def __init__(self, mada_files, event_num, poll_interval=PROGRESS_POLL_INTERVAL):
-        self.mada_files = mada_files
-        self.event_num = event_num
-        self.poll_interval = poll_interval
-
-        self.board_ids = list(mada_files.keys())
-        self.offsets = {board_id: 0 for board_id in self.board_ids}
-        self.carries = {board_id: b'' for board_id in self.board_ids}
-        self.counts = {board_id: 0 for board_id in self.board_ids}
-        self.is_tty = sys.stdout.isatty()
-        self._drawn = False
-
-    @staticmethod
-    def _count_new_footers(data, carry):
-        # Prepend the tail of the previous chunk so a footer split across
-        # two polls (e.g. "...uPI" | "C...") is still detected.
-        buf = carry + data
-        return buf.count(UPIC_FOOTER), buf[-(len(UPIC_FOOTER) - 1):]
-
-    def poll(self):
-        for board_id, path in self.mada_files.items():
-            try:
-                with open(path, 'rb') as f:
-                    f.seek(self.offsets[board_id])
-                    chunk = f.read()
-            except FileNotFoundError:
-                continue
-
-            if not chunk:
-                continue
-
-            found, self.carries[board_id] = self._count_new_footers(chunk, self.carries[board_id])
-            self.counts[board_id] += found
-            self.offsets[board_id] += len(chunk)
-
-    def render(self, final=False):
-        # On a TTY, redraw the same lines in place every poll (cheap, bounded
-        # size). Off a TTY (redirected to a file, e.g. --daemon), each poll
-        # would otherwise append a fresh line and blow up the log file, so
-        # only print once the counts are final.
-        if self.is_tty:
-            if self._drawn:
-                sys.stdout.write(f'\x1b[{len(self.board_ids)}A')
-            for board_id in self.board_ids:
-                line = f'  {board_id}: {self.counts[board_id]:>6}/{self.event_num:<6} events stored'
-                sys.stdout.write('\x1b[2K' + line + '\n')
-            sys.stdout.flush()
-            self._drawn = True
-        elif final:
-            for board_id in self.board_ids:
-                line = f'  {board_id}: {self.counts[board_id]:>6}/{self.event_num:<6} events stored'
-                print(line)
-            sys.stdout.flush()
-
-    def wait_for_any_exit(self, procs):
-        """Poll and render while waiting for at least one gigaiwaki process
-        to exit (matching the intended 'one board done -> stop all' policy).
-        Raises GigaIwakiError if any process exited with a non-zero status
-        (e.g. MadaIwaki lost its connection to the board)."""
-        print('Waiting for gigaiwaki processes to finish...')
-        process_num_org = len(procs)
-
-        while True:
-            self.poll()
-            self.render()
-
-            alive = [p for p in procs.values() if p.poll() is None]
-            if len(alive) != process_num_org:
-                break
-            time.sleep(self.poll_interval)
-
-        # Catch any events written just before the processes were found to
-        # have stopped, and print the final per-board counts.
-        self.poll()
-        self.render(final=True)
-
-        for board_id, proc in procs.items():
-            if proc.poll() is not None and proc.returncode != 0:
-                raise GigaIwakiError(
-                    f'gigaiwaki for {board_id} exited with error (code {proc.returncode})'
-                )
-
-
-def kill_gigaiwaki_processes(procs):
-    for board_id, proc in procs.items():
-        if proc.poll() is None:
-            proc.kill()
-            print(f'Killed process for {board_id} (PID: {proc.pid})')
-
 def run_period(config_path, period_id, file_num, event_num, active_boards,
                adalm_serial_daq_enable, adalm_serial_counter_reset,
                adalm_mask_daq_enable, adalm_mask_counter_reset):
@@ -258,12 +55,11 @@ def run_period(config_path, period_id, file_num, event_num, active_boards,
         # DAQ enable is low here: it was lowered when the previous file ended
         # (or by run_daq before the first file), so nothing is acquired
         # while the readers start and the counters are reset.
-        print('Running gigaiwaki...')
+        # Readers that fail to come up are restarted one by one here; the
+        # counter reset and DAQ enable below then go to all boards together.
+        print('Running gigaiwaki (waiting for data flushing)...')
         mada_files = logger.mada_file_paths(file_id, active_boards)
-        procs = run_gigaiwaki(event_num, active_boards, mada_files)
-
-        print('Waiting data flushing...')
-        time.sleep(FLUSH_WAIT)
+        procs = start_readers(event_num, active_boards, mada_files)
 
         print('Resetting counters...')
         run_adalm_control(adalm_serial_counter_reset, latch=1, width=0.1,
@@ -289,12 +85,10 @@ def run_period(config_path, period_id, file_num, event_num, active_boards,
         time.sleep(DRAIN_WAIT)
 
         print("Kill gigaiwaki processes...")
-        kill_gigaiwaki_processes(procs)
+        kill_readers(procs)
 
         print('Updating info files with end time...')
-        sizes_by_board = logger.write_info_end(file_id, active_boards, end_time)
-        sizes = [sizes_by_board[board_id] for board_id, ip in active_boards]
-        logger.write_rate_log(start_time, end_time, sizes)
+        logger.finalize_file(file_id, active_boards, end_time, start_time)
 
 
 def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
@@ -329,11 +123,11 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
                 switch_log(period)
     except KeyboardInterrupt:
         print('Keyboard interrupt received. Stopping DAQ...')
-        run_daq_killer()
+        run_daq_killer(config_path)
         raise
     except (GigaIwakiError, AdalmError, MonitorError) as e:
         print(f'FATAL: {e}. Stopping DAQ...')
-        run_daq_killer()
+        run_daq_killer(config_path)
         raise
     finally:
         # Close the scaler period: it is updated on the falling edge of DAQ enable.
