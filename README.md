@@ -104,6 +104,25 @@ For each entry under `gigaIwaki`, set:
     mada_kill_adalms.py    # terminates AdalmControl processes
     ```
 
+### DAQ-flow modules (one responsibility per file)
+
+`scripts/mada.py` is only the entry point (arguments, config check, daemonizing); the rest of the DAQ flow is split as follows.
+
+| File | Responsibility |
+|------|----------------|
+| `mada_daq_session.py` | one session: power up, acquire period after period, guarded shutdown |
+| `mada_file_cycle.py` | one file: start readers, reset counters, DAQ enable, wait, close |
+| `mada_gigaiwaki.py` | the MadaIwaki readers (start with per-board restart, stop) |
+| `mada_progress.py` | live per-board event counts |
+| `mada_run_logger.py` | `perNNNN/` directories, `.info` files, rate log |
+| `mada_config.py` / `mada_adalm_roles.py` | config access and validation / ADALM roles and DIO masks |
+| `mada_adalm_runner.py` / `mada_adalm_control.py` | run `AdalmControl` with lock and timeout / its command line |
+| `mada_process.py` | find and stop processes by program name |
+| `mada_errors.py` | `MadaError`, the base of all errors that stop a DAQ run |
+| `mada_autoreset_ctl.py`, `mada_regulator_monitor.py`, `mada_regulator_autoreset.py`, `mada_software_veto.py`, `mada_ap_state.py` | LV-reset monitor (start-up guarantee, logic, command line), software veto, AP state |
+
+Behaviour worth knowing: the config is validated (boards, DAC files, ADALM roles and masks) before anything is started or daemonized, and any failure stops the DAQ with a message and a non-zero exit code. A reader (`MadaIwaki`) that fails while starting, typically a refused or dropped TCP connection, is restarted on its own up to three times; DAQ enable and the counter reset are only sent, to all boards in one command each, after every reader is up. A reader that dies after DAQ enable stops the DAQ. Process stopping matches the program name exactly, so unrelated processes whose command line merely mentions `MadaIwaki` are left alone.
+
 ### Config, DAC, and Vth
 
 - **Fetch/update the config file (resolve ADALM URIs)**
@@ -173,7 +192,7 @@ For each entry under `gigaIwaki`, set:
 
 - **ADALM digital output control (DAQ enable / counter reset latch)**
     ```bash
-    mada_adalm_control.py [-c config] [-l latch(0/1)] [-i idx(0=DAQ enable,1=counter reset)]
+    mada_adalm_control.py [-c config] [-l latch(0/1)] [-i idx(0=DAQ enable,1=counter reset,2=software veto)] [-w width]
     ```
     Uses `bin/AdalmControl -s [S/N] -l [0/1]` at the low level. All lines of one call (a role's `DIO_mask`) change on the same sample via a short buffer (not one `setValueRaw` per line), and other lines keep their level. `-m [mask]` selects the DIO lines (bit i = Di, default 0xFFFF); `MADALM_n.DIO_mask` in the config sets it per role, so DAQ enable (D0-D4) and counter reset (D8-D11) can share one ADALM by giving both the same S/N. `AdalmControl` exits non-zero on libm2k errors; the wrapper retries up to 3 times and then raises `AdalmError`, which makes `mada.py` stop the DAQ safely.
 
