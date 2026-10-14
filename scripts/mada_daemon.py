@@ -86,3 +86,24 @@ def daemonize(first_period):
     os.close(devnull_fd)
 
     _redirect_stdio(log_file)
+
+
+
+def detach(log_file, pidfile_path=None):
+    """Fork into the background and redirect stdout/stderr to log_file. The
+    parent exits (after recording the child PID in pidfile_path, if given)."""
+    os.makedirs(RUN_DIR, exist_ok=True)
+
+    pid = os.fork()
+    if pid > 0:
+        if pidfile_path:
+            with open(pidfile_path, 'w') as f:
+                f.write(str(pid))
+        print(f'Started in background (PID {pid}). Log: {log_file}')
+        os._exit(0)
+
+    os.setsid()
+    devnull_fd = os.open(os.devnull, os.O_RDONLY)
+    os.dup2(devnull_fd, sys.stdin.fileno())
+    os.close(devnull_fd)
+    _redirect_stdio(log_file)

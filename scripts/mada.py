@@ -12,9 +12,9 @@ from mada_kill_adalms import run_kill_adalms
 from mada_adalm_control import run_adalm_control, get_adalm_serial, get_adalm_mask, check_adalm_masks, AdalmError
 from mada_daq_killer import run_daq_killer
 from mada_encoder_power import run_encoder_power_up, run_encoder_power_down
-from mada_regulator_autoreset import RegulatorAutoresetMonitor
-from mada_software_veto import SoftwareVeto
+from mada_software_veto import get_veto_role, veto_failed
 from mada_daemon import daemonize, install_sigterm_handler, remove_pidfile, switch_log
+from mada_autoreset_ctl import ensure_autoreset_running, MonitorError
 from mada_rate_log import write_rate_log
 
 HOME     = os.environ["HOME"]
@@ -258,11 +258,14 @@ def kill_gigaiwaki_processes(procs):
 
 def run_period(config_path, period_id, file_num, event_num, active_boards,
                adalm_serial_daq_enable, adalm_serial_counter_reset,
-               adalm_mask_daq_enable, adalm_mask_counter_reset, veto):
+               adalm_mask_daq_enable, adalm_mask_counter_reset):
     logger = RunLogger(config_path, period_id)
 
     for file_id in range(file_num):
-        veto.raise_if_failed()
+        if not ensure_autoreset_running(config_path):
+            raise MonitorError('regulator autoreset monitor is not running')
+        if veto_failed():
+            raise AdalmError('software veto could not be released (see run/veto.state); stopping')
         print(f'Creating file {file_id} with {event_num} events...')
 
         print('Killing ADALM processes...')
@@ -318,17 +321,14 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
     adalm_serial_counter_reset = get_adalm_serial(config_load, adalm_index=1)
     adalm_mask_daq_enable = get_adalm_mask(config_load, adalm_index=0)
     adalm_mask_counter_reset = get_adalm_mask(config_load, adalm_index=1)
-    veto = SoftwareVeto(config_path)
     roles = [(adalm_serial_daq_enable, adalm_mask_daq_enable),
              (adalm_serial_counter_reset, adalm_mask_counter_reset)]
-    if veto.enabled:
-        roles.append((veto.serial, veto.mask))
+    veto_role = get_veto_role(config_path)
+    if veto_role:
+        roles.append(veto_role)
     check_adalm_masks(*roles)
 
-    veto.initialize()
-    run_encoder_power_up(config_path)
-    regulator_monitor = RegulatorAutoresetMonitor(config_path, veto=veto)
-    regulator_monitor.start()
+    run_encoder_power_up(config_path, require_monitor=True)
 
     print('DAQ is running... Press Ctrl+C to stop.')
     try:
@@ -337,7 +337,7 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
             print('New period created : per' + str(period).zfill(4))
             run_period(config_path, period, file_num, event_num, active_boards,
                        adalm_serial_daq_enable, adalm_serial_counter_reset,
-                       adalm_mask_daq_enable, adalm_mask_counter_reset, veto)
+                       adalm_mask_daq_enable, adalm_mask_counter_reset)
             period = RunLogger.new_period()
             if daemon:
                 switch_log(period)
@@ -345,13 +345,11 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
         print('Keyboard interrupt received. Stopping DAQ...')
         run_daq_killer()
         raise
-    except (GigaIwakiError, AdalmError) as e:
+    except (GigaIwakiError, AdalmError, MonitorError) as e:
         print(f'FATAL: {e}. Stopping DAQ...')
         run_daq_killer()
         raise
     finally:
-        regulator_monitor.stop()
-        veto.end()
         run_encoder_power_down(config_path)
 
 def main():
@@ -382,7 +380,7 @@ def main():
         run_daq(config_path, file_num, event_num, first_period, args.daemon, calin)
     except KeyboardInterrupt:
         print('DAQ stopped by user.')
-    except (GigaIwakiError, AdalmError) as e:
+    except (GigaIwakiError, AdalmError, MonitorError) as e:
         print(f'DAQ stopped due to error: {e}')
         sys.exit(1)
     finally:

@@ -6,10 +6,13 @@ import json
 import subprocess
 import argparse
 
+from mada_autoreset_ctl import ensure_autoreset_running, MonitorError
+
 MADAHOME = os.environ['MADAHOME']
 MADABIN = MADAHOME + '/bin'
 
 SETAP = os.path.join(MADABIN, 'SetAP')
+READCTRLMEM = os.path.join(MADABIN, 'ReadCtrlMem')
 
 CONFIG = './MADA_config.json'
 
@@ -25,7 +28,27 @@ def arg_parser():
     args = parser.parse_args()
     return args
 
-def run_set_ap(config_path, io, target_ip=None):
+def get_ap_state(ip):
+    """True/False for regulator (AP) on/off read from register 0xf1, or None if unreadable."""
+    try:
+        out = subprocess.run([READCTRLMEM, ip, '0xf0', '0x10'], capture_output=True, text=True, timeout=10).stdout
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+
+    for line in out.splitlines():
+        parts = line.split()
+        if len(parts) >= 3 and parts[0] == 'f0':
+            return bool(int(parts[2], 16) & 1)
+    return None
+
+def run_set_ap(config_path, io, target_ip=None, ensure=True, require_monitor=False):
+    # Powering the ASIC on without the LV-reset monitor running is unprotected,
+    # so make sure it is up before the regulator is switched on.
+    if io == 1 and ensure and not ensure_autoreset_running(config_path):
+        if require_monitor:
+            raise MonitorError('regulator autoreset monitor is not running')
+        print('WARNING: the regulator autoreset monitor is not running; the ASIC is unprotected against over-current.')
+
     with open(config_path, 'r') as file:
         config_load = json.load(file)
 

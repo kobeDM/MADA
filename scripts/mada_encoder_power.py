@@ -21,9 +21,9 @@ def latch_up_detect_enabled(config_path):
         config_load = json.load(f)
     return config_load.get('general', {}).get('latch_up_detect', 0) == 1
 
-def run_encoder_power_up(config_path, calin=None):
+def run_encoder_power_up(config_path, calin=None, require_monitor=False):
     print('Activating Regulator...')
-    run_set_ap(config_path, io=1)
+    run_set_ap(config_path, io=1, require_monitor=require_monitor)
 
     print('Setting DAC values, Vth and ADC bias...')
     run_set_all_dac(config_path, calin=calin)

@@ -8,13 +8,17 @@ using namespace std;
 
 int main( int argc, char *argv[] )
 {
-    if ( argc != 2 ) {
-        cerr << " USAGE> ReadCtrlMem [IP address] " << endl;
+    if ( argc != 2 && argc != 4 ) {
+        cerr << " USAGE> ReadCtrlMem [IP address] [<address> <length>] " << endl;
         exit( 1 );
     }
     string IPaddr = argv[1];
 
     RBCP SlowCtrl;
     SlowCtrl.Open( IPaddr );
-    SlowCtrl.ReadRBCP( );
+    if ( argc == 4 ) {
+        SlowCtrl.ReadRBCP( stoi( argv[2], nullptr, 0 ), stoi( argv[3], nullptr, 0 ) );
+    } else {
+        SlowCtrl.ReadRBCP( );
+    }
 }

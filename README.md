@@ -79,7 +79,7 @@ For each entry under `gigaIwaki`, set:
     ```bash
     mada.py [-c config] [-f file_num] [-n event_num] [-d] [--calin IP ch]
     ```
-    For every board with `active: 1` in `MADA_config.json`, enables the regulator → sets DAC/Vth/bias → enables latch-up detection once at startup only if `general.latch_up_detect` is 1 in `MADA_config.json` (default 0: a run with it enabled leaves the boards in a bad all-hit / no-hit state until they are power cycled) (each step is sent to all boards concurrently). It then repeatedly creates a new `perNNNN/` run directory and collects `file_num` files of `event_num` events each via `MadaIwaki` (controlling DAQ enable / counter reset through the ADALM units), writing a `.info` log for each file, moving on to a new period once `file_num` files have been collected. While the regulator is enabled, a background thread watches the MPOD over-current logs and auto-resets the regulator for any affected board (see below). Ctrl+C stops the run safely, disabling the regulator (and latch-up detection, if it was enabled) on the way out. If a board never replies to a slow-control command, or a `MadaIwaki` process loses its data connection to a board, mada.py stops the run rather than continuing silently.
+    For every board with `active: 1` in `MADA_config.json`, enables the regulator → sets DAC/Vth/bias → enables latch-up detection once at startup only if `general.latch_up_detect` is 1 in `MADA_config.json` (default 0: a run with it enabled leaves the boards in a bad all-hit / no-hit state until they are power cycled) (each step is sent to all boards concurrently). It then repeatedly creates a new `perNNNN/` run directory and collects `file_num` files of `event_num` events each via `MadaIwaki` (controlling DAQ enable / counter reset through the ADALM units), writing a `.info` log for each file, moving on to a new period once `file_num` files have been collected. The MPOD over-current auto-reset is a separate monitor process (`mada_regulator_autoreset.py`, see below); `mada.py` makes sure it is running before the regulator is switched on and at every file boundary, and stops the DAQ if it cannot be started. Ctrl+C stops the run safely, disabling the regulator (and latch-up detection, if it was enabled) on the way out. If a board never replies to a slow-control command, or a `MadaIwaki` process loses its data connection to a board, mada.py stops the run rather than continuing silently.
     - `-c/--config`: config file name (default `MADA_config.json`)
     - `-f/--file_num`: number of files per period (default 512)
     - `-n/--event_num`: number of events per file (default 1000)
@@ -142,11 +142,12 @@ For each entry under `gigaIwaki`, set:
     ```
     Each of these runs `bin/SetADCBias` / `bin/SetAP` / `bin/SetLatchUpDetect` against every board with `active: 1`. `mada_set_ap.py` and `mada_set_latch_up_detect.py` run all boards concurrently and exit non-zero if any board never replies; `mada_set_adc_bias.py` still runs one board at a time. `mada_set_adc_bias.py` is kept as a standalone tool; `mada.py`'s own startup sequence sets bias via `mada_set_all_dac.py` instead (see above) and no longer calls it separately.
 
-- **Regulator over-current auto-reset**
+- **Regulator over-current auto-reset (monitor)**
     ```bash
-    mada_regulator_autoreset.py [-c config]
+    mada_regulator_autoreset.py -d [-c config] [--idle-exit SEC]   # start in the background (log: run/mada_autoreset.log)
+    mada_regulator_autoreset.py --stop                             # stop it
     ```
-    Watches `Module-<N>_YYYYMMDD.log` under `/nadb/nadb65/status/mpod/regulator_autoreset/` for the MPOD module numbers listed in each `gigaIwaki` entry's `module` field. That log only ever gets a new line appended when the module goes over its current limit, so any new line is itself the trigger: the affected boards' regulators are reset (AP 0→1, via `mada_set_ap.py`'s `target_ip` filter). `mada.py` starts this monitor as a background thread right after enabling the regulator and stops it right before disabling it, so it runs automatically for the lifetime of each DAQ period; run this script directly only for standalone testing.
+    You normally do not start it by hand: `run_set_ap(io=1)` (used by `mada.py`, `mada_encoder_power.py` and `mada_set_ap.py`) starts it before the regulator is switched on, and restarts it if it was started with another config. It runs independently of `mada.py`, so it keeps protecting boards powered on via `mada_encoder_power.py` / `mada_set_ap.py`, and exits by itself once every active board has had AP off for `--idle-exit` seconds (default 600; 0 = never). Directly calling the `bin/SetAP` binary bypasses this. It watches `Module-<N>_YYYYMMDD.log` under `/nadb/nadb65/status/mpod/regulator_autoreset/` for the MPOD module numbers listed in each `gigaIwaki` entry's `module` field. That log only ever gets a new line appended when the module goes over its current limit, so any new line is itself the trigger: the affected boards' regulators are reset (AP 0→1) and the software veto is asserted meanwhile. A board whose AP is off (register 0xf1) is skipped, so it is never switched on by mistake. The config is read once at start. Only one instance runs (`run/mada_autoreset.lock`, `run/mada_autoreset.pid`).
 
 ### Scanning and analysis
 
@@ -178,9 +179,9 @@ For each entry under `gigaIwaki`, set:
 
 - **Software veto (D12, active high) to the scaler**
     ```bash
-    mada_software_veto.py [1/0] [-c config]     # manual assert / release
+    mada_software_veto.py [1/0] [-c config]     # manual assert / release (testing only)
     ```
-    Defined by `MADALM_2` (same S/N as MADALM_0, `DIO_mask` 0x1000). `mada.py` drives D12 low at start, and `RegulatorAutoresetMonitor` asserts it in parallel with the LV reset (AP off), then releases it 0.5 s after the last AP on. Assert/release times go to `veto.log` in the run directory. If a release fails, `mada.py` stops at the next file boundary. All `AdalmControl` calls through `run_adalm_control` are serialized with a file lock (`run/adalm.lock`). Add a pull-down on the scaler input so a floating line never reads as veto.
+    Defined by `MADALM_2` (same S/N as MADALM_0, `DIO_mask` 0x1000). The auto-reset monitor is the sole owner of D12: it drives it low at start and on exit, asserts it in parallel with the LV reset (AP off), and releases it 0.5 s after the last AP on. Assert/release times go to `run/veto.log`. If a release fails, the monitor retries every 10 s and records `failed` in `run/veto.state`; `mada.py` checks that file at each file boundary and stops safely. All `AdalmControl` calls through `run_adalm_control` are serialized with a file lock (`run/adalm.lock`). Add a pull-down on the scaler input so a floating line never reads as veto. If the monitor is killed with SIGKILL, D12 can stay high until it is restarted.
 
 - **Test pulse output**
     ```bash
