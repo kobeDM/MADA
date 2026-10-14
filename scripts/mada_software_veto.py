@@ -8,7 +8,7 @@ from datetime import datetime
 
 from mada_config import load_config
 from mada_adalm_roles import veto_role
-from mada_adalm_control import run_adalm_control, AdalmError
+from mada_adalm_runner import run_adalm_control, AdalmError
 
 MADAHOME = os.environ['MADAHOME']
 RUN_DIR = MADAHOME + '/run'

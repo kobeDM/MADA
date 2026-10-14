@@ -11,7 +11,7 @@ from mada_kill_modules import run_kill_modules
 from mada_kill_adalms import run_kill_adalms
 from mada_config import load_config, active_boards, board_entry_by_ip, ConfigError
 from mada_adalm_roles import daq_roles, ROLE_DAQ_ENABLE, ROLE_COUNTER_RESET
-from mada_adalm_control import run_adalm_control, AdalmError
+from mada_adalm_runner import run_adalm_control, AdalmError
 from mada_daq_killer import run_daq_killer
 from mada_encoder_power import run_encoder_power_up, run_encoder_power_down
 from mada_software_veto import veto_failed
