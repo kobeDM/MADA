@@ -8,6 +8,7 @@ import psutil
 import glob
 import time
 
+from mada_config import load_config, active_boards
 from mada_rate_log import write_rate_log
 
 CONFIG   = "MADA_config.json"
@@ -40,16 +41,6 @@ def get_latest_file_id(period_name):
         file = period_name + "/*_" + str(file_id).zfill(4) + ".info"
     return file_id - 1
 
-def get_active_boards(config_path):
-    with open(config_path, 'r') as file:
-        config_load = json.load(file)
-
-    active_boards = []
-    for x in config_load['gigaIwaki']:
-        if config_load['gigaIwaki'][x]['active'] == 1:
-            active_boards.append((x, config_load['gigaIwaki'][x]['IP']))
-    return active_boards
-
 def run_kill_daq():
     killed_pids = set()
 
@@ -70,7 +61,7 @@ def update_latest_info(config):
     period = get_latest_period()
     period_name = 'per' + str(period-1).zfill(4)
 
-    active_boards = get_active_boards(config)
+    boards = active_boards(load_config(config))
     endtime = time.time()
 
     latest_file_id = get_latest_file_id(period_name)
@@ -80,7 +71,7 @@ def update_latest_info(config):
 
     size_list = []
     starttime = None
-    for board_id, board_ip in active_boards:
+    for board_id, board_ip in boards:
         base = period_name + "/" + board_id + "_" + str(latest_file_id).zfill(4)
         info_file_path = base + ".info"
         mada_file_path = base + ".mada"

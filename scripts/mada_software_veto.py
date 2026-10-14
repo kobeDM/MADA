@@ -6,7 +6,9 @@ import threading
 import time
 from datetime import datetime
 
-from mada_adalm_control import run_adalm_control, get_adalm_serial, get_adalm_mask, AdalmError
+from mada_config import load_config
+from mada_adalm_roles import veto_role
+from mada_adalm_control import run_adalm_control, AdalmError
 
 MADAHOME = os.environ['MADAHOME']
 RUN_DIR = MADAHOME + '/run'
@@ -15,17 +17,6 @@ VETO_INDEX = 2
 VETO_LOG = RUN_DIR + '/veto.log'
 VETO_STATE = RUN_DIR + '/veto.state'
 RELEASE_RETRY_INTERVAL = 10.0  # sec
-
-
-def get_veto_role(config_path):
-    """(serial, DIO mask) of the veto line, or None when MADALM_2 is not configured."""
-    with open(config_path, 'r') as f:
-        config_load = json.load(f)
-
-    entry = config_load['ADALM'].get('MADALM_' + str(VETO_INDEX))
-    if entry is None or entry.get('active', 1) != 1:
-        return None
-    return get_adalm_serial(config_load, VETO_INDEX), get_adalm_mask(config_load, VETO_INDEX)
 
 
 def veto_failed(state_path=VETO_STATE):
@@ -45,7 +36,7 @@ class SoftwareVeto:
     live time, so it is reported through the state file and retried."""
 
     def __init__(self, config_path, log_path=VETO_LOG, state_path=VETO_STATE):
-        role = get_veto_role(config_path)
+        role = veto_role(load_config(config_path))
         self.enabled = role is not None
         self.serial, self.mask = role if role else (None, None)
         self.log_path = log_path

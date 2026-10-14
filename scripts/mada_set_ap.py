@@ -2,10 +2,10 @@
 
 import os
 import sys
-import json
 import subprocess
 import argparse
 
+from mada_config import load_config, active_boards
 from mada_autoreset_ctl import ensure_autoreset_running, MonitorError
 
 MADAHOME = os.environ['MADAHOME']
@@ -49,19 +49,8 @@ def run_set_ap(config_path, io, target_ip=None, ensure=True, require_monitor=Fal
             raise MonitorError('regulator autoreset monitor is not running')
         print('WARNING: the regulator autoreset monitor is not running; the ASIC is unprotected against over-current.')
 
-    with open(config_path, 'r') as file:
-        config_load = json.load(file)
-
-    targets = []
-    for name, data in config_load.get('gigaIwaki', {}).items():
-        if data.get('active') != 1:
-            continue
-
-        ip = data.get('IP')
-        if target_ip and ip != target_ip:
-            continue
-
-        targets.append((name, ip))
+    targets = [(name, ip) for name, ip in active_boards(load_config(config_path))
+               if not target_ip or ip == target_ip]
 
     # Launch every board's SetAP first so the commands go out together,
     # then collect results, rather than waiting on each board in turn.

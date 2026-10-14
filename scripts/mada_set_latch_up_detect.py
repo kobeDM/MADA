@@ -6,6 +6,8 @@ import json
 import subprocess
 import argparse
 
+from mada_config import load_config, active_boards
+
 MADAHOME = os.environ['MADAHOME']
 MADABIN = MADAHOME + '/bin'
 
@@ -28,14 +30,7 @@ def arg_parser():
 
 
 def run_set_latch_up_detect(config_path: str, io : int):
-    with open(config_path, 'r') as file:
-        config_load = json.load(file)
-
-    targets = [
-        (name, data['IP'])
-        for name, data in config_load.get('gigaIwaki', {}).items()
-        if data.get('active') == 1
-    ]
+    targets = active_boards(load_config(config_path))
 
     # Launch every board's SetLatchUpDetect first so the commands go out
     # together, then collect results, rather than waiting on each in turn.

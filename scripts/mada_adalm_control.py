@@ -2,11 +2,13 @@
 
 import os
 import subprocess
-import json
 import argparse
 import fcntl
 import sys
 import time
+
+from mada_config import load_config, ConfigError
+from mada_adalm_roles import adalm_role
 
 MADAHOME = os.environ['MADAHOME']
 ADALM_CTRL = MADAHOME + '/bin/AdalmControl'
@@ -20,36 +22,11 @@ def arg_parser():
     args = parser.parse_args()
     return args
 
-def load_config(config_path):
-    with open(config_path, 'r') as f:
-        config_load = json.load(f)
-    return config_load
-
-def get_adalm_serial(config_load, adalm_index=0):
-    return config_load['ADALM']['MADALM_' + str(adalm_index)]['S/N']
-
 class AdalmError(RuntimeError):
     """Raised when AdalmControl keeps failing after all retries."""
 
 
-def get_adalm_mask(config_load, adalm_index=0):
-    return config_load['ADALM']['MADALM_' + str(adalm_index)].get('DIO_mask', '0xFFFF')
-
 ADALM_LOCK_PATH = MADAHOME + '/run/adalm.lock'
-
-def check_adalm_masks(*roles):
-    """roles: (serial, mask) pairs. Refuse to start when roles sharing one
-    ADALM have a missing (all-lines) or overlapping DIO mask."""
-    for i in range(len(roles)):
-        for j in range(i + 1, len(roles)):
-            (sa, ma), (sb, mb) = roles[i], roles[j]
-            if sa != sb:
-                continue
-            ma, mb = int(str(ma), 0), int(str(mb), 0)
-            if ma == 0xFFFF or mb == 0xFFFF or (ma & mb):
-                raise AdalmError(
-                    f'Roles share ADALM {sa} but DIO_mask is missing or overlaps '
-                    f'({hex(ma)}, {hex(mb)}); set disjoint DIO_mask in the config')
 
 def _run_with_retry(cmd, serial, latch, retries, retry_wait):
     for attempt in range(1, retries + 1):
@@ -65,7 +42,7 @@ def _run_with_retry(cmd, serial, latch, retries, retry_wait):
 def run_adalm_control(serial, latch, bg=False, width=None, retries=3, retry_wait=1.0, mask=None, analog=True):
     cmd = ADALM_CTRL + " -s " + serial + " -l " + str(latch)
     if mask is not None:
-        cmd += " -m " + str(mask)
+        cmd += " -m " + hex(mask)
     if not analog:
         cmd += " --no-analog"
     if width is not None:
@@ -88,13 +65,11 @@ def main():
     adalm_index = args.idx
     width = args.width
 
-    if not os.path.isfile(config_path):
-        print(f"Error: Configuration file '{config_path}' not found.")
-        return
-
-    config_load = load_config(config_path)
-    serial = get_adalm_serial(config_load, adalm_index)
-    mask = get_adalm_mask(config_load, adalm_index)
+    try:
+        serial, mask = adalm_role(load_config(config_path), adalm_index)
+    except ConfigError as e:
+        print(f'Error: {e}')
+        sys.exit(1)
 
     try:
         run_adalm_control(serial, latch, width=width, mask=mask, analog=(adalm_index != 2))

@@ -9,10 +9,12 @@ import time
 
 from mada_kill_modules import run_kill_modules
 from mada_kill_adalms import run_kill_adalms
-from mada_adalm_control import run_adalm_control, get_adalm_serial, get_adalm_mask, check_adalm_masks, AdalmError
+from mada_config import load_config, active_boards, board_entry_by_ip, ConfigError
+from mada_adalm_roles import daq_roles, ROLE_DAQ_ENABLE, ROLE_COUNTER_RESET
+from mada_adalm_control import run_adalm_control, AdalmError
 from mada_daq_killer import run_daq_killer
 from mada_encoder_power import run_encoder_power_up, run_encoder_power_down
-from mada_software_veto import get_veto_role, veto_failed
+from mada_software_veto import veto_failed
 from mada_daemon import daemonize, install_sigterm_handler, remove_pidfile, switch_log
 from mada_autoreset_ctl import ensure_autoreset_running, MonitorError
 from mada_rate_log import write_rate_log
@@ -45,22 +47,6 @@ def arg_parser():
     args = parser.parse_args()
     return args
 
-def load_config(config_path):
-    with open(config_path, 'r') as f:
-        config_load = json.load(f)
-    return config_load
-
-def get_active_boards(config_path):
-    with open(config_path, 'r') as file:
-        config_load = json.load(file)
-
-    active_boards = []
-    for x in config_load['gigaIwaki']:
-        if config_load['gigaIwaki'][x]['active'] == 1:
-            active_boards.append((x, config_load['gigaIwaki'][x]['IP']))
-    return active_boards
-
-
 class RunLogger:
     """Owns per-period file paths and the .info/.mada/rate log bookkeeping."""
 
@@ -89,27 +75,23 @@ class RunLogger:
         }
 
     def write_info_start(self, file_id, active_boards, start_time):
-        with open(self.config_path, 'r') as file:
-            config_load = json.load(file)
+        config_load = load_config(self.config_path)
 
         for board_id, ip in active_boards:
-            config_dict = {}
+            entry = board_entry_by_ip(config_load, ip)
+            if entry is None:
+                print(f'WARNING: no config entry for {board_id} (IP {ip}); its .info file is not written')
+                continue
 
-            for gid in config_load['gigaIwaki']:
-                if config_load['gigaIwaki'][gid]['IP'] == ip:
-                    config_dict.update(config_load['gigaIwaki'][gid])
+            output_data = {
+                'gigaIwaki': dict(entry),
+                'runinfo': {
+                    'start': start_time
+                }
+            }
 
-                    output_data = {
-                        'gigaIwaki': config_dict,
-                        'runinfo': {
-                            'start': start_time
-                        }
-                    }
-
-                    with open(self._info_file_path(file_id, board_id), mode='wt', encoding='utf-8') as out_file:
-                        json.dump(output_data, out_file, ensure_ascii=False, indent=4)
-
-                    break
+            with open(self._info_file_path(file_id, board_id), mode='wt', encoding='utf-8') as out_file:
+                json.dump(output_data, out_file, ensure_ascii=False, indent=4)
 
     def write_info_end(self, file_id, active_boards, end_time):
         sizes_by_board = {}
@@ -316,25 +298,18 @@ def run_period(config_path, period_id, file_num, event_num, active_boards,
 
 
 def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
-    active_boards = get_active_boards(config_path)
+    config_load = load_config(config_path)
+    boards = active_boards(config_load)
     if calin:
-        active_boards = [(board_id, ip) for board_id, ip in active_boards if ip == calin[0]]
+        boards = [(board_id, ip) for board_id, ip in boards if ip == calin[0]]
     else:
-        for board_id, ip in active_boards:
+        for board_id, ip in boards:
             print(f'Starting DAQ for board {board_id} at IP {ip}')
 
     run_kill_modules()
-    config_load = load_config(config_path)
-    adalm_serial_daq_enable = get_adalm_serial(config_load, adalm_index=0)
-    adalm_serial_counter_reset = get_adalm_serial(config_load, adalm_index=1)
-    adalm_mask_daq_enable = get_adalm_mask(config_load, adalm_index=0)
-    adalm_mask_counter_reset = get_adalm_mask(config_load, adalm_index=1)
-    roles = [(adalm_serial_daq_enable, adalm_mask_daq_enable),
-             (adalm_serial_counter_reset, adalm_mask_counter_reset)]
-    veto_role = get_veto_role(config_path)
-    if veto_role:
-        roles.append(veto_role)
-    check_adalm_masks(*roles)
+    roles = daq_roles(config_load)
+    adalm_serial_daq_enable, adalm_mask_daq_enable = roles[ROLE_DAQ_ENABLE]
+    adalm_serial_counter_reset, adalm_mask_counter_reset = roles[ROLE_COUNTER_RESET]
 
     run_encoder_power_up(config_path, require_monitor=True)
 
@@ -346,7 +321,7 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
         period = first_period
         while True:
             print('New period created : per' + str(period).zfill(4))
-            run_period(config_path, period, file_num, event_num, active_boards,
+            run_period(config_path, period, file_num, event_num, boards,
                        adalm_serial_daq_enable, adalm_serial_counter_reset,
                        adalm_mask_daq_enable, adalm_mask_counter_reset)
             period = RunLogger.new_period()
@@ -396,7 +371,7 @@ def main():
         run_daq(config_path, file_num, event_num, first_period, args.daemon, calin)
     except KeyboardInterrupt:
         print('DAQ stopped by user.')
-    except (GigaIwakiError, AdalmError, MonitorError) as e:
+    except (GigaIwakiError, AdalmError, MonitorError, ConfigError) as e:
         print(f'DAQ stopped due to error: {e}')
         sys.exit(1)
     finally:

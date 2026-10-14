@@ -3,11 +3,12 @@
 import os
 import sys
 import argparse
-import json
 import datetime
 
 import subprocess
 from subprocess import PIPE
+
+from mada_config import load_config, active_boards
 
 MADAHOME    = os.environ['MADAHOME']
 
@@ -40,20 +41,11 @@ def make_logdir():
         os.makedirs(LOGPATH)
 
 def run_set_all_dac(config_path, calin=None):
-    if not os.path.exists(config_path):
-        print(f"Error: Config file '{config_path}' does not exist.")
-        return
+    config_load = load_config(config_path)
 
-    with open(config_path, 'r') as config_open:
-        config_load = json.load(config_open)
-
-    targets = []
-    for x in config_load['gigaIwaki']:
-        if config_load['gigaIwaki'][x]['active'] == 1:
-            ip = config_load['gigaIwaki'][x]['IP']
-            if calin and ip != calin[0]:
-                continue
-            targets.append((x, config_load['gigaIwaki'][x]))
+    targets = [(name, config_load['gigaIwaki'][name])
+               for name, ip in active_boards(config_load)
+               if not calin or ip == calin[0]]
 
     # Launch every board's SetAllDAC first so the commands go out together,
     # then collect results, rather than waiting on each board in turn.

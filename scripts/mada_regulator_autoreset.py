@@ -3,17 +3,17 @@
 import os
 import sys
 import glob
-import json
 import time
 import signal
 import argparse
 import threading
 import traceback
 
+from mada_config import load_config, module_boards
 from mada_set_ap import run_set_ap, get_ap_state
 from mada_software_veto import SoftwareVeto
 from mada_daemon import detach
-from mada_autoreset_ctl import (RUN_DIR, PIDFILE_PATH, CONFIG_RECORD_PATH, LOG_PATH,
+from mada_autoreset_ctl import (PIDFILE_PATH, CONFIG_RECORD_PATH, LOG_PATH,
                                 monitor_pid, acquire_lock)
 
 CONFIG = './MADA_config.json'
@@ -34,23 +34,6 @@ def arg_parser():
     args = parser.parse_args()
     return args
 
-def get_module_boards(config_path):
-    with open(config_path, 'r') as file:
-        config_load = json.load(file)
-
-    module_boards = {}
-    for name, data in config_load.get('gigaIwaki', {}).items():
-        if data.get('active') != 1:
-            continue
-
-        module = data.get('module')
-        if module is None:
-            continue
-
-        module_boards.setdefault(module, []).append((name, data['IP']))
-    return module_boards
-
-
 class RegulatorAutoresetMonitor:
     """Watches per-module MPOD over-current logs under MONITOR_DIR and resets
     the regulator (AP 0->1) for the boards on a module as soon as a new
@@ -61,7 +44,7 @@ class RegulatorAutoresetMonitor:
         self.config_path = config_path
         self.monitor_dir = monitor_dir
         self.poll_interval = poll_interval
-        self.module_boards = get_module_boards(config_path)
+        self.module_boards = module_boards(load_config(config_path))
         self.veto = veto
 
         self._tracked = {}
