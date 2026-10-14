@@ -5,6 +5,7 @@ import sys
 import subprocess
 import argparse
 
+from mada_errors import MadaError
 from mada_config import load_config, active_boards
 from mada_autoreset_ctl import ensure_autoreset_running, MonitorError
 
@@ -17,7 +18,7 @@ READCTRLMEM = os.path.join(MADABIN, 'ReadCtrlMem')
 CONFIG = './MADA_config.json'
 
 
-class SetApError(RuntimeError):
+class SetApError(MadaError):
     """Raised when SetAP gets no reply from one or more boards."""
 
 

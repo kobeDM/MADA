@@ -9,6 +9,8 @@ import os
 import subprocess
 import time
 
+from mada_errors import MadaError
+
 MADAHOME = os.environ['MADAHOME']
 ADALM_CTRL = MADAHOME + '/bin/AdalmControl'
 LOCK_PATH = MADAHOME + '/run/adalm.lock'
@@ -17,7 +19,7 @@ LOCK_TIMEOUT = 60.0  # sec to wait for the lock before giving up
 CALL_TIMEOUT = 20.0  # sec one AdalmControl call may take, plus the pulse width
 
 
-class AdalmError(RuntimeError):
+class AdalmError(MadaError):
     """Raised when AdalmControl keeps failing after all retries."""
 
 

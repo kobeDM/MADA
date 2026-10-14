@@ -6,6 +6,7 @@ import json
 import subprocess
 import argparse
 
+from mada_errors import MadaError
 from mada_config import load_config, active_boards
 
 MADAHOME = os.environ['MADAHOME']
@@ -17,7 +18,7 @@ SETLATCHUPDETECT = os.path.join(MADABIN, 'SetLatchUpDetect')
 CONFIG = './MADA_config.json'
 
 
-class SetLatchUpDetectError(RuntimeError):
+class SetLatchUpDetectError(MadaError):
     """Raised when SetLatchUpDetect gets no reply from one or more boards."""
 
 

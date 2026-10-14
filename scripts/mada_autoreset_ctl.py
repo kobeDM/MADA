@@ -11,6 +11,8 @@ import fcntl
 import signal
 import subprocess
 
+from mada_errors import MadaError
+
 MADAHOME = os.environ['MADAHOME']
 RUN_DIR = MADAHOME + '/run'
 
@@ -24,7 +26,7 @@ START_TIMEOUT = 15.0  # sec
 STOP_TIMEOUT = 30.0   # sec
 
 
-class MonitorError(RuntimeError):
+class MonitorError(MadaError):
     """Raised when the autoreset monitor is required but cannot be started."""
 
 

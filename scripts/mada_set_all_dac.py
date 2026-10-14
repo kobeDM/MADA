@@ -8,6 +8,7 @@ import datetime
 import subprocess
 from subprocess import PIPE
 
+from mada_errors import MadaError
 from mada_config import load_config, active_boards
 
 MADAHOME    = os.environ['MADAHOME']
@@ -25,7 +26,7 @@ SETALLDAC_EXE  = MADAHOME + "/bin/SetAllDAC"
 READMEM_EXE    = MADAHOME + "/bin/ReadCtrlMem"
 
 
-class SetAllDacError(RuntimeError):
+class SetAllDacError(MadaError):
     """Raised when SetAllDAC gets no reply from one or more boards."""
 
 

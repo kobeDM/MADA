@@ -8,6 +8,8 @@ import subprocess
 import threading
 import time
 
+from mada_errors import MadaError
+
 MADAHOME = os.environ['MADAHOME']
 MADA_IWAKI = MADAHOME + '/bin/MadaIwaki'
 
@@ -15,7 +17,7 @@ START_ATTEMPTS = 3  # tries to bring one reader up before giving up
 SETTLE_TIME = 1.0   # sec a new reader must stay alive to count as connected
 
 
-class GigaIwakiError(RuntimeError):
+class GigaIwakiError(MadaError):
     """Raised when a reader exits with a non-zero status (e.g. it lost the
     connection to its board), so the caller can stop the DAQ instead of
     treating the exit as a normal 'file complete' event."""

@@ -6,8 +6,10 @@ and flags through here instead of parsing the file itself."""
 import json
 import os
 
+from mada_errors import MadaError
 
-class ConfigError(RuntimeError):
+
+class ConfigError(MadaError):
     """Raised when the config file is missing, malformed or incomplete."""
 
 
