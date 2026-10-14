@@ -3,9 +3,12 @@
 """Per-run bookkeeping: the perNNNN directories, the .mada/.info file names,
 the .info files (start and end of each file) and the rate log."""
 
+import datetime
 import glob
 import json
 import os
+import threading
+import time
 
 from mada_config import load_config, board_entry_by_ip
 from mada_rate_log import write_rate_log, RATE_ROOT
@@ -15,10 +18,14 @@ def _period_dir(period_id):
     return 'per' + str(period_id).zfill(4)
 
 
+WARNING_LOG_NAME = 'warnings.log'
+
+
 class RunLogger:
     def __init__(self, config_path, period_id):
         self.config_path = config_path
         self.period_id = period_id
+        self._warning_lock = threading.Lock()
 
     @staticmethod
     def new_period() -> int:
@@ -48,6 +55,22 @@ class RunLogger:
 
     def mada_file_paths(self, file_id, boards):
         return {board_id: self._base(file_id, board_id) + '.mada' for board_id, ip in boards}
+
+    def warning_log_path(self):
+        return f'{_period_dir(self.period_id)}/{WARNING_LOG_NAME}'
+
+    def warning(self, file_id, source, message):
+        """Append one line to the period's warning log, for later analysis:
+        epoch, ISO time, file number, source (a board name or DAQ), message.
+        Never raises: a log failure must not stop the DAQ."""
+        now = time.time()
+        stamp = datetime.datetime.fromtimestamp(now).isoformat(timespec='milliseconds')
+        line = '\t'.join([f'{now:.3f}', stamp, str(file_id).zfill(4), source, message.replace('\t', ' ').replace('\n', ' ')])
+        try:
+            with self._warning_lock, open(self.warning_log_path(), 'a', encoding='utf-8') as f:
+                f.write(line + '\n')
+        except OSError as e:
+            print(f'WARNING: could not write {self.warning_log_path()} ({e})')
 
     def write_info_start(self, file_id, boards, start_time):
         config_load = load_config(self.config_path)

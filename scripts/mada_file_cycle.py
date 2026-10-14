@@ -9,6 +9,7 @@ import time
 from mada_adalm_roles import ROLE_DAQ_ENABLE, ROLE_COUNTER_RESET
 from mada_adalm_runner import run_adalm_control, AdalmError
 from mada_autoreset_ctl import ensure_autoreset_running, MonitorError
+from mada_errors import MadaError
 from mada_gigaiwaki import start_readers, kill_readers
 from mada_progress import ProgressMonitor
 from mada_run_logger import RunLogger
@@ -31,13 +32,18 @@ def run_file(logger, file_id, boards, event_num, roles):
     reset_serial, reset_mask = roles[ROLE_COUNTER_RESET]
 
     mada_files = logger.mada_file_paths(file_id, boards)
+    warn = lambda source, message: logger.warning(file_id, source, message)
 
     # DAQ enable is low here: it was lowered when the previous file ended (or
     # by the session before the first file), so nothing is acquired while the
     # readers start. Readers that fail to come up are restarted one by one;
     # the counter reset and DAQ enable below then go to all boards together.
     print('Running gigaiwaki (waiting for data flushing)...')
-    procs = start_readers(event_num, boards, mada_files)
+    try:
+        procs = start_readers(event_num, boards, mada_files, warn)
+    except MadaError as e:
+        warn('DAQ', f'ERROR {e}')
+        raise
 
     try:
         print('Resetting counters...')
@@ -58,6 +64,9 @@ def run_file(logger, file_id, boards, event_num, roles):
         run_adalm_control(daq_serial, latch=0, mask=daq_mask)
         end_time = time.time()
         time.sleep(DRAIN_WAIT)
+    except MadaError as e:
+        warn('DAQ', f'ERROR {e}')
+        raise
     finally:
         print('Kill gigaiwaki processes...')
         kill_readers(procs)

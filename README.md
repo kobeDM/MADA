@@ -227,4 +227,5 @@ Behaviour worth knowing: the config is validated (boards, DAC files, ADALM roles
 ## Notes
 
 - Build artifacts (`bin/`, `build/`), DAC setting logs (`config/DAClog/`), and Python `__pycache__` directories are all gitignored.
-- Files created during a DAQ run (`perNNNN/*.mada` / `*.info`) are written to the run directory, i.e. the current directory from which `mada.py` was launched.
+- Files created during a DAQ run (`perNNNN/*.mada` / `*.info` / `warnings.log`) are written to the run directory, i.e. the current directory from which `mada.py` was launched.
+- `perNNNN/warnings.log` collects, for the whole period, what the readers report on stderr plus the reader restarts and the error that stopped the DAQ. Tab-separated: epoch s, ISO time, file number, source (board or `DAQ`), message. `MadaIwaki` writes timing warnings with the wall-clock time `t=` (epoch s) of the event: `kind=recv_wait` (the board sent nothing for `sec`, much longer than the usual interval: board or network side), `kind=write_slow` (writing to disk took `sec`: PC side), and an `INFO ... kind=summary` line when a file is complete. The reporting threshold is `MadaIwaki -t <sec>` (default 0.2 s). Use it to tell the cause of missing trigger IDs: match the `t=` of a stall with the time of the gap (`.info` start + clock counter, 100 us units).
