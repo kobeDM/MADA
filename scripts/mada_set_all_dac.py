@@ -100,10 +100,9 @@ def main():
     ret = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=None, check=False, capture_output=False)
     print(ret.stdout)
             
-    # run_set_all_dac(config, calin)
     try:
-        run_set_all_dac(config)
-    except SetAllDacError as e:
+        run_set_all_dac(config, calin=calin)
+    except MadaError as e:
         print(f'ERROR: {e}')
         sys.exit(1)
 

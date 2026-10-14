@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
+import sys
 
 from mada_config import load_config, latch_up_detect_enabled
+from mada_errors import MadaError
 from mada_set_ap import run_set_ap
 from mada_set_all_dac import run_set_all_dac
 from mada_set_latch_up_detect import run_set_latch_up_detect
@@ -47,7 +49,11 @@ def main():
     print('*** mada_encoder_power.py start ***')
 
     args = arg_parser()
-    run_encoder_power(args.config, args.io)
+    try:
+        run_encoder_power(args.config, args.io)
+    except MadaError as e:
+        print(f'ERROR: {e}')
+        sys.exit(1)
 
     print('*** mada_encoder_power.py end ***')
 

@@ -2,7 +2,6 @@
 
 import os
 import sys
-import json
 import subprocess
 import argparse
 
@@ -12,7 +11,7 @@ from mada_config import load_config, active_boards
 MADAHOME = os.environ['MADAHOME']
 MADABIN = MADAHOME + '/bin'
 
-FETCHCONFIG = os.path.join(MADABIN, 'mada_fetch_config.py')
+FETCHCONFIG = os.path.join(MADAHOME, 'scripts', 'mada_fetch_config.py')
 SETLATCHUPDETECT = os.path.join(MADABIN, 'SetLatchUpDetect')
 
 CONFIG = './MADA_config.json'
@@ -71,12 +70,9 @@ def main():
     print('Config file: ' + config)
     print('---')
 
-    with open(config, 'r') as file:
-        config_load = json.load(file)
-
     try:
         run_set_latch_up_detect(config, io)
-    except SetLatchUpDetectError as e:
+    except MadaError as e:
         print(f'ERROR: {e}')
         sys.exit(1)
 

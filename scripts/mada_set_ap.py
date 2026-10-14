@@ -71,7 +71,7 @@ def main():
 
     try:
         run_set_ap(config, io)
-    except SetApError as e:
+    except MadaError as e:
         print(f'ERROR: {e}')
         sys.exit(1)
 

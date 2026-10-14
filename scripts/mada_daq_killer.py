@@ -4,9 +4,11 @@
 size into the .info files, rate log) and stop the readers."""
 
 import argparse
+import sys
 import time
 
 from mada_config import load_config, active_boards
+from mada_errors import MadaError
 from mada_process import stop_processes
 from mada_run_logger import RunLogger
 
@@ -43,7 +45,11 @@ def run_daq_killer(config_path=CONFIG):
 
 
 def main():
-    run_daq_killer(arg_parser().config)
+    try:
+        run_daq_killer(arg_parser().config)
+    except MadaError as e:
+        print(f'ERROR: {e}')
+        sys.exit(1)
 
 
 if __name__ == "__main__":
