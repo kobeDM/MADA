@@ -16,11 +16,14 @@ from mada_file_cycle import run_period
 from mada_kill_adalms import run_kill_adalms
 from mada_kill_modules import run_kill_modules
 from mada_run_logger import RunLogger
+from mada_run_state import clear_run_state
 
 
 def _shutdown(config_path, daq_role):
     """Each step is guarded so that a failure in one does not skip the next or
     hide the error that stopped the DAQ."""
+    clear_run_state()
+
     try:
         run_daq_killer(config_path)
     except Exception as e:

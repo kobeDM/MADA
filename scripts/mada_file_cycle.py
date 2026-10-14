@@ -13,6 +13,7 @@ from mada_errors import MadaError
 from mada_gigaiwaki import start_readers, kill_readers
 from mada_progress import ProgressMonitor
 from mada_run_logger import RunLogger
+from mada_run_state import publish_run_state
 from mada_software_veto import veto_failed
 
 DRAIN_WAIT = 0.2         # sec, keep readers attached after DAQ enable falls
@@ -31,6 +32,7 @@ def run_file(logger, file_id, boards, event_num, roles):
     daq_serial, daq_mask = roles[ROLE_DAQ_ENABLE]
     reset_serial, reset_mask = roles[ROLE_COUNTER_RESET]
 
+    publish_run_state(logger.period_dir_abs(), file_id)
     mada_files = logger.mada_file_paths(file_id, boards)
     warn = lambda source, message: logger.warning(file_id, source, message)
 

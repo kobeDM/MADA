@@ -42,6 +42,7 @@ class SoftwareVeto:
         self.log_path = log_path
         self.state_path = state_path
         self.failed = False
+        self.on_event = None  # called with the text of every veto.log line
         self._thread = None
         self._active = False
         self._pending_release = False
@@ -55,6 +56,11 @@ class SoftwareVeto:
         stamp = datetime.fromtimestamp(now).isoformat(timespec='milliseconds')
         with open(self.log_path, 'a', encoding='utf-8') as f:
             f.write(f'{now:.3f} {stamp} {text}\n')
+        if self.on_event:
+            try:
+                self.on_event(text)
+            except Exception:
+                pass
 
     def _write_state(self):
         state = {'failed': self.failed, 'asserted': self._active or self._pending_release, 'time': time.time()}
