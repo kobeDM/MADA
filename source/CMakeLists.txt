@@ -14,10 +14,6 @@ set(Targets
     SetADCBias
     SetAP
     SetLatchUpDetect
-    DACAnalysis
-    DACSurvey
-    ScanVth
-    VthAnalysis
     FindAdalm
     AdalmControl
     OutputTestPulse
@@ -43,10 +39,6 @@ add_executable(ReadCtrlMem ReadCtrlMem.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(SetADCBias SetADCBias.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(SetAP SetAP.cc SiTCP.cc TCPclient.cc RBCP.cc)
 add_executable(SetLatchUpDetect SetLatchUpDetect.cc SiTCP.cc TCPclient.cc RBCP.cc)
-add_executable(DACAnalysis DACAnalysis.cc )
-add_executable(DACSurvey DACSurvey.cc RBCP.cc SiTCP.cc )
-add_executable(ScanVth ScanVth.cc SiTCP.cc RBCP.cc)
-add_executable(VthAnalysis VthAnalysis.cc)
 add_executable(FindAdalm FindAdalm.cc)
 add_executable(AdalmControl AdalmControl.cc AdalmUtil.cc)
 add_executable(OutputTestPulse OutputTestPulse.cc AdalmUtil.cc)
@@ -64,10 +56,6 @@ target_link_libraries(ReadCtrlMem PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetADCBias PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetAP PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetLatchUpDetect PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
-target_link_libraries(DACAnalysis PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
-target_link_libraries(DACSurvey PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
-target_link_libraries(ScanVth PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
-target_link_libraries(VthAnalysis PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(FindAdalm PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(SetAllDAC PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(ScanFit PRIVATE ${ROOT_LIBRARIES} Threads::Threads)

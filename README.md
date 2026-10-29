@@ -13,7 +13,6 @@ This branch is tuned for GigaIwaki v3.1.
 | `build/` | CMake build directory (gitignored) |
 | `scripts/` | Python scripts for operation and automation |
 | `config/` | Config file templates, DAC files, DAC setting logs (`DAClog/`) |
-| `rootmacro/` | CERN ROOT macros for Vth/DAC analysis |
 | `setup.sh` | Sets environment variables and `PATH` |
 
 ## Requirements
@@ -51,7 +50,7 @@ source setup.sh
 
 Run `source setup.sh` from the working directory where you'll launch DAQ (i.e. where the `per0000/` run directories will be created), or add it to your `.bashrc` so it's always available.
 
-Some scripts (`mada_check_vths.py`, `mada_testout.py`) also reference `ADAHOME` / `ADSW` environment variables that point to a separate ADALM toolset. If you don't use those scripts, you can leave them unset.
+The script `mada_testout.py` also references `ADAHOME` / `ADSW` environment variables that point to a separate ADALM toolset. If you don't use that script, you can leave them unset.
 
 ### 3. Prepare the config file (`MADA_config.json`)
 
@@ -146,13 +145,7 @@ Behaviour worth knowing: the config is validated (boards, DAC files, ADALM roles
     SetVth [IP] [Vth]
     # e.g. SetVth 192.168.100.24 8000
     ```
-    `SetAllDAC` is what `mada_set_all_dac.py` calls; `SetDAC`/`SetVth` remain as standalone tools (used e.g. by `mada_run_vth_scan.py`) for setting just one of the two.
-
-- **Check Vth across all boards**
-    ```bash
-    mada_check_vths.py
-    ```
-    Fetches the config, emits a test pulse, and runs a Vth scan on each board to confirm the thresholds are as intended (requires the `ADAHOME` environment variable).
+    `SetAllDAC` is what `mada_set_all_dac.py` calls; `SetDAC`/`SetVth` remain as standalone tools for setting just one of the two.
 
 - **Toggle ADC bias / AP (regulator) / latch-up detection**
     ```bash
@@ -197,11 +190,9 @@ Behaviour worth knowing: the config is validated (boards, DAC files, ADALM roles
     ```bash
     ScanAcquire [IP] vth [outdir] [start] [end] [step] -d [DAC file] [-n events] [-t sec] [-s settle]
     ScanAcquire [IP] dac [outdir] [start] [end] [step] -v [Vth] [-n events] [-t sec] [-s settle]
-    ScanFit [outdir] {vth|dac} [target [level [rate|occupancy]]]   # also reads the data of the old ScanVth/DACSurvey
+    ScanFit [outdir] {vth|dac} [target [level [rate|occupancy]]]   # also reads the data of the removed ScanVth/DACSurvey
     ScanCorrect {dac|slope|refine} ...
     ```
-
-- **Old Vth/DAC scan scripts** (`mada_run_vth_scan.py`, `mada_run_dac_scan.py`, `mada_run_vth_ana.py`, `mada_check_vths.py`): superseded by `mada_scan.py`. They count only events that contain hit data when computing the hit rate, take the closest scan point instead of a fit, and wait forever when no data arrives.
 
 ### ADALM2000
 
