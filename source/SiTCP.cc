@@ -1,4 +1,5 @@
 #include "../include/SiTCP.h"
+#include <poll.h>
 #include <unistd.h>
 bool SiTCP::Open( const string ip )
 {
@@ -34,6 +35,17 @@ int SiTCP::Read( char *data )
     int num = recv( sock, data, 4096, 0 );
 
     return num;
+}
+
+int SiTCP::ReadTimeout( char *data, int timeout_ms )
+{
+    struct pollfd pfd;
+    pfd.fd     = sock;
+    pfd.events = POLLIN;
+    if ( poll( &pfd, 1, timeout_ms ) <= 0 )
+        return -1;
+
+    return recv( sock, data, 4096, 0 );
 }
 
 SiTCP::SiTCP( )

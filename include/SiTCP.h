@@ -27,6 +27,7 @@ class SiTCP
         void Close( );
 
         int Read( char * );
+        int ReadTimeout( char *, int );  // -1 when nothing arrives within the milliseconds
 
     private:
         struct sockaddr_in param;
