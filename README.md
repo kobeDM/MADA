@@ -114,6 +114,7 @@ For each entry under `gigaIwaki`, set:
 | `mada_file_cycle.py` | one file: start readers, reset counters, DAQ enable, wait, close |
 | `mada_gigaiwaki.py` | the MadaIwaki readers (start with per-board restart, stop) |
 | `mada_progress.py` | live per-board event counts |
+| `mada_scan.py`, `mada_scan_session.py`, `mada_scan_board.py`, `mada_scan_tools.py`, `mada_scan_progress.py`, `mada_scan_replot.py` | DAC/Vth scan: entry point, session (power, DAQ enable, parallel boards), one board's correction, scan binaries, progress bars, redo of the fits |
 | `mada_run_logger.py` | `perNNNN/` directories, `.info` files, rate log |
 | `mada_config.py` / `mada_adalm_roles.py` | config access and validation / ADALM roles and DIO masks |
 | `mada_adalm_runner.py` / `mada_adalm_control.py` | run `AdalmControl` with lock and timeout / its command line |
@@ -170,18 +171,37 @@ Behaviour worth knowing: the config is validated (boards, DAC files, ADALM roles
 
 ### Scanning and analysis
 
-- **Vth scan**
+- **DAC/Vth correction (noise-only scans, all boards in parallel)**
     ```bash
-    mada_run_vth_scan.py [IP] [Vth low] [Vth high] [Vth step] [-b] [-d DACfile] [-c]
-    # e.g. mada_run_vth_scan.py 192.168.100.16 8500 10000 1000
+    mada_scan.py [-c config] [-b board|IP ...] [-o outdir] [-n events] [--vth-events N] [-t timeout] [-s settle]
+                 [--level L] [--dac-level L] [--metric occupancy|rate] [--window-hit W] [--window-nohit W]
+                 [--step S] [--max-iter N] [--slope-dv DV] [--target config|median]
+    # e.g. mada_scan.py -c MADA_config.json -n 300 --vth-events 2000 -t 25 --step 20
     ```
-    Runs the scan with `bin/ScanVth`, then analyzes it with `mada_run_vth_ana.py` (`bin/VthAnalysis` + `rootmacro/ShowVth*.cxx`). Pass `-c` to also apply DAC correction via `rootmacro/DACValueCorrection.cxx`.
+    Needs no DAQ running and the external trigger running; the hits are the noise crossing the threshold. Boards whose regulator (AP) is off are switched on (with the config's Vth/DAC/bias, and the autoreset monitor) and switched off again at the end; boards that were already on stay on. It raises DAQ enable for the session, shows one progress bar per board (stage, points done, elapsed time, estimate of the time left; redrawn in place on a terminal, one status line a minute in a log file), and for every board (in parallel):
+    1. DAC scan at the board's working Vth (DAC 0-63 on all channels at once) -> the DAC where each channel reaches the alignment level at that Vth (`ScanAcquire`, `ScanFit`, `ScanCorrect dac`).
+    2. A second DAC scan at Vth + `--slope-dv` (default 200) -> the measured Vth counts per DAC count (`ScanCorrect slope`); falls back to 52 with a warning if the result is not plausible. The DAC scan also tells on which side of the Vth scale the hits are (cathode boards: low Vth, anode boards: high Vth).
+    3. Vth scans verify the result: from the working Vth `--window-hit` (default 300) towards the hits and `--window-nohit` (default 300) towards the no-hit side, so that the whole noise edge of every channel is covered. `ScanCorrect refine` moves the DAC of channels more than 0.6 DAC off the target; the scan is repeated until no value changes or `--max-iter` (default 5) refinements were made.
 
-- **DAC scan**
+    **Alignment.** The scan is done at the `Vth` of the board's config entry, which becomes the working point the channels are aligned to. The channels are aligned not at the center of their noise transition (hit rate 50%, where the noise hits all the time) but at the edge where the noise vanishes: where the fraction of events with a hit (`--metric occupancy`, default; `rate` counts clocks with a hit instead) has risen to `--level` (default 0.005) of the whole transition, coming from the no-hit side (`--dac-level`, default 0.05, for the DAC scans, which have fewer events and only give the start). The position is read from the data by interpolation, because the tail of the noise distribution is heavier than an error function. `--level 0.5 --metric rate` aligns the fitted centers. The tail needs many events (a level of 0.005 is 10 events at 2000), so give the Vth scans more with `--vth-events` (the points time out at `-t`). The Vth in the config is where the channels end up aligned; run the DAQ a margin beyond it (towards fewer hits) to have no noise at all. For a first calibration (no DAC file tuned for the board yet) set `Vth` to 8000 in the config before scanning.
+
+    **Data and results.** Every point takes `-n` events or at most `-t` seconds (a point that times out is kept with the events it got and reported; a scan with no event at all stops with an error). Channels that never hit (dead) or always hit (stuck), or that show no transition, are not fitted, keep the DAC of the board's config DACfile, and are listed in the summary. The hit statistics count every event, including the ones without hit data. Results go to `scan_runNNNN/<board>/` (scan data, `fit_result.csv/.root`, `fit_summary.png`, `Vthcheck.png`, `dac_N.dac`, `summary.json`) and `scan_runNNNN/<board>.dac` is the corrected DAC file; **copy it into the config's `DACfile` by hand**. After the scan every board gets its configured Vth, DAC values and bias again.
+
+- **Redo the fits and plots of finished scans**
     ```bash
-    mada_run_dac_scan.py [IP] [Vth]
+    mada_scan_replot.py scan_runNNNN [scan_runMMMM ...]
     ```
-    Runs the scan with `bin/DACSurvey` and analyzes it with `bin/DACAnalysis`.
+    Runs `ScanFit` again on the saved data of every board (no board access). The scan plots are `vth_scan_N/Vthcheck.png` (hit rate vs channel and Vth, red line at the working Vth) and `dac_scan_N/DACcheck.png`.
+
+- **Single scans (low level)**
+    ```bash
+    ScanAcquire [IP] vth [outdir] [start] [end] [step] -d [DAC file] [-n events] [-t sec] [-s settle]
+    ScanAcquire [IP] dac [outdir] [start] [end] [step] -v [Vth] [-n events] [-t sec] [-s settle]
+    ScanFit [outdir] {vth|dac} [target [level [rate|occupancy]]]   # also reads the data of the old ScanVth/DACSurvey
+    ScanCorrect {dac|slope|refine} ...
+    ```
+
+- **Old Vth/DAC scan scripts** (`mada_run_vth_scan.py`, `mada_run_dac_scan.py`, `mada_run_vth_ana.py`, `mada_check_vths.py`): superseded by `mada_scan.py`. They count only events that contain hit data when computing the hit rate, take the closest scan point instead of a fit, and wait forever when no data arrives.
 
 ### ADALM2000
 
