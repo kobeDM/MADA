@@ -82,5 +82,13 @@
 		"buffer_samples": 8192,
 		"pre_trigger_samples": 8000,
 		"save_waveform": 0
+	},
+	"SCALER": {
+		"_comment": "Scaler (runScaler on the Zybo, started over ssh once per period while DAQ enable is low). output_root is this PC's path of the directory shared with the Zybo (remote_output_root: the Zybo's path of it); it holds <run>/perNNNN. Run 'ssh <host>' once by hand first so the host key is known.",
+		"active": 0,
+		"ssh": { "host": "msgc@10.37.0.241", "identity_file": "/home/msgc/.ssh/id_ecdsa", "connect_timeout": 5 },
+		"command": "/home/msgc/repo/MAZYSCA_SW/bin/runScaler",
+		"output_root": "/nadb61/scaler",
+		"remote_output_root": "/nadb/nadb61/scaler"
 	}
 }

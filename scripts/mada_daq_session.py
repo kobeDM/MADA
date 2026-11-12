@@ -3,6 +3,7 @@
 """One DAQ session: power the boards up, acquire period after period until
 stopped or failed, then shut everything down."""
 
+import time
 import traceback
 
 from mada_adalm_roles import daq_roles, ROLE_DAQ_ENABLE
@@ -16,10 +17,14 @@ from mada_file_cycle import run_period
 from mada_kill_adalms import run_kill_adalms
 from mada_kill_modules import run_kill_modules
 from mada_run_logger import RunLogger
+from mada_scaler import ScalerRunner
 from mada_run_state import clear_run_state
 
 
-def _shutdown(config_path, daq_role):
+SCALER_SETTLE = 0.5  # sec for the scaler to record the last falling edge of DAQ enable
+
+
+def _shutdown(config_path, daq_role, scaler=None):
     """Each step is guarded so that a failure in one does not skip the next or
     hide the error that stopped the DAQ."""
     clear_run_state()
@@ -36,10 +41,16 @@ def _shutdown(config_path, daq_role):
     except AdalmError as e:
         print(f'WARNING: could not latch down DAQ enable on exit ({e}).')
 
+    if scaler and scaler.pid is not None:
+        time.sleep(SCALER_SETTLE)
+
     try:
         run_encoder_power_down(config_path)
     except Exception as e:
         print(f'WARNING: power down failed ({e}); check that the regulators are off.')
+
+    if scaler:
+        scaler.stop()
 
 
 def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None, sci=None):
@@ -52,12 +63,17 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None, 
             print(f'Starting DAQ for board {board_id} at IP {ip}')
 
     roles = daq_roles(config_load)
+    scaler = ScalerRunner.from_config(config_load)
 
     run_kill_modules()
     run_kill_adalms()
 
     try:
         run_encoder_power_up(config_path, calin=calin, require_monitor=True)
+
+        if scaler:
+            print('Stopping a scaler left over from an earlier run...')
+            scaler.clean_stale()
 
         print('DAQ is running... Press Ctrl+C to stop.')
         print('Latch down DAQ enable (initial)...')
@@ -67,7 +83,7 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None, 
         period = first_period
         while True:
             print('New period created : per' + str(period).zfill(4))
-            run_period(config_path, period, file_num, event_num, boards, roles, sci)
+            run_period(config_path, period, file_num, event_num, boards, roles, sci, scaler)
             period = RunLogger.new_period()
             if daemon:
                 switch_log(period)
@@ -82,4 +98,4 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None, 
         traceback.print_exc()
         raise
     finally:
-        _shutdown(config_path, roles[ROLE_DAQ_ENABLE])
+        _shutdown(config_path, roles[ROLE_DAQ_ENABLE], scaler)

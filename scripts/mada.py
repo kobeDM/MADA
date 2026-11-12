@@ -4,11 +4,12 @@ import argparse
 import sys
 
 from mada_adalm_roles import daq_roles
-from mada_config import load_config, validate_boards, validate_sci, sci_settings, ConfigError
+from mada_config import load_config, validate_boards, validate_sci, validate_scaler, sci_settings, ConfigError
 from mada_daemon import daemonize, install_sigterm_handler, remove_pidfile
 from mada_daq_session import run_daq
 from mada_errors import MadaError
 from mada_run_logger import RunLogger
+from mada_scaler import ScalerRunner, ScalerError
 from mada_run_state import set_period, clear_last_exit, write_last_exit
 
 
@@ -37,7 +38,11 @@ def check_config(config_path, sci=False):
         daq_roles(config)
         if sci:
             validate_sci(config)
-    except ConfigError as e:
+        validate_scaler(config)
+        scaler = ScalerRunner.from_config(config)
+        if scaler:
+            scaler.preflight()
+    except (ConfigError, ScalerError) as e:
         print(f'Error: {e}')
         sys.exit(1)
 

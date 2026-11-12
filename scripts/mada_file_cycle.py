@@ -14,6 +14,7 @@ from mada_errors import MadaError
 from mada_gigaiwaki import start_readers, kill_readers, ReaderExitError
 from mada_progress import ProgressMonitor
 from mada_run_logger import RunLogger
+from mada_scaler import ScalerError
 from mada_run_state import publish_run_state, publish_progress, clear_progress
 from mada_warning_log import event_message
 from mada_sci import SciRecorder
@@ -105,12 +106,17 @@ def run_file(logger, file_id, boards, event_num, roles, sci=None, state_extra=No
     return invalid is None
 
 
-def run_period(config_path, period_id, file_num, event_num, boards, roles, sci=None):
+def run_period(config_path, period_id, file_num, event_num, boards, roles, sci=None, scaler=None):
     """Acquire file_num valid files. An invalid file (a reader died) keeps its
-    number and does not count; MAX_INVALID_IN_ROW of them in a row stop the DAQ."""
+    number and does not count; MAX_INVALID_IN_ROW of them in a row stop the DAQ.
+    With a scaler, runScaler serves this period: it is started while DAQ enable
+    is low, checked after every file and stopped when the period is complete."""
     logger = RunLogger(config_path, period_id)
     state_extra = {'run': run_name(), 'period': period_id, 'file_num': file_num, 'event_num': event_num,
                    'sci': bool(sci), 'boards': [{'id': board_id, 'ip': ip} for board_id, ip in boards]}
+
+    if scaler:
+        scaler.start(period_id)
 
     file_id = 0
     valid = 0
@@ -118,7 +124,10 @@ def run_period(config_path, period_id, file_num, event_num, boards, roles, sci=N
     while valid < file_num:
         check_protection(config_path)
         print(f'Creating file {file_id} with {event_num} events...')
-        if run_file(logger, file_id, boards, event_num, roles, sci, dict(state_extra, valid_files=valid)):
+        is_valid = run_file(logger, file_id, boards, event_num, roles, sci, dict(state_extra, valid_files=valid))
+        if scaler:
+            scaler.verify_file(file_id)
+        if is_valid:
             valid += 1
             invalid_in_row = 0
         else:
@@ -127,3 +136,6 @@ def run_period(config_path, period_id, file_num, event_num, boards, roles, sci=N
             if invalid_in_row >= MAX_INVALID_IN_ROW:
                 raise MadaError(f'{invalid_in_row} invalid files in a row; stopping')
         file_id += 1
+
+    if scaler and not (scaler.stop() or scaler.stop()):
+        raise ScalerError('could not stop the scaler of the finished period; stopping')

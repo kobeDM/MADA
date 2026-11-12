@@ -154,3 +154,46 @@ def validate_sci(config):
 
     if problems:
         raise ConfigError('invalid SCI settings: ' + '; '.join(problems))
+
+
+SCALER_DEFAULTS = {'connect_timeout': 5}
+
+
+def scaler_settings(config):
+    """The SCALER section with defaults filled in, or None when the scaler is
+    not used (no section, or active != 1)."""
+    section = config.get('SCALER')
+    if not isinstance(section, dict) or section.get('active') != 1:
+        return None
+    settings = dict(section)
+    settings['ssh'] = dict(SCALER_DEFAULTS, **section.get('ssh', {}))
+    return settings
+
+
+def validate_scaler(config):
+    """Check the SCALER section; raises ConfigError listing every problem."""
+    settings = scaler_settings(config)
+    if settings is None:
+        return
+
+    problems = []
+    ssh = settings['ssh']
+    if not ssh.get('host'):
+        problems.append('SCALER.ssh.host is missing')
+    identity = ssh.get('identity_file')
+    if not identity or not os.path.isfile(identity):
+        problems.append(f'SCALER.ssh.identity_file {identity!r} does not exist')
+    if not isinstance(ssh['connect_timeout'], int) or ssh['connect_timeout'] < 1:
+        problems.append('SCALER.ssh.connect_timeout must be a positive integer [sec]')
+    if not str(settings.get('command', '')).startswith('/'):
+        problems.append('SCALER.command must be an absolute path on the scaler host')
+    root = settings.get('output_root')
+    if not root or not os.path.isdir(root):
+        problems.append(f'SCALER.output_root {root!r} is not a directory (it must be visible from this PC)')
+
+    remote_root = settings.get('remote_output_root')
+    if remote_root is not None and not str(remote_root).startswith('/'):
+        problems.append('SCALER.remote_output_root must be an absolute path on the scaler host')
+
+    if problems:
+        raise ConfigError('invalid SCALER settings: ' + '; '.join(problems))

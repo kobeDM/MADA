@@ -184,3 +184,21 @@ def test_lag_and_invalid_file(client):
     assert files[0]['valid'] is False and files[0]['invalid_reason']
     api.post('/api/v1/daq/stop')
     wait_phase(api, 'idle')
+
+
+def test_scaler_state(client):
+    api, _ = client
+    assert api.get('/api/v1/status').json()['monitor']['scaler'] is None
+    import json
+    with open(f'{HOME}/run/mada_scaler.json', 'w') as f:
+        json.dump({'state': 'running', 'period': 4, 'pid': 1, 'host': 'h', 'time': 1.0}, f)
+    scaler = api.get('/api/v1/status').json()['monitor']['scaler']
+    assert scaler == {'state': 'orphaned', 'period': 4, 'time': 1.0}
+    make_run('runA')
+    mada_client_files.clear_cache()
+    api.post('/api/v1/daq/start', json={'run': 'runA', 'file_num': 1})
+    wait_phase(api, 'running')
+    assert api.get('/api/v1/status').json()['monitor']['scaler']['state'] == 'running'
+    api.post('/api/v1/daq/stop')
+    wait_phase(api, 'idle')
+    assert api.get('/api/v1/status').json()['monitor']['scaler']['state'] == 'stopped'

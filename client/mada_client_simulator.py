@@ -21,8 +21,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.realpath
 from mada_daemon import daemonize, install_sigterm_handler, remove_pidfile, run_name
 from mada_errors import MadaError
 from mada_run_logger import RunLogger
+from mada_scaler import STATE_PATH as SCALER_STATE_PATH
 from mada_run_state import (clear_last_exit, clear_progress, clear_run_state, publish_progress,
-                            publish_run_state, set_period, write_last_exit)
+                            publish_run_state, set_period, write_json, write_last_exit)
 from mada_warning_log import WARNING_LOG_NAME, append_warning, event_message
 
 STEP = 0.25  # sec between progress updates
@@ -89,6 +90,10 @@ def acquire_file(period_dir, file_id, boards, event_num, file_sec, lag, extra):
     return start, time.time(), counts
 
 
+def write_scaler_state(state, period):
+    write_json(SCALER_STATE_PATH, {'state': state, 'period': period, 'pid': None, 'host': 'sim', 'time': time.time()})
+
+
 def run_simulation(args, boards, first_period):
     file_sec = env_number('MADA_SIM_FILE_SEC', 3.0)
     fail_after = env_number('MADA_SIM_FAIL_AFTER', 0, int)
@@ -100,6 +105,7 @@ def run_simulation(args, boards, first_period):
     while True:
         logger = RunLogger(args.config, period)
         period_dir = logger.period_dir_abs()
+        write_scaler_state('running', period)
         valid = 0
         for file_id in range(10 ** 6):
             if valid >= args.file_num:
@@ -112,6 +118,7 @@ def run_simulation(args, boards, first_period):
             write_info(period_dir, file_id, boards, start, end, counts, invalid)
             valid += 0 if invalid else 1
             taken += 1
+        write_scaler_state('stopped', period)
         period = RunLogger.new_period()
 
 
@@ -131,10 +138,12 @@ def main():
         print('DAQ stopped by user.')
         time.sleep(env_number('MADA_SIM_SHUTDOWN_SEC', 2.0))
         clear_run_state()
+        write_scaler_state('stopped', first_period)
         write_last_exit('stopped')
     except MadaError as e:
         print(f'DAQ stopped due to error: {e}')
         clear_run_state()
+        write_scaler_state('stopped', first_period)
         write_last_exit('error', str(e))
         sys.exit(1)
     finally:

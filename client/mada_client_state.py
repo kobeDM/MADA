@@ -109,6 +109,18 @@ def _last_exit(record):
     return None
 
 
+def _scaler_state(daq_running):
+    """The scaler as recorded by mada.py (None when it never used one). A scaler
+    recorded as running while no DAQ runs is 'orphaned'."""
+    record = read_json(paths.SCALER_STATE_PATH)
+    if not record:
+        return None
+    state = record.get('state')
+    if state == 'running' and not daq_running:
+        state = 'orphaned'
+    return {'state': state, 'period': record.get('period'), 'time': record.get('time')}
+
+
 def build_status(settings):
     phase, pid, state = current_phase()
     record = load_record()
@@ -123,7 +135,8 @@ def build_status(settings):
         'daq': _daq_info(pid, state, record) if pid else None,
         'monitor': {'autoreset_running': monitor_up,
                     'veto': {'failed': bool(veto.get('failed', False)),
-                             'asserted': bool(veto.get('asserted', False))}},
+                             'asserted': bool(veto.get('asserted', False))},
+                    'scaler': _scaler_state(pid is not None)},
         'last_exit': None if pid else _last_exit(record),
     }
 
