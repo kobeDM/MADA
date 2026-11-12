@@ -256,6 +256,17 @@ Per file the period directory gets `SCI_NNNN.root` (tree `trigger`, one entry pe
 
     Both loggers read `influx` (host/port/username/password/database), `tags`, `retry` (`max_retries`/`initial_backoff`), `interval_seconds`, and `mode` from their config JSON. Edit `config/MADA_logDataSize.json` / `config/MADA_logEventRate.json` to match your environment (host names, database names, etc.).
 
+### Scaler (runScaler on the Zybo)
+
+With `SCALER.active` = 1 in `MADA_config.json`, `mada.py` runs the scaler (`runScaler`, MAZYSCA_SW) over ssh together with the DAQ. `runScaler <dir> <period>` serves one period and writes `<dir>/perNNNN`, one line per falling edge of DAQ enable, so `mada.py`:
+
+1. checks the section and the ssh connection before anything is started (`Error:` and exit code 1 otherwise), and stops a `runScaler` left over from an earlier run when the session starts;
+2. starts `runScaler <remote_output_root>/<run> <period>` for every period (`output_root` is the same directory as seen from this PC, `/nadb61/scaler`; the Zybo mounts it at `/nadb/nadb61/scaler`), while DAQ enable is low and before the first file; the run is the name of the launch directory, as for the log files, and an existing `perNNNN` is never overwritten;
+3. checks after every file that the scaler recorded a line for it (the output directory is shared with the Zybo, so no ssh is needed);
+4. stops it after the last file of the period, and on every exit path (after DAQ enable is lowered and the boards are powered down).
+
+If the scaler cannot be started, does not record a file, or cannot be stopped, the DAQ stops with an error. `run/mada_scaler.json` holds its state (`running`, `stopped`, `failed`); the DAQ client reports it as `monitor.scaler`. Run `ssh <host>` once by hand first so that the host key is known (ssh runs with `BatchMode`). Tests: `python3 -m pytest tests` (uses a fake `ssh`; run it apart from `client/tests`, both set their own `MADAHOME`).
+
 ## DAQ client (HTTP API for the web server)
 
 `client/` is an HTTP API server that runs on the DAQ PC so that a web server on another PC can start and stop the DAQ and watch it (specification: [docs/specs/2026-11-12.md](docs/specs/2026-11-12.md) for the API, [docs/specs/2026-11-12_2.md](docs/specs/2026-11-12_2.md) for the client). It only runs `mada.py -d`, sends it SIGTERM and reads the files MADA writes; the DAQ keeps running if the client stops.
