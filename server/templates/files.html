@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}ファイル一覧 - MADA DAQサーバー{% endblock %}
+{% block content %}
+<h1>{{ run }} / per{{ '%04d'|format(period) }} のファイル一覧</h1>
+{% if error %}<p class="error">daq-clientへの接続に失敗しました: {{ error }}</p>{% endif %}
+<table>
+  <thead><tr><th>file_id</th><th>有効</th><th>無効理由</th><th>開始</th><th>終了</th><th>ボード別サイズ</th></tr></thead>
+  <tbody>
+  {% for f in files %}
+    <tr class="{{ 'invalid' if not f.valid else '' }}">
+      <td>{{ f.file_id }}</td>
+      <td>{{ '有効' if f.valid else '無効' }}</td>
+      <td>{{ f.invalid_reason or '' }}</td>
+      <td>{{ f.start }}</td>
+      <td>{{ f.end if f.end is not none else '(取得中)' }}</td>
+      <td>
+        {% for board, info in (f.boards or {}).items() %}{{ board }}: {{ info.size if info.size is not none else '(取得中)' }}{% if not loop.last %}, {% endif %}{% endfor %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="muted">ファイルがありません</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

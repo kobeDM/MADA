@@ -1,0 +1,17 @@
+{
+	"listen_host": "0.0.0.0",
+	"port": 8080,
+	"cookie_secure": false,
+	"state_dir": "/home/msgc/mada_server/state",
+	"session_secret": "REPLACE_ME: python3 -c \"import secrets; print(secrets.token_hex(32))\"",
+	"users": {},
+	"client": {
+		"base_url": "http://192.168.100.10:8765",
+		"token_file": "/home/msgc/.mada_server_client_token",
+		"timeout": 5.0
+	},
+	"presets": [
+		{ "name": "55Fe", "event_num": 5000 },
+		{ "name": "252Cf", "event_num": 2000 }
+	]
+}

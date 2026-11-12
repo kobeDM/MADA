@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}履歴 - MADA DAQサーバー{% endblock %}
+{% block content %}
+<h1>操作履歴</h1>
+<table>
+  <thead><tr><th>時刻</th><th>ユーザー</th><th>操作</th><th>パラメータ</th><th>結果</th></tr></thead>
+  <tbody>
+  {% for op in operations %}
+    <tr class="{{ 'invalid' if op.status_code and op.status_code >= 400 else '' }}">
+      <td>{{ op.time }}</td>
+      <td>{{ op.username }}</td>
+      <td>{{ op.action }}</td>
+      <td>{{ op.params or '' }}</td>
+      <td>{{ op.status_code }}{% if op.error_code %} {{ op.error_code }}: {{ op.error_message }}{% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="muted">履歴がありません</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h1>通知履歴</h1>
+<table>
+  <thead><tr><th>時刻</th><th>種類</th><th>メッセージ</th><th>確認済み</th></tr></thead>
+  <tbody>
+  {% for n in notifications %}
+    <tr>
+      <td>{{ n.time }}</td>
+      <td>{{ n.kind }}</td>
+      <td>{{ n.message }}</td>
+      <td>{{ '済' if n.acknowledged else '未' }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="muted">通知がありません</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

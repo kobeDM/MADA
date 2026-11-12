@@ -1,11 +1,14 @@
-bin
-
-build
-config/DAClog
-run
-
-.vscode
-.clang-format
+__pycache__
+*.pyc
 .venv
 
-__pycache__
+# server runtime artifacts, in case state_dir ever points inside the repo
+*.db
+*.pid
+*.log
+
+# the real config (secrets: session_secret, users, client token path) --
+# only config/MADA_server_SKEL.json is checked in
+config/MADA_server.json
+
+.vscode

@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}config - MADA DAQサーバー{% endblock %}
+{% block content %}
+<h1>{{ run }} の MADA_config.json (読み取りのみ)</h1>
+{% if error %}<p class="error">daq-clientへの接続に失敗しました: {{ error }}</p>{% endif %}
+<pre class="config-json">{{ config_json }}</pre>
+{% endblock %}

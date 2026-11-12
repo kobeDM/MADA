@@ -1,7 +1,8 @@
-# MADA
+# MADA (dev-cn1-daq-server)
+
+このブランチはdaq-server(別PCで動くWebサーバー、`server/`)専用。DAQクライアント/ファームウェア本体
+(`scripts/`、`source/`等)はこのブランチでは扱わない(`main`を参照)。
 
 ## 参照情報
 
-- GigaIwakiボードのイベントデータフォーマット仕様: [docs/manuals/2026-08-24.md](docs/manuals/2026-08-24.md)
-- GigaIwakiボード(Encoder_v3.1)のファームウェアソース: `/home/msgc/repo/Encoder_v3.1_Firmware.git`
-  (Vivadoプロジェクト。イベント組み立ては`.../sources_1/imports/GigaIwaki/Formatter.vhd`、トップモジュールは`.../sources_1/new/main.vhd`)
+- daq-server/daq-client間のAPI契約、daq-server仕様書: [docs/specs/INDEX.md](docs/specs/INDEX.md)

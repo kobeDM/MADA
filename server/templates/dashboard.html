@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}ダッシュボード - MADA DAQサーバー{% endblock %}
+{% block content %}
+<script id="initial-state" type="application/json">{{ state_json | safe }}</script>
+<section class="cards">
+  <div class="card">
+    <h2>接続 / phase</h2>
+    <p>接続: <span id="connection-badge" class="badge">-</span></p>
+    <p>phase: <span id="phase-badge" class="badge">-</span></p>
+    <p id="blocked-by"></p>
+  </div>
+  <div class="card">
+    <h2>実行情報</h2>
+    <div id="daq-info">-</div>
+  </div>
+  <div class="card">
+    <h2>ボード別進捗</h2>
+    <div id="board-progress">-</div>
+  </div>
+  <div class="card">
+    <h2>保護機構</h2>
+    <div id="monitor-info">-</div>
+  </div>
+  <div class="card" id="last-exit-card" style="display:none">
+    <h2>直近の終了</h2>
+    <div id="last-exit"></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>通知</h2>
+  <ul id="notifications-list">
+    {% for n in notifications %}
+    <li data-id="{{ n.id }}">
+      <span class="t">{{ n.time }}</span> [{{ n.kind }}] {{ n.message }}
+      {% if user.role == 'operator' %}<button class="ack-btn" data-id="{{ n.id }}">確認</button>{% endif %}
+    </li>
+    {% else %}
+    <li class="muted">通知はありません</li>
+    {% endfor %}
+  </ul>
+</section>
+
+{% if user.role == 'operator' %}
+<section class="card">
+  <h2>開始</h2>
+  <form id="start-form">
+    <label>run <input type="text" name="run" id="start-run" required></label>
+    <button type="button" id="suggest-run-btn">今日の名前を提案</button>
+    <label>config_from (新規runのみ、任意) <input type="text" name="config_from" id="start-config-from"></label>
+    <label>file_num <input type="number" name="file_num" id="start-file-num" min="1" max="10000"></label>
+    <label>event_num <input type="number" name="event_num" id="start-event-num" min="1" max="100000"></label>
+    {% if presets %}
+    <label>プリセット
+      <select id="start-preset">
+        <option value="">(なし)</option>
+        {% for p in presets %}<option value="{{ p.event_num }}">{{ p.name }} ({{ p.event_num }} events/file)</option>{% endfor %}
+      </select>
+    </label>
+    {% endif %}
+    <label><input type="checkbox" name="sci" id="start-sci"> SCIモード</label>
+    <button type="submit" id="start-btn">DAQ開始を要求</button>
+  </form>
+  <p id="start-result"></p>
+</section>
+
+<section class="card">
+  <h2>停止</h2>
+  <button type="button" id="stop-btn">DAQ停止を要求</button>
+  <p id="stop-result"></p>
+</section>
+{% endif %}
+
+<script src="/static/app.js"></script>
+{% endblock %}
