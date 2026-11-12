@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}ログイン - MADA DAQサーバー{% endblock %}
+{% block title %}Login - MADA DAQ Server{% endblock %}
 {% block content %}
 <div class="login-box">
-  <h1>ログイン</h1>
+  <h1>Login</h1>
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
   <form method="post" action="/login">
-    <label>ユーザー名 <input type="text" name="username" required autofocus></label>
-    <label>パスワード <input type="password" name="password" required></label>
-    <button type="submit">ログイン</button>
+    <label>Username <input type="text" name="username" required autofocus></label>
+    <label>Password <input type="password" name="password" required></label>
+    <button type="submit">Login</button>
   </form>
 </div>
 {% endblock %}

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """The server's view of the DAQ, held in memory (spec 2026-11-12_3.md
-section 5: "最新の状態 | メモリ | ... 再起動で消えてよい"). mada_server_poller.py
+section 5: "latest state: in memory; losing it on restart is fine"). mada_server_poller.py
 is the only writer; request handlers and the SSE stream only read a
 snapshot. Losing this on restart is fine: it is rebuilt from the next poll."""
 

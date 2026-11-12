@@ -35,13 +35,13 @@ function renderState(data) {
   const connBadge = document.getElementById('connection-badge');
   if (connBadge) {
     if (data.connected === true) {
-      connBadge.textContent = '接続中';
+      connBadge.textContent = 'Connected';
       connBadge.className = 'badge connected';
     } else if (data.connected === false) {
-      connBadge.textContent = `接続断 (最後に成功: ${fmtTime(data.last_success_at)})`;
+      connBadge.textContent = `Disconnected (last success: ${fmtTime(data.last_success_at)})`;
       connBadge.className = 'badge disconnected';
     } else {
-      connBadge.textContent = '不明';
+      connBadge.textContent = 'Unknown';
       connBadge.className = 'badge';
     }
   }
@@ -54,12 +54,12 @@ function renderState(data) {
       phaseBadge.textContent = status.phase;
       phaseBadge.className = 'badge ' + status.phase;
     } else {
-      phaseBadge.textContent = '不明';
+      phaseBadge.textContent = 'Unknown';
       phaseBadge.className = 'badge';
     }
   }
   if (blockedBy) {
-    blockedBy.textContent = (status && status.blocked_by) ? `他のプログラムが動作中: ${status.blocked_by}` : '';
+    blockedBy.textContent = (status && status.blocked_by) ? `Another program is running: ${status.blocked_by}` : '';
   }
 
   const daqInfo = document.getElementById('daq-info');
@@ -69,27 +69,27 @@ function renderState(data) {
       // status.time is the daq-client's own clock, taken at the same moment
       // as started_at/stop_requested_at -- server_time (this server's clock)
       // would drift with any clock skew between the two machines (server
-      // spec section 4: "サーバーとクライアントの時計がずれていても、表示
-      // の整合が取れる").
+      // spec section 4: the display must stay consistent even when the two
+      // clocks differ).
       const clientNow = status.time;
       const elapsed = daq.started_at ? (clientNow - daq.started_at) : null;
       let stoppingNotice = '';
       if (status.phase === 'stopping' && daq.stop_requested_at) {
         const stoppingFor = clientNow - daq.stop_requested_at;
-        stoppingNotice = `<p>停止要求からの経過: ${fmtElapsed(stoppingFor)}</p>`;
+        stoppingNotice = `<p>Time since stop request: ${fmtElapsed(stoppingFor)}</p>`;
         if (stoppingFor > 120) {
-          stoppingNotice += '<p class="error">後処理が長引いています。端末での確認が必要かもしれません。</p>';
+          stoppingNotice += '<p class="error">Cleanup is taking long. You may need to check the terminal.</p>';
         }
       }
       daqInfo.innerHTML = `
         <p>run: ${daq.run ?? '-'} / period: ${daq.period ?? '-'} / file: ${daq.file_id ?? '-'}</p>
-        <p>有効ファイル: ${daq.valid_files ?? '-'} / ${daq.file_num ?? '-'}</p>
-        <p>event_num: ${daq.event_num ?? '-'} / SCI: ${daq.sci ? 'あり' : 'なし'}</p>
-        <p>経過時間: ${fmtElapsed(elapsed)}</p>
+        <p>Valid files: ${daq.valid_files ?? '-'} / ${daq.file_num ?? '-'}</p>
+        <p>event_num: ${daq.event_num ?? '-'} / SCI: ${daq.sci ? 'yes' : 'no'}</p>
+        <p>Elapsed: ${fmtElapsed(elapsed)}</p>
         ${stoppingNotice}
       `;
     } else {
-      daqInfo.innerHTML = `<p>DAQは動いていません (latest_run: ${(status && status.latest_run) || '-'})</p>`;
+      daqInfo.innerHTML = `<p>DAQ is not running (latest_run: ${(status && status.latest_run) || '-'})</p>`;
     }
   }
 
@@ -101,16 +101,16 @@ function renderState(data) {
     const lagging = new Set((progress && progress.lagging) || []);
     const names = Object.keys(boards);
     if (names.length === 0) {
-      boardProgress.innerHTML = '<p class="muted">取得中のボードはありません</p>';
+      boardProgress.innerHTML = '<p class="muted">No boards are acquiring</p>';
     } else {
       boardProgress.innerHTML = names.map((name) => {
         const events = boards[name].events;
         const pct = eventNum ? Math.min(100, Math.round(100 * events / eventNum)) : 0;
         const cls = lagging.has(name) ? 'lagging' : '';
-        return `<p class="${cls}">${name}: ${events} / ${eventNum ?? '-'} (${pct}%)${lagging.has(name) ? ' [遅れ]' : ''}</p>`;
+        return `<p class="${cls}">${name}: ${events} / ${eventNum ?? '-'} (${pct}%)${lagging.has(name) ? ' [lagging]' : ''}</p>`;
       }).join('');
       if (progress && progress.stale) {
-        boardProgress.innerHTML += '<p class="error">進捗の更新が止まっています</p>';
+        boardProgress.innerHTML += '<p class="error">Progress updates have stopped</p>';
       }
     }
   }
@@ -122,8 +122,8 @@ function renderState(data) {
       const autoresetOk = monitor.autoreset_running !== false;
       const vetoOk = !(monitor.veto && monitor.veto.failed);
       monitorInfo.innerHTML = `
-        <p class="${autoresetOk ? '' : 'error'}">LV自動リセットモニタ: ${monitor.autoreset_running ? '生存' : '停止'}</p>
-        <p class="${vetoOk ? '' : 'error'}">veto: ${monitor.veto && monitor.veto.asserted ? 'assert中' : '非assert'}${monitor.veto && monitor.veto.failed ? ' (失敗)' : ''}</p>
+        <p class="${autoresetOk ? '' : 'error'}">LV auto-reset monitor: ${monitor.autoreset_running ? 'alive' : 'stopped'}</p>
+        <p class="${vetoOk ? '' : 'error'}">veto: ${monitor.veto && monitor.veto.asserted ? 'asserted' : 'not asserted'}${monitor.veto && monitor.veto.failed ? ' (failed)' : ''}</p>
       `;
     } else {
       monitorInfo.innerHTML = '<p class="muted">-</p>';
@@ -176,7 +176,7 @@ function setupStartForm() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const run = document.getElementById('start-run').value;
-    if (!confirm(`run "${run}" でDAQを開始します。よろしいですか?`)) return;
+    if (!confirm(`Start DAQ with run "${run}". Are you sure?`)) return;
 
     const body = { run: run, sci: document.getElementById('start-sci').checked };
     const fileNum = document.getElementById('start-file-num').value;
@@ -187,13 +187,13 @@ function setupStartForm() {
     if (configFrom) body.config_from = configFrom;
 
     const result = document.getElementById('start-result');
-    result.textContent = '開始を要求しています...';
+    result.textContent = 'Requesting start...';
     const res = await postJSON('/daq/start', body);
     if (res.ok) {
-      result.textContent = '開始を要求しました。running になるまでお待ちください。';
+      result.textContent = 'Start requested. Wait until the phase becomes running.';
     } else {
       const err = res.data && res.data.error;
-      result.textContent = `開始に失敗しました: ${err ? err.code + ' ' + err.message : res.status}`;
+      result.textContent = `Start failed: ${err ? err.code + ' ' + err.message : res.status}`;
     }
   });
 }
@@ -202,15 +202,15 @@ function setupStopButton() {
   const btn = document.getElementById('stop-btn');
   if (!btn) return;
   btn.addEventListener('click', async () => {
-    if (!confirm('DAQを停止します。よろしいですか?')) return;
+    if (!confirm('Stop DAQ. Are you sure?')) return;
     const result = document.getElementById('stop-result');
-    result.textContent = '停止を要求しています...';
+    result.textContent = 'Requesting stop...';
     const res = await postJSON('/daq/stop');
     if (res.ok) {
-      result.textContent = '停止を要求しました。後処理には数十秒かかることがあります。';
+      result.textContent = 'Stop requested. Cleanup can take tens of seconds.';
     } else {
       const err = res.data && res.data.error;
-      result.textContent = `停止に失敗しました: ${err ? err.code + ' ' + err.message : res.status}`;
+      result.textContent = `Stop failed: ${err ? err.code + ' ' + err.message : res.status}`;
     }
   });
 }

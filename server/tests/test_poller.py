@@ -9,7 +9,7 @@ review (section 4) asked for. Run with:
 Covers the fixes from that review: 2.1 (files "after" starts at -1, not 0,
 so file_id 0 isn't skipped), 2.4 (notified-exit and files cursors survive a
 restart), 2.5 (one last warnings fetch for the (run, period) being left),
-and 2.6 (a period boundary only reads "完了" when the old period actually
+and 2.6 (a period boundary only reads "completed" when the old period actually
 reached file_num)."""
 
 import asyncio
@@ -148,7 +148,7 @@ class RestartDedupTest(PollerTestCase):
 
 
 class PeriodWordingTest(PollerTestCase):
-    """2.6: a period boundary only reads "完了" when the old period actually
+    """2.6: a period boundary only reads "completed" when the old period actually
     reached file_num; stopping mid-period gets different wording."""
 
     def test_full_period_reads_done(self):

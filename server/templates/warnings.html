@@ -1,15 +1,15 @@
 {% extends "base.html" %}
-{% block title %}警告 - MADA DAQサーバー{% endblock %}
+{% block title %}Warnings - MADA DAQ Server{% endblock %}
 {% block content %}
-<h1>{{ run }} / per{{ '%04d'|format(period) }} の警告</h1>
-{% if error %}<p class="error">daq-clientへの接続に失敗しました: {{ error }}</p>{% endif %}
+<h1>{{ run }} / per{{ '%04d'|format(period) }} warnings</h1>
+{% if error %}<p class="error">Failed to connect to daq-client: {{ error }}</p>{% endif %}
 <form method="get" class="filter-form">
   <label>level <input type="text" name="level" value="{{ level }}" placeholder="WARNING / ERROR"></label>
   <label>source <input type="text" name="source" value="{{ source }}" placeholder="GBKB-34 / DAQ / LV"></label>
-  <button type="submit">絞り込み</button>
+  <button type="submit">Filter</button>
 </form>
 <table>
-  <thead><tr><th>時刻</th><th>file_id</th><th>source</th><th>level</th><th>kind</th><th>メッセージ</th></tr></thead>
+  <thead><tr><th>Time</th><th>file_id</th><th>source</th><th>level</th><th>kind</th><th>Message</th></tr></thead>
   <tbody>
   {% for r in records %}
     <tr class="{{ 'level-error' if r.level == 'ERROR' else '' }}">
@@ -21,7 +21,7 @@
       <td>{{ r.message }}</td>
     </tr>
   {% else %}
-    <tr><td colspan="6" class="muted">警告がありません</td></tr>
+    <tr><td colspan="6" class="muted">No warnings</td></tr>
   {% endfor %}
   </tbody>
 </table>

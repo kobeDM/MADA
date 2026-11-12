@@ -1,24 +1,24 @@
 {% extends "base.html" %}
-{% block title %}ファイル一覧 - MADA DAQサーバー{% endblock %}
+{% block title %}Files - MADA DAQ Server{% endblock %}
 {% block content %}
-<h1>{{ run }} / per{{ '%04d'|format(period) }} のファイル一覧</h1>
-{% if error %}<p class="error">daq-clientへの接続に失敗しました: {{ error }}</p>{% endif %}
+<h1>{{ run }} / per{{ '%04d'|format(period) }} files</h1>
+{% if error %}<p class="error">Failed to connect to daq-client: {{ error }}</p>{% endif %}
 <table>
-  <thead><tr><th>file_id</th><th>有効</th><th>無効理由</th><th>開始</th><th>終了</th><th>ボード別サイズ</th></tr></thead>
+  <thead><tr><th>file_id</th><th>Valid</th><th>Invalid reason</th><th>Start</th><th>End</th><th>Size per board</th></tr></thead>
   <tbody>
   {% for f in files %}
     <tr class="{{ 'invalid' if not f.valid else '' }}">
       <td>{{ f.file_id }}</td>
-      <td>{{ '有効' if f.valid else '無効' }}</td>
+      <td>{{ 'valid' if f.valid else 'invalid' }}</td>
       <td>{{ f.invalid_reason or '' }}</td>
       <td>{{ f.start }}</td>
-      <td>{{ f.end if f.end is not none else '(取得中)' }}</td>
+      <td>{{ f.end if f.end is not none else '(acquiring)' }}</td>
       <td>
-        {% for board, info in (f.boards or {}).items() %}{{ board }}: {{ info.size if info.size is not none else '(取得中)' }}{% if not loop.last %}, {% endif %}{% endfor %}
+        {% for board, info in (f.boards or {}).items() %}{{ board }}: {{ info.size if info.size is not none else '(acquiring)' }}{% if not loop.last %}, {% endif %}{% endfor %}
       </td>
     </tr>
   {% else %}
-    <tr><td colspan="6" class="muted">ファイルがありません</td></tr>
+    <tr><td colspan="6" class="muted">No files</td></tr>
   {% endfor %}
   </tbody>
 </table>

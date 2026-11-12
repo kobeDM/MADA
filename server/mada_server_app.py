@@ -87,7 +87,7 @@ def create_app(config):
         logged_in = auth.verify_login(config.get('users', {}), username, password)
         if logged_in is None:
             response = templates.TemplateResponse(
-                request, 'login.html', {'error': 'ユーザー名またはパスワードが違います'}, status_code=401)
+                request, 'login.html', {'error': 'Invalid username or password'}, status_code=401)
             auth.issue_csrf_cookie(response, cookie_secure)
             return response
         auth.login(request, *logged_in)

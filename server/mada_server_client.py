@@ -3,8 +3,8 @@
 """HTTP client for the daq-client API (docs/specs/2026-11-12.md). One
 instance, shared by the poller and the request handlers, so every call to
 the DAQ PC goes through the same timeout/auth/error handling (spec
-2026-11-12_3.md section 7: "クライアントへの呼び出しは、1つのクライアント
-クラスに集約する")."""
+2026-11-12_3.md section 7: "route every call to the client through a
+single client class")."""
 
 import httpx
 

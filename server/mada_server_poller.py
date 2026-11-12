@@ -87,7 +87,7 @@ class Poller:
         self.state.last_error = error.message
         if self.state.consecutive_failures >= 3:
             if self.state.connected is True:
-                db.add_notification('connection_lost', 'daq-clientへの接続が切れました')
+                db.add_notification('connection_lost', 'Lost connection to daq-client')
             self.state.connected = False
             self._status_backoff = min(self._status_backoff * 2, BACKOFF_MAX_S)
 
@@ -100,7 +100,7 @@ class Poller:
         self.state.status = status
         self._status_backoff = BACKOFF_MIN_S
         if was_connected is False:
-            db.add_notification('connection_restored', 'daq-clientへの接続が復旧しました')
+            db.add_notification('connection_restored', 'Connection to daq-client restored')
 
         self._check_last_exit(status)
         self._check_period(status)
@@ -129,7 +129,7 @@ class Poller:
         if last_exit.get('reason') in ('error', 'crashed'):
             db.add_notification(
                 'daq_exit',
-                f"DAQが異常終了しました ({last_exit.get('reason')}): {last_exit.get('message') or ''}")
+                f"DAQ exited abnormally ({last_exit.get('reason')}): {last_exit.get('message') or ''}")
 
     def _check_period(self, status):
         daq = status.get('daq')
@@ -146,17 +146,17 @@ class Poller:
     def _notify_period_ended(self, run, prev_daq):
         """A period boundary doesn't always mean the period actually
         finished: stopping mid-period and starting again also bumps the
-        period number for the next one. Only call it "完了" when the old
+        period number for the next one. Only call it "completed" when the old
         period actually reached file_num valid files (2026-11-12 integration
         review, 2.6)."""
         prev_period = prev_daq.get('period')
         valid_files, file_num = prev_daq.get('valid_files'), prev_daq.get('file_num')
         if valid_files is not None and file_num is not None and valid_files >= file_num:
-            db.add_notification('period_done', f"run {run}: period {prev_period} が完了しました")
+            db.add_notification('period_done', f"run {run}: period {prev_period} completed")
         else:
             db.add_notification(
                 'period_incomplete',
-                f"run {run}: period {prev_period} は停止により終了しました ({valid_files}/{file_num} ファイル)")
+                f"run {run}: period {prev_period} ended by a stop ({valid_files}/{file_num} files)")
 
     def _check_monitor(self, status):
         phase = status.get('phase')
@@ -166,9 +166,9 @@ class Poller:
 
         if phase in ('running', 'starting') and autoreset_running is False \
                 and self._prev_autoreset_running is not False:
-            db.add_notification('autoreset_down', 'LV過電流自動リセットのモニタが停止しています')
+            db.add_notification('autoreset_down', 'The LV overcurrent auto-reset monitor is not running')
         if veto_failed and not self._prev_veto_failed:
-            db.add_notification('veto_failed', 'software vetoが失敗しています')
+            db.add_notification('veto_failed', 'The software veto has failed')
 
         self._prev_autoreset_running = autoreset_running
         self._prev_veto_failed = veto_failed
@@ -183,7 +183,7 @@ class Poller:
         self.state.progress = progress
         stale = progress.get('stale')
         if stale and not self._prev_stale:
-            db.add_notification('progress_stale', f"進捗の更新が止まっています (file_id={progress.get('file_id')})")
+            db.add_notification('progress_stale', f"Progress updates have stopped (file_id={progress.get('file_id')})")
         self._prev_stale = stale
 
     # -- warnings / files (feed the live cache and raise invalid-file alerts) --

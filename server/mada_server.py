@@ -24,8 +24,10 @@ import mada_server_config as cfg
 import mada_server_db as db
 from mada_server_app import create_app
 
-DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                    'config', 'MADA_server.json')
+# MADA_SERVER_CONFIG (set by setup.sh) overrides the in-repo default.
+DEFAULT_CONFIG_PATH = os.environ.get(
+    'MADA_SERVER_CONFIG',
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config', 'MADA_server.json'))
 
 
 def _daemonize(log_file, pidfile_path):

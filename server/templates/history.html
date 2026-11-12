@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}履歴 - MADA DAQサーバー{% endblock %}
+{% block title %}History - MADA DAQ Server{% endblock %}
 {% block content %}
-<h1>操作履歴</h1>
+<h1>Operation History</h1>
 <table>
-  <thead><tr><th>時刻</th><th>ユーザー</th><th>操作</th><th>パラメータ</th><th>結果</th></tr></thead>
+  <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Parameters</th><th>Result</th></tr></thead>
   <tbody>
   {% for op in operations %}
     <tr class="{{ 'invalid' if op.status_code and op.status_code >= 400 else '' }}">
@@ -14,24 +14,24 @@
       <td>{{ op.status_code }}{% if op.error_code %} {{ op.error_code }}: {{ op.error_message }}{% endif %}</td>
     </tr>
   {% else %}
-    <tr><td colspan="5" class="muted">履歴がありません</td></tr>
+    <tr><td colspan="5" class="muted">No history</td></tr>
   {% endfor %}
   </tbody>
 </table>
 
-<h1>通知履歴</h1>
+<h1>Notification History</h1>
 <table>
-  <thead><tr><th>時刻</th><th>種類</th><th>メッセージ</th><th>確認済み</th></tr></thead>
+  <thead><tr><th>Time</th><th>Kind</th><th>Message</th><th>Acknowledged</th></tr></thead>
   <tbody>
   {% for n in notifications %}
     <tr>
       <td>{{ n.time }}</td>
       <td>{{ n.kind }}</td>
       <td>{{ n.message }}</td>
-      <td>{{ '済' if n.acknowledged else '未' }}</td>
+      <td>{{ 'yes' if n.acknowledged else 'no' }}</td>
     </tr>
   {% else %}
-    <tr><td colspan="4" class="muted">通知がありません</td></tr>
+    <tr><td colspan="4" class="muted">No notifications</td></tr>
   {% endfor %}
   </tbody>
 </table>

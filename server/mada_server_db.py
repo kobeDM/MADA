@@ -110,7 +110,7 @@ def acknowledge_notification(notification_id):
         _conn.commit()
 
 
-# -- warnings cursor (spec section 5, "取りこぼし防止") ----------------------
+# -- warnings cursor (spec section 5, no missed items) ----------------------
 
 def get_warnings_cursor(run, period):
     with _lock:
@@ -128,7 +128,7 @@ def set_warnings_cursor(run, period, last_t):
         _conn.commit()
 
 
-# -- files cursor (same "取りこぼし防止" rationale as warnings_cursor; a
+# -- files cursor (same no-missed-items rationale as warnings_cursor; a
 # restart must not re-raise a file_invalid notification it already raised) --
 
 def get_files_cursor(run, period):

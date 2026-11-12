@@ -1,23 +1,23 @@
 {% extends "base.html" %}
-{% block title %}run一覧 - MADA DAQサーバー{% endblock %}
+{% block title %}Runs - MADA DAQ Server{% endblock %}
 {% block content %}
-<h1>run一覧</h1>
-{% if error %}<p class="error">daq-clientへの接続に失敗しました: {{ error }}</p>{% endif %}
+<h1>Runs</h1>
+{% if error %}<p class="error">Failed to connect to daq-client: {{ error }}</p>{% endif %}
 <table>
-  <thead><tr><th>run</th><th>config</th><th>periods</th><th>最終更新</th></tr></thead>
+  <thead><tr><th>run</th><th>config</th><th>periods</th><th>Last modified</th></tr></thead>
   <tbody>
   {% for r in runs %}
     <tr>
       <td>{{ r.run }}</td>
-      <td><a href="/runs/{{ r.run }}/config">{{ 'あり' if r.has_config else 'なし' }}</a></td>
+      <td><a href="/runs/{{ r.run }}/config">{{ 'yes' if r.has_config else 'no' }}</a></td>
       <td>
         {% for p in r.periods %}<a href="/runs/{{ r.run }}/periods/{{ p }}/files">per{{ '%04d'|format(p) }}</a>
-        <a href="/runs/{{ r.run }}/periods/{{ p }}/warnings">(警告)</a>{% if not loop.last %}, {% endif %}{% endfor %}
+        <a href="/runs/{{ r.run }}/periods/{{ p }}/warnings">(warnings)</a>{% if not loop.last %}, {% endif %}{% endfor %}
       </td>
       <td>{{ r.modified }}</td>
     </tr>
   {% else %}
-    <tr><td colspan="4" class="muted">runがありません</td></tr>
+    <tr><td colspan="4" class="muted">No runs</td></tr>
   {% endfor %}
   </tbody>
 </table>
