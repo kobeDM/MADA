@@ -1,0 +1,13 @@
+# Example systemd user unit for the DAQ client. Adjust the paths, then:
+#   cp client/mada-client.service ~/.config/systemd/user/ && systemctl --user enable --now mada-client
+[Unit]
+Description=MADA DAQ client
+After=network.target
+
+[Service]
+ExecStart=/bin/bash -c 'source %h/setup_claude.sh && exec python3 $$MADAHOME/client/mada_client.py'
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

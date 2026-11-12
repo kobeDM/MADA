@@ -1,0 +1,11 @@
+{
+	"_comment": "Settings of the DAQ client (client/mada_client.py). token_file: one line, mode 600. allowed_servers: IPs of the web server.",
+	"listen_host": "0.0.0.0",
+	"port": 8765,
+	"allowed_servers": ["192.168.0.10"],
+	"token_file": "/home/msgc/.mada_client_token",
+	"data_root": "/nadb61/cn_tc/data",
+	"carry_over_config": true,
+	"defaults": { "file_num": 512, "event_num": 1000 },
+	"limits": { "file_num_max": 10000, "event_num_max": 100000 }
+}

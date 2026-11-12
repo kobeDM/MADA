@@ -256,6 +256,20 @@ Per file the period directory gets `SCI_NNNN.root` (tree `trigger`, one entry pe
 
     Both loggers read `influx` (host/port/username/password/database), `tags`, `retry` (`max_retries`/`initial_backoff`), `interval_seconds`, and `mode` from their config JSON. Edit `config/MADA_logDataSize.json` / `config/MADA_logEventRate.json` to match your environment (host names, database names, etc.).
 
+## DAQ client (HTTP API for the web server)
+
+`client/` is an HTTP API server that runs on the DAQ PC so that a web server on another PC can start and stop the DAQ and watch it (specification: [docs/specs/2026-11-12.md](docs/specs/2026-11-12.md) for the API, [docs/specs/2026-11-12_2.md](docs/specs/2026-11-12_2.md) for the client). It only runs `mada.py -d`, sends it SIGTERM and reads the files MADA writes; the DAQ keeps running if the client stops.
+
+```bash
+pip install -r client/requirements.txt
+cp config/MADA_client_SKEL.json config/MADA_client.json   # allowed_servers, token_file (mode 600), data_root
+python3 client/mada_client.py [-c settings.json] [--port N]
+python3 client/mada_client.py --simulate                  # simulated DAQ in a temporary MADAHOME, no hardware
+python3 -m pytest client/tests                            # needs pytest and httpx
+```
+
+`client/mada-client.service` is an example systemd user unit. The simulator (`--simulate`, options `--sim-file-sec`, `--sim-fail-after`, `--sim-lag`, `--sim-invalid-file`) is for developing the web server without hardware. `mada.py` publishes `run/mada_run.json`, `run/mada_progress.json` and `run/mada_last_exit.json` for the client.
+
 ## Notes
 
 - Build artifacts (`bin/`, `build/`), DAC setting logs (`config/DAClog/`), and Python `__pycache__` directories are all gitignored.
