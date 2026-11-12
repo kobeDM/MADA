@@ -1,5 +1,5 @@
 {
-    "eventrate_path": "./",
+    "eventrate_path": "/home/msgc/nadb61/scaler",
     "influx": {
         "host": "10.37.0.216",
         "port": 8086,
@@ -12,6 +12,7 @@
         "device": "zybo01"
     },
     "measurement": "zybo",
+    "clock_hz": 200000.0,
     "retry": {
         "max_retries": 5,
         "initial_backoff": 1

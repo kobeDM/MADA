@@ -41,6 +41,8 @@ INITIAL_BACKOFF = float(RETRY_CFG.get("initial_backoff", 1.0))
 INTERVAL_SECONDS = int(cfg.get("interval_seconds", 10))
 MODE = cfg.get("mode", "latest").lower()
 MEASUREMENT = cfg.get("measurement", "rate")
+# Scaler counting clock [Hz]; realtime/livetime columns are counts of this clock.
+CLOCK_HZ = float(cfg.get("clock_hz", 1e4))
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -85,8 +87,8 @@ def process_file(target_filepath, index=None, total=None):
             logger.info("realtime or livetime is zero at %s line %d; skipping", target_filepath, line_no)
             continue
 
-        realtime = realtime_clk * 1e-4
-        livetime = livetime_clk * 1e-4
+        realtime = realtime_clk / CLOCK_HZ
+        livetime = livetime_clk / CLOCK_HZ
         trigger_rate_real = num_trigger / realtime
         trigger_rate_live = num_trigger / livetime
         scalertime = datetime.datetime.utcfromtimestamp(unixtime)
