@@ -5,18 +5,25 @@
 import sys
 import time
 
-from mada_gigaiwaki import GigaIwakiError
+from mada_gigaiwaki import ReaderExitError
 
 UPIC_FOOTER = b'uPIC'
 POLL_INTERVAL = 0.2  # sec
+LAG_SEC = 0.2  # sec, a board that lacks an event the other boards already have for this long is reported
 
 
 class ProgressMonitor:
     """Tracks and displays each board's live event count during acquisition,
     by tailing the growing .mada files for the 'uPIC' footer marker."""
 
-    def __init__(self, mada_files, event_num, poll_interval=POLL_INTERVAL):
+    def __init__(self, mada_files, event_num, poll_interval=POLL_INTERVAL, warn=None, lag_sec=LAG_SEC):
         self.mada_files = mada_files
+        self.warn = warn
+        self.lag_sec = lag_sec
+        # reach_time[n-1]: when the first board had stored n events
+        self.reach_time = []
+        # board id -> (time the lag was reported, events behind) while it is lagging
+        self.lagging = {}
         self.event_num = event_num
         self.poll_interval = poll_interval
 
@@ -50,6 +57,30 @@ class ProgressMonitor:
             self.counts[board_id] += found
             self.offsets[board_id] += len(chunk)
 
+    def check_lag(self):
+        """Report a board that lacks an event the other boards already stored.
+        All the boards take the same triggers, so a missing trigger stops every
+        board alike; only a stalled board falls behind the others."""
+        now = time.time()
+        lead = max(self.counts.values())
+        while len(self.reach_time) < lead:
+            self.reach_time.append(now)
+
+        for board_id, count in self.counts.items():
+            behind = lead - count
+            if behind > 0:
+                since = self.reach_time[count]
+                if board_id not in self.lagging and now - since >= self.lag_sec:
+                    self.lagging[board_id] = (now, behind)
+                    self._warn(board_id, f'WARNING t={now:.3f} kind=board_lag events={count} lead={lead} sec={now - since:.3f}')
+            elif board_id in self.lagging:
+                start, _ = self.lagging.pop(board_id)
+                self._warn(board_id, f'INFO t={now:.3f} kind=board_lag_end events={count} sec={now - start:.3f}')
+
+    def _warn(self, board_id, message):
+        if self.warn:
+            self.warn(board_id, message)
+
     def render(self, final=False):
         # On a TTY, redraw the same lines in place every poll (cheap, bounded
         # size). Off a TTY (redirected to a file, e.g. --daemon), each poll
@@ -72,7 +103,7 @@ class ProgressMonitor:
     def wait_for_any_exit(self, procs, on_poll=None):
         """Poll and render while waiting for at least one gigaiwaki process
         to exit (matching the intended 'one board done -> stop all' policy).
-        Raises GigaIwakiError if any process exited with a non-zero status
+        Raises ReaderExitError if any process exited with a non-zero status
         (e.g. MadaIwaki lost its connection to the board). on_poll, if given,
         is called every poll and may raise to stop the wait."""
         print('Waiting for gigaiwaki processes to finish...')
@@ -80,6 +111,7 @@ class ProgressMonitor:
 
         while True:
             self.poll()
+            self.check_lag()
             self.render()
             if on_poll:
                 on_poll()
@@ -94,8 +126,7 @@ class ProgressMonitor:
         self.poll()
         self.render(final=True)
 
-        for board_id, proc in procs.items():
-            if proc.poll() is not None and proc.returncode != 0:
-                raise GigaIwakiError(
-                    f'gigaiwaki for {board_id} exited with error (code {proc.returncode})'
-                )
+        failed = {board_id: proc.returncode for board_id, proc in procs.items()
+                  if proc.poll() is not None and proc.returncode != 0}
+        if failed:
+            raise ReaderExitError(failed)

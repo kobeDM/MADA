@@ -76,10 +76,11 @@ class RunLogger:
             with open(self._base(file_id, board_id) + '.info', 'w', encoding='utf-8') as f:
                 json.dump(info, f, ensure_ascii=False, indent=4)
 
-    def finalize_file(self, file_id, boards, end_time, start_time=None):
+    def finalize_file(self, file_id, boards, end_time, start_time=None, invalid=None):
         """Write end time and size into each board's .info (unless it already
         has an end) and append the rate log. start_time defaults to the one in
-        the .info files. Returns the sizes in board order."""
+        the .info files. invalid, a reason string, marks the file as not usable
+        (valid=false in every .info). Returns the sizes in board order."""
         sizes = []
         for board_id, ip in boards:
             base = self._base(file_id, board_id)
@@ -90,14 +91,14 @@ class RunLogger:
                 print(f'WARNING: {base}.mada not found (connection failure suspected on {board_id})')
             print('size= ', size, 'byte')
 
-            start_time = self._update_info_end(base + '.info', end_time, size, mada_missing, start_time)
+            start_time = self._update_info_end(base + '.info', end_time, size, mada_missing, start_time, invalid)
 
         if start_time is not None:
             self._write_rate_log(start_time, end_time, sizes)
         return sizes
 
     @staticmethod
-    def _update_info_end(info_path, end_time, size, mada_missing, start_time):
+    def _update_info_end(info_path, end_time, size, mada_missing, start_time, invalid=None):
         """Returns start_time, filled from this .info when it was None."""
         try:
             with open(info_path, 'r', encoding='utf-8') as f:
@@ -116,6 +117,8 @@ class RunLogger:
             return start_time
 
         runinfo.update({'end': end_time, 'size': str(size)})
+        if invalid:
+            runinfo.update({'valid': False, 'invalid_reason': invalid})
         if mada_missing:
             runinfo['error'] = 'mada file not found (connection failure suspected)'
 

@@ -7,6 +7,7 @@
 #include <getopt.h>
 #include <iomanip>
 #include <iostream>
+#include <cerrno>
 #include <signal.h>
 #include <string.h>
 #include <sys/ioctl.h>
@@ -17,10 +18,11 @@ using namespace std;
 
 // Timing diagnostics: stalls are reported on stderr as one line each, with the
 // wall-clock time (epoch s) so they can be matched with the .mada events:
-//   WARNING t=... kind=recv_wait sec=... events=... mean_interval=...
-//     the board sent nothing for sec, much longer than usual (board/network side)
 //   WARNING t=... kind=write_slow sec=... events=...
 //     writing and flushing the data to disk took sec (PC side)
+// A board that lags behind the other boards is detected by the DAQ script
+// (kind=board_lag), which sees all the boards; one reader cannot tell a missing
+// trigger from a stalled board.
 using SteadyClock = std::chrono::steady_clock;
 
 double EpochNow( )
@@ -59,7 +61,7 @@ int main( int argc, char *argv[] )
         {0,           0,                 0,    0  },
     };
 
-    double warn_sec = 0.2;  // s, a recv wait or a disk write longer than this is reported
+    double warn_sec = 0.2;  // s, a disk write longer than this is reported
 
     int opt, longindex;
     int hopt = 0;
@@ -110,9 +112,6 @@ int main( int argc, char *argv[] )
     int            warnings        = 0;
     double         max_recv_wait   = 0.0;
     double         max_write       = 0.0;
-    double         mean_interval   = -1.0;  // s between recv returns, running mean
-    int            recvs           = 0;
-    auto           prev_recv_end   = SteadyClock::now( );
 
     while ( !end_flag ) {
         auto recv_start = SteadyClock::now( );
@@ -120,21 +119,8 @@ int main( int argc, char *argv[] )
         auto recv_end   = SteadyClock::now( );
 
         const double recv_wait = Seconds( recv_start, recv_end );
-        const double interval  = Seconds( prev_recv_end, recv_end );
-        prev_recv_end          = recv_end;
-        if ( num > 0 ) {
-            recvs++;
-            mean_interval = ( mean_interval < 0.0 ) ? interval : 0.99 * mean_interval + 0.01 * interval;
-            if ( recv_wait > max_recv_wait )
-                max_recv_wait = recv_wait;
-            // The mean interval only means something once there is a history;
-            // at low trigger rates a long wait is normal and is not reported.
-            if ( recvs > 50 && recv_wait > warn_sec && recv_wait > 10.0 * mean_interval && warnings < max_warnings ) {
-                warnings++;
-                fprintf( stderr, "WARNING t=%.3f kind=recv_wait sec=%.3f events=%d mean_interval=%.4f\n",
-                         EpochNow( ), recv_wait, trig_count, mean_interval );
-            }
-        }
+        if ( num > 0 && recv_wait > max_recv_wait )
+            max_recv_wait = recv_wait;
 
         if ( num == 0 ) {
             cerr << "ERROR: connection closed by Iwaki board" << endl;
@@ -143,7 +129,7 @@ int main( int argc, char *argv[] )
         }
 
         if ( num < 0 ) {
-            cerr << "ERROR: failed to read from Iwaki board" << endl;
+            cerr << "ERROR: failed to read from Iwaki board (errno=" << errno << " " << strerror( errno ) << ")" << endl;
             OutData.close( );
             exit( EXIT_FAILURE );
         }

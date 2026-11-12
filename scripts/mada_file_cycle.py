@@ -10,15 +10,17 @@ from mada_adalm_roles import ROLE_DAQ_ENABLE, ROLE_COUNTER_RESET
 from mada_adalm_runner import run_adalm_control, AdalmError
 from mada_autoreset_ctl import ensure_autoreset_running, MonitorError
 from mada_errors import MadaError
-from mada_gigaiwaki import start_readers, kill_readers
+from mada_gigaiwaki import start_readers, kill_readers, ReaderExitError
 from mada_progress import ProgressMonitor
 from mada_run_logger import RunLogger
 from mada_run_state import publish_run_state
+from mada_warning_log import event_message
 from mada_sci import SciRecorder
 from mada_software_veto import veto_failed
 
 DRAIN_WAIT = 0.2         # sec, keep readers attached after DAQ enable falls
 COUNTER_RESET_WIDTH = 0.1  # sec
+MAX_INVALID_IN_ROW = 3     # invalid files in a row that stop the DAQ
 
 
 def check_protection(config_path):
@@ -30,6 +32,8 @@ def check_protection(config_path):
 
 
 def run_file(logger, file_id, boards, event_num, roles, sci=None):
+    """Acquire one file. Returns True for a valid file, False when a reader
+    died: the file is kept, marked invalid, and the caller starts a new one."""
     daq_serial, daq_mask = roles[ROLE_DAQ_ENABLE]
     reset_serial, reset_mask = roles[ROLE_COUNTER_RESET]
 
@@ -44,6 +48,7 @@ def run_file(logger, file_id, boards, event_num, roles, sci=None):
     # The SCI acquisition, when asked for, is armed before the readers start so
     # that it is ready when DAQ enable goes up.
     recorder = None
+    invalid = None
     try:
         if sci:
             print('Starting the SCI acquisition...')
@@ -68,7 +73,12 @@ def run_file(logger, file_id, boards, event_num, roles, sci=None):
         print('Creating info files...')
         logger.write_info_start(file_id, boards, start_time)
 
-        ProgressMonitor(mada_files, event_num).wait_for_any_exit(procs, recorder.check if recorder else None)
+        try:
+            ProgressMonitor(mada_files, event_num, warn=warn).wait_for_any_exit(procs, recorder.check if recorder else None)
+        except ReaderExitError as e:
+            invalid = str(e)
+            boards_failed = ','.join(e.failed)
+            warn('DAQ', event_message('WARNING', 'file_invalid', boards=boards_failed, reason=f'"{invalid}"'))
 
         # Lower DAQ enable before anything else so no event is taken while
         # the readers are being stopped.
@@ -86,13 +96,27 @@ def run_file(logger, file_id, boards, event_num, roles, sci=None):
             warn('SCI', 'WARNING the SCI acquisition did not end cleanly')
 
     print('Updating info files with end time...')
-    logger.finalize_file(file_id, boards, end_time, start_time)
+    logger.finalize_file(file_id, boards, end_time, start_time, invalid=invalid)
+    return invalid is None
 
 
 def run_period(config_path, period_id, file_num, event_num, boards, roles, sci=None):
+    """Acquire file_num valid files. An invalid file (a reader died) keeps its
+    number and does not count; MAX_INVALID_IN_ROW of them in a row stop the DAQ."""
     logger = RunLogger(config_path, period_id)
 
-    for file_id in range(file_num):
+    file_id = 0
+    valid = 0
+    invalid_in_row = 0
+    while valid < file_num:
         check_protection(config_path)
         print(f'Creating file {file_id} with {event_num} events...')
-        run_file(logger, file_id, boards, event_num, roles, sci)
+        if run_file(logger, file_id, boards, event_num, roles, sci):
+            valid += 1
+            invalid_in_row = 0
+        else:
+            invalid_in_row += 1
+            print(f'File {file_id} is invalid ({invalid_in_row} in a row).')
+            if invalid_in_row >= MAX_INVALID_IN_ROW:
+                raise MadaError(f'{invalid_in_row} invalid files in a row; stopping')
+        file_id += 1

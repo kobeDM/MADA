@@ -23,6 +23,17 @@ class GigaIwakiError(MadaError):
     treating the exit as a normal 'file complete' event."""
 
 
+class ReaderExitError(GigaIwakiError):
+    """A reader exited with an error while a file was being acquired. The file
+    is invalid for every board, but the DAQ can go on with a new file.
+    `failed` maps the board id to the exit code."""
+
+    def __init__(self, failed):
+        self.failed = dict(failed)
+        super().__init__('; '.join(f'gigaiwaki for {board_id} exited with error (code {code})'
+                                   for board_id, code in self.failed.items()))
+
+
 def _forward_stderr(board_id, pipe, warn):
     for line in pipe:
         line = line.rstrip()
