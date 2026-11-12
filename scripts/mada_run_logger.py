@@ -50,6 +50,9 @@ class RunLogger:
     def mada_file_paths(self, file_id, boards):
         return {board_id: self._base(file_id, board_id) + '.mada' for board_id, ip in boards}
 
+    def sci_file_path(self, file_id):
+        return f'{_period_dir(self.period_id)}/SCI_{str(file_id).zfill(4)}.root'
+
     def warning_log_path(self):
         return f'{_period_dir(self.period_id)}/{WARNING_LOG_NAME}'
 

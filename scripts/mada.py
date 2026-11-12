@@ -4,7 +4,7 @@ import argparse
 import sys
 
 from mada_adalm_roles import daq_roles
-from mada_config import load_config, validate_boards, ConfigError
+from mada_config import load_config, validate_boards, validate_sci, sci_settings, ConfigError
 from mada_daemon import daemonize, install_sigterm_handler, remove_pidfile
 from mada_daq_session import run_daq
 from mada_errors import MadaError
@@ -25,14 +25,17 @@ def arg_parser():
     parser.add_argument('-n', '--event_num', help='Event number in a file', default=1000, type=int)
     parser.add_argument('-d', '--daemon', action='store_true', help='Run in the background, detached from the terminal')
     parser.add_argument('--calin', nargs=2, type=str, help='Calibration input: [IP] [channel (0-127)]', default=None)
+    parser.add_argument('--sci', action='store_true', help='SCI mode: an ADALM (the SCI section of the config) records the time of the PMT pulses relative to the DAQ trigger, SCI_NNNN.root in every period directory')
     return parser.parse_args()
 
-def check_config(config_path):
+def check_config(config_path, sci=False):
     """Fail on the terminal, before daemonizing, if the config cannot run a DAQ."""
     try:
         config = load_config(config_path)
         validate_boards(config)
         daq_roles(config)
+        if sci:
+            validate_sci(config)
     except ConfigError as e:
         print(f'Error: {e}')
         sys.exit(1)
@@ -44,7 +47,8 @@ def main():
     event_num = args.event_num
     calin = args.calin
 
-    check_config(config_path)
+    check_config(config_path, args.sci)
+    sci = sci_settings(load_config(config_path)) if args.sci else None
 
     # Allocate the starting period before daemonizing, since the per-period
     # log file name (<run_name>_<period>.log) needs to be known up front.
@@ -62,9 +66,11 @@ def main():
     print('Event number in a file : ' + str(event_num))
     if calin:
         print('Calibration input : IP = ' + calin[0] + ', channel = ' + calin[1])
+    if sci:
+        print('SCI mode : ADALM ' + sci['S/N'])
 
     try:
-        run_daq(config_path, file_num, event_num, first_period, args.daemon, calin)
+        run_daq(config_path, file_num, event_num, first_period, args.daemon, calin, sci)
     except KeyboardInterrupt:
         print('DAQ stopped by user.')
     except MadaError as e:

@@ -21,6 +21,7 @@ set(Targets
     ScanFit
     ScanAcquire
     ScanCorrect
+    AdalmAnalogIn
 )
 
 find_package(Threads REQUIRED)
@@ -46,6 +47,7 @@ add_executable(SetAllDAC SetAllDAC.cc RBCP.cc)
 add_executable(ScanFit ScanFit.cc)
 add_executable(ScanAcquire ScanAcquire.cc SiTCP.cc RBCP.cc)
 add_executable(ScanCorrect ScanCorrect.cc)
+add_executable(AdalmAnalogIn AdalmAnalogIn.cc AdalmUtil.cc)
 
 target_link_libraries(AdalmControl PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(OutputTestPulse PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
@@ -60,6 +62,7 @@ target_link_libraries(FindAdalm PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads
 target_link_libraries(SetAllDAC PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(ScanFit PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
 target_link_libraries(ScanAcquire PRIVATE ${ROOT_LIBRARIES} Threads::Threads)
+target_link_libraries(AdalmAnalogIn PRIVATE libm2k::libm2k ${ROOT_LIBRARIES} Threads::Threads)
 
 install(TARGETS ${Targets}
     RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/../bin

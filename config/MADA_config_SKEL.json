@@ -70,5 +70,17 @@
 			"DIO_mask": "0x1000",
 			"Clock_d": 100000000.0
 		}
+	},
+	"SCI": {
+		"_comment": "SCI mode (mada.py --sci): another ADALM than MADALM_n records the PMT pulses against the DAQ trigger (NIM, 50 ohm terminated). channels: 1 or 2 of the analog inputs. pre_trigger_samples: at most 8192 (10 ns each).",
+		"active": 0,
+		"S/N": "",
+		"channels": { "pmt": 1, "trigger": 2 },
+		"trigger": { "threshold_V": -0.4, "edge": "falling" },
+		"pmt": { "threshold_V": -0.4, "edge": "falling" },
+		"range": "low",
+		"buffer_samples": 8192,
+		"pre_trigger_samples": 8000,
+		"save_waveform": 0
 	}
 }

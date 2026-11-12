@@ -69,17 +69,20 @@ class ProgressMonitor:
                 print(line)
             sys.stdout.flush()
 
-    def wait_for_any_exit(self, procs):
+    def wait_for_any_exit(self, procs, on_poll=None):
         """Poll and render while waiting for at least one gigaiwaki process
         to exit (matching the intended 'one board done -> stop all' policy).
         Raises GigaIwakiError if any process exited with a non-zero status
-        (e.g. MadaIwaki lost its connection to the board)."""
+        (e.g. MadaIwaki lost its connection to the board). on_poll, if given,
+        is called every poll and may raise to stop the wait."""
         print('Waiting for gigaiwaki processes to finish...')
         process_num_org = len(procs)
 
         while True:
             self.poll()
             self.render()
+            if on_poll:
+                on_poll()
 
             alive = [p for p in procs.values() if p.poll() is None]
             if len(alive) != process_num_org:

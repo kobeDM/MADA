@@ -38,6 +38,11 @@ def _acquire_lock():
             time.sleep(0.05)
 
 
+def acquire_adalm_lock():
+    """The lock all ADALM users take while they open an ADALM; the caller closes the returned file to release it."""
+    return _acquire_lock()
+
+
 def _run_once(cmd, timeout):
     try:
         return subprocess.run(cmd, timeout=timeout).returncode

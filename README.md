@@ -76,7 +76,7 @@ For each entry under `gigaIwaki`, set:
 
 - **Start DAQ**
     ```bash
-    mada.py [-c config] [-f file_num] [-n event_num] [-d] [--calin IP ch]
+    mada.py [-c config] [-f file_num] [-n event_num] [-d] [--calin IP ch] [--sci]
     ```
     For every board with `active: 1` in `MADA_config.json`, enables the regulator → sets DAC/Vth/bias → enables latch-up detection once at startup only if `general.latch_up_detect` is 1 in `MADA_config.json` (default 0: a run with it enabled leaves the boards in a bad all-hit / no-hit state until they are power cycled) (each step is sent to all boards concurrently). It then repeatedly creates a new `perNNNN/` run directory and collects `file_num` files of `event_num` events each via `MadaIwaki` (controlling DAQ enable / counter reset through the ADALM units), writing a `.info` log for each file, moving on to a new period once `file_num` files have been collected. The MPOD over-current auto-reset is a separate monitor process (`mada_regulator_autoreset.py`, see below); `mada.py` makes sure it is running before the regulator is switched on and at every file boundary, and stops the DAQ if it cannot be started. Ctrl+C stops the run safely, disabling the regulator (and latch-up detection, if it was enabled) on the way out. If a board never replies to a slow-control command, or a `MadaIwaki` process loses its data connection to a board, mada.py stops the run rather than continuing silently.
     - `-c/--config`: config file name (default `MADA_config.json`)
@@ -113,6 +113,7 @@ For each entry under `gigaIwaki`, set:
 | `mada_file_cycle.py` | one file: start readers, reset counters, DAQ enable, wait, close |
 | `mada_gigaiwaki.py` | the MadaIwaki readers (start with per-board restart, stop) |
 | `mada_progress.py` | live per-board event counts |
+| `mada_sci.py` | the SCI mode: one `AdalmAnalogIn` process per file (start, check, stop) |
 | `mada_scan.py`, `mada_scan_session.py`, `mada_scan_board.py`, `mada_scan_tools.py`, `mada_scan_progress.py`, `mada_scan_replot.py` | DAC/Vth scan: entry point, session (power, DAQ enable, parallel boards), one board's correction, scan binaries, progress bars, redo of the fits |
 | `mada_run_logger.py` | `perNNNN/` directories, `.info` files, rate log |
 | `mada_config.py` / `mada_adalm_roles.py` | config access and validation / ADALM roles and DIO masks |
@@ -193,6 +194,26 @@ Behaviour worth knowing: the config is validated (boards, DAC files, ADALM roles
     ScanFit [outdir] {vth|dac} [target [level [rate|occupancy]]]   # also reads the data of the removed ScanVth/DACSurvey
     ScanCorrect {dac|slope|refine} ...
     ```
+
+### SCI mode: PMT pulses against the DAQ trigger
+
+```bash
+mada.py --sci [other options]
+```
+With `--sci`, another ADALM2000 (the `SCI` section of the config, never one of the `MADALM_n` of the DAQ) records, for every trigger of the DAQ, the time of the PMT pulses relative to the trigger edge. Both signals are discriminated NIM signals (negative, about -0.8 V) on the analog inputs, terminated with 50 ohm, input range `low` (+-2.5 V). The ADALM triggers on the DAQ trigger (`SCI.trigger`, threshold only) and keeps `pre_trigger_samples` (default 8000 = 80 us, at most 8192) of the buffer before it, since the PMT comes first; the pulses of the PMT channel in the whole buffer are found in software (crossing of the threshold, interpolated between the 10 ns samples; gaps of two samples or less do not split a pulse).
+
+```json
+"SCI": {
+    "active": 1, "S/N": "<serial of the ADALM>",
+    "channels": { "pmt": 1, "trigger": 2 },
+    "trigger": { "threshold_V": -0.4, "edge": "falling" },
+    "pmt": { "threshold_V": -0.4, "edge": "falling" },
+    "range": "low", "buffer_samples": 8192, "pre_trigger_samples": 8000, "save_waveform": 0
+}
+```
+`mada.py --sci` checks the section before anything is started (the ADALM must differ from the DAQ's, the channels must be 1 and 2, the thresholds within the range, the pre-trigger length within 8192 with 100 samples left after the trigger). One `bin/AdalmAnalogIn` runs per file, armed before the readers start and stopped after they end; its start is serialized with the other ADALM calls (`run/adalm.lock`). If it cannot start, dies, or sees no trigger for 30 s while DAQ enable is up, the DAQ stops with an error (and the reason goes into `warnings.log`).
+
+Per file the period directory gets `SCI_NNNN.root` (tree `trigger`, one entry per trigger: `seq`, `t_epoch` (PC clock, roughly matches the DAQ files), `trig_ns`, `n_pmt`, and per PMT pulse `pmt_dt` [ns, negative: before the trigger], `pmt_amp` [V], `pmt_width` [ns]; `flags`: 1 = no trigger edge found, 2 = a sample at the range limit; with `save_waveform` also `wave_pmt`, `wave_trig` [V]; the object `meta` holds the settings) and `SCI_NNNN.info`. The analysis of `pmt_dt` (drift time) is done in the analyzer, not here; the file format is described in `docs/manuals/2026-11-10.md`. `bin/AdalmAnalogIn --simulate [Hz]` produces the same files from simulated signals, to test without an ADALM.
 
 ### ADALM2000
 

@@ -42,7 +42,7 @@ def _shutdown(config_path, daq_role):
         print(f'WARNING: power down failed ({e}); check that the regulators are off.')
 
 
-def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
+def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None, sci=None):
     config_load = load_config(config_path)
     boards = active_boards(config_load)
     if calin:
@@ -67,7 +67,7 @@ def run_daq(config_path, file_num, event_num, first_period, daemon, calin=None):
         period = first_period
         while True:
             print('New period created : per' + str(period).zfill(4))
-            run_period(config_path, period, file_num, event_num, boards, roles)
+            run_period(config_path, period, file_num, event_num, boards, roles, sci)
             period = RunLogger.new_period()
             if daemon:
                 switch_log(period)
