@@ -5,7 +5,12 @@
 mada_server_state.state up to date and raises notifications (section 3.4)
 into the DB on the edges the spec lists: an abnormal exit, a period
 boundary, connection loss/recovery, a monitor going bad, an invalid file,
-and stale progress."""
+and stale progress.
+
+Cursors that gate notifications (the last-notified DAQ exit, the files
+cursor) are persisted in the DB, not just kept in memory, so a server
+restart doesn't re-raise a notification it already raised (2026-11-12
+integration review, 2.4)."""
 
 import asyncio
 import time
@@ -21,6 +26,7 @@ FILES_INTERVAL_S = 10.0
 BACKOFF_MIN_S = 2.0
 BACKOFF_MAX_S = 30.0
 RUNNING_PHASES = ('running', 'starting', 'stopping')
+FIRST_FILE_ID = -1  # "after" is exclusive (API contract 4.7), and file_id starts at 0
 
 
 class Poller:
@@ -32,13 +38,12 @@ class Poller:
         self._next_progress = 0.0
         self._next_warnings = 0.0
         self._next_files = 0.0
-        self._prev_period_by_run = {}
-        self._notified_exit_time = 'unset'  # distinct from any real last_exit.time, including None
+        self._prev_daq_by_run = {}  # run -> last-seen daq dict, for period-transition wording
+        self._notified_exit_time = db.get_last_notified_exit_time()
         self._prev_autoreset_running = None
         self._prev_veto_failed = None
         self._prev_stale = None
         self._current_run_period = None  # (run, period) that warnings/files polling follows
-        self._files_max_id = {}
 
     async def run(self, stop_event):
         while not stop_event.is_set():
@@ -75,7 +80,7 @@ class Poller:
         except DaqClientError as e:
             self._on_status_failure(e)
             return
-        self._on_status_success(status)
+        await self._on_status_success(status)
 
     def _on_status_failure(self, error):
         self.state.consecutive_failures += 1
@@ -86,7 +91,7 @@ class Poller:
             self.state.connected = False
             self._status_backoff = min(self._status_backoff * 2, BACKOFF_MAX_S)
 
-    def _on_status_success(self, status):
+    async def _on_status_success(self, status):
         was_connected = self.state.connected
         self.state.connected = True
         self.state.consecutive_failures = 0
@@ -102,10 +107,15 @@ class Poller:
         self._check_monitor(status)
 
         phase, daq = status.get('phase'), status.get('daq')
-        if phase in RUNNING_PHASES and daq:
-            self._current_run_period = (daq.get('run'), daq.get('period'))
-        elif phase == 'idle':
-            self._current_run_period = None
+        new_target = (daq.get('run'), daq.get('period')) if (phase in RUNNING_PHASES and daq) else None
+
+        # Fetch one last round of warnings for the (run, period) we are
+        # leaving before switching away, so a warning logged in the last few
+        # seconds before a stop/period boundary isn't dropped on the floor
+        # (2026-11-12 integration review, 2.5).
+        if new_target != self._current_run_period and self._current_run_period is not None:
+            await self._drain_warnings(*self._current_run_period)
+        self._current_run_period = new_target
 
     def _check_last_exit(self, status):
         last_exit = status.get('last_exit')
@@ -115,6 +125,7 @@ class Poller:
         if exit_time == self._notified_exit_time:
             return
         self._notified_exit_time = exit_time
+        db.set_last_notified_exit_time(exit_time)
         if last_exit.get('reason') in ('error', 'crashed'):
             db.add_notification(
                 'daq_exit',
@@ -127,10 +138,25 @@ class Poller:
         run, period = daq.get('run'), daq.get('period')
         if run is None or period is None:
             return
-        prev = self._prev_period_by_run.get(run)
-        if prev is not None and period > prev:
-            db.add_notification('period_done', f"run {run}: period {prev} が完了しました")
-        self._prev_period_by_run[run] = period
+        prev_daq = self._prev_daq_by_run.get(run)
+        if prev_daq is not None and period > prev_daq.get('period'):
+            self._notify_period_ended(run, prev_daq)
+        self._prev_daq_by_run[run] = daq
+
+    def _notify_period_ended(self, run, prev_daq):
+        """A period boundary doesn't always mean the period actually
+        finished: stopping mid-period and starting again also bumps the
+        period number for the next one. Only call it "完了" when the old
+        period actually reached file_num valid files (2026-11-12 integration
+        review, 2.6)."""
+        prev_period = prev_daq.get('period')
+        valid_files, file_num = prev_daq.get('valid_files'), prev_daq.get('file_num')
+        if valid_files is not None and file_num is not None and valid_files >= file_num:
+            db.add_notification('period_done', f"run {run}: period {prev_period} が完了しました")
+        else:
+            db.add_notification(
+                'period_incomplete',
+                f"run {run}: period {prev_period} は停止により終了しました ({valid_files}/{file_num} ファイル)")
 
     def _check_monitor(self, status):
         phase = status.get('phase')
@@ -166,7 +192,9 @@ class Poller:
         target = self._current_run_period
         if not target or target[0] is None or target[1] is None:
             return
-        run, period = target
+        await self._drain_warnings(*target)
+
+    async def _drain_warnings(self, run, period):
         after = db.get_warnings_cursor(run, period)
         try:
             result = await self.client.warnings(run, period, after=after, limit=200)
@@ -183,7 +211,9 @@ class Poller:
         if not target or target[0] is None or target[1] is None:
             return
         run, period = target
-        after = self._files_max_id.get(target, 0)
+        after = db.get_files_cursor(run, period)
+        if after is None:
+            after = FIRST_FILE_ID
         try:
             result = await self.client.files(run, period, after=after, limit=1000)
         except DaqClientError:
@@ -197,4 +227,5 @@ class Poller:
                 db.add_notification(
                     'file_invalid',
                     f"run {run} per{period:04d} file {f['file_id']}: invalid ({f.get('invalid_reason')})")
-        self._files_max_id[target] = max_finished
+        if max_finished != after:
+            db.set_files_cursor(run, period, max_finished)

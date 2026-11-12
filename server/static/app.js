@@ -66,12 +66,27 @@ function renderState(data) {
   if (daqInfo) {
     const daq = status && status.daq;
     if (daq) {
-      const elapsed = daq.started_at ? (data.server_time - daq.started_at) : null;
+      // status.time is the daq-client's own clock, taken at the same moment
+      // as started_at/stop_requested_at -- server_time (this server's clock)
+      // would drift with any clock skew between the two machines (server
+      // spec section 4: "サーバーとクライアントの時計がずれていても、表示
+      // の整合が取れる").
+      const clientNow = status.time;
+      const elapsed = daq.started_at ? (clientNow - daq.started_at) : null;
+      let stoppingNotice = '';
+      if (status.phase === 'stopping' && daq.stop_requested_at) {
+        const stoppingFor = clientNow - daq.stop_requested_at;
+        stoppingNotice = `<p>停止要求からの経過: ${fmtElapsed(stoppingFor)}</p>`;
+        if (stoppingFor > 120) {
+          stoppingNotice += '<p class="error">後処理が長引いています。端末での確認が必要かもしれません。</p>';
+        }
+      }
       daqInfo.innerHTML = `
         <p>run: ${daq.run ?? '-'} / period: ${daq.period ?? '-'} / file: ${daq.file_id ?? '-'}</p>
         <p>有効ファイル: ${daq.valid_files ?? '-'} / ${daq.file_num ?? '-'}</p>
         <p>event_num: ${daq.event_num ?? '-'} / SCI: ${daq.sci ? 'あり' : 'なし'}</p>
         <p>経過時間: ${fmtElapsed(elapsed)}</p>
+        ${stoppingNotice}
       `;
     } else {
       daqInfo.innerHTML = `<p>DAQは動いていません (latest_run: ${(status && status.latest_run) || '-'})</p>`;

@@ -39,6 +39,18 @@ CREATE TABLE IF NOT EXISTS warnings_cursor (
     last_t REAL NOT NULL,
     PRIMARY KEY (run, period)
 );
+
+CREATE TABLE IF NOT EXISTS files_cursor (
+    run TEXT NOT NULL,
+    period INTEGER NOT NULL,
+    max_file_id INTEGER NOT NULL,
+    PRIMARY KEY (run, period)
+);
+
+CREATE TABLE IF NOT EXISTS poller_state (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 """
 
 _lock = threading.Lock()
@@ -113,4 +125,41 @@ def set_warnings_cursor(run, period, last_t):
             'INSERT INTO warnings_cursor (run, period, last_t) VALUES (?, ?, ?) '
             'ON CONFLICT(run, period) DO UPDATE SET last_t = excluded.last_t',
             (run, period, last_t))
+        _conn.commit()
+
+
+# -- files cursor (same "取りこぼし防止" rationale as warnings_cursor; a
+# restart must not re-raise a file_invalid notification it already raised) --
+
+def get_files_cursor(run, period):
+    with _lock:
+        row = _conn.execute('SELECT max_file_id FROM files_cursor WHERE run = ? AND period = ?',
+                             (run, period)).fetchone()
+    return row['max_file_id'] if row else None
+
+
+def set_files_cursor(run, period, max_file_id):
+    with _lock:
+        _conn.execute(
+            'INSERT INTO files_cursor (run, period, max_file_id) VALUES (?, ?, ?) '
+            'ON CONFLICT(run, period) DO UPDATE SET max_file_id = excluded.max_file_id',
+            (run, period, max_file_id))
+        _conn.commit()
+
+
+# -- poller key/value state (currently just the last-notified DAQ exit, so a
+# restart doesn't re-raise a daq_exit notification it already raised) -------
+
+def get_last_notified_exit_time():
+    with _lock:
+        row = _conn.execute("SELECT value FROM poller_state WHERE key = 'last_notified_exit_time'").fetchone()
+    return float(row['value']) if row else None
+
+
+def set_last_notified_exit_time(exit_time):
+    with _lock:
+        _conn.execute(
+            "INSERT INTO poller_state (key, value) VALUES ('last_notified_exit_time', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (str(exit_time),))
         _conn.commit()
