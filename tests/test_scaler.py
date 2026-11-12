@@ -35,6 +35,9 @@ def scaler(tmp_path, monkeypatch):
     bin_dir.mkdir()
     write_script(bin_dir / 'ssh', FAKE_SSH)
     write_script(bin_dir / 'runScaler', FAKE_RUN_SCALER)
+    write_script(bin_dir / 'gpioget', '#!/bin/sh\ncat "$GPIO_VALUE_FILE" 2>/dev/null || echo 1\n')
+    monkeypatch.setenv('GPIO_VALUE_FILE', str(tmp_path / 'gpio'))
+    monkeypatch.setattr(mada_scaler, 'READ_ENABLE_WAIT', 0.5)
     out_root = tmp_path / 'scaler'
     out_root.mkdir()
     monkeypatch.setenv('PATH', f"{bin_dir}:{os.environ['PATH']}")
@@ -161,3 +164,10 @@ def test_remote_output_root(scaler, tmp_path):
     runner.start(0)
     assert os.path.exists(runner.out_dir + '/per0000')
     runner.stop()
+
+
+def test_start_refused_when_read_enable_low(scaler, tmp_path):
+    (tmp_path / 'gpio').write_text('0\n')
+    with pytest.raises(ScalerError, match='read enable'):
+        scaler.start(1)
+    assert not os.path.exists(scaler.out_file(1))

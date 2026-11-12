@@ -22,6 +22,8 @@ MADAHOME = os.environ['MADAHOME']
 STATE_PATH = MADAHOME + '/run/mada_scaler.json'
 REMOTE_LOG = '/tmp/mada_runScaler.log'
 
+READ_ENABLE_WAIT = 5.0  # sec for the read enable to be high before the start
+READ_ENABLE_CHIP = 'gpiochip5'  # MAZYSCA_SW include/def.h CHIP_ID_SW_READ_ENABLE
 FILE_WAIT = 5.0    # sec for the output file to appear after the start
 LINE_WAIT = 3.0    # sec for the scaler to write the line of a finished file
 STOP_WAIT = 3.0    # sec for the process to end after SIGTERM
@@ -91,6 +93,15 @@ class ScalerRunner:
         if done.returncode != 0:
             raise ScalerError(f"cannot clean up the scaler on {self.ssh['host']}: {done.stderr.strip()}")
 
+    def _wait_read_enable(self):
+        """runScaler skips the first rise of the read enable (high while DAQ
+        enable is low); if it is low at the start, the line of file 0 is lost."""
+        gpio = f'gpioget {READ_ENABLE_CHIP} 0'
+        done = self._ssh(f'for i in $(seq 1 {int(READ_ENABLE_WAIT / POLL)}); do [ "$({gpio})" = 1 ] && exit 0; sleep {POLL}; done; exit 1')
+        if done.returncode != 0:
+            raise ScalerError(f"the scaler's read enable ({READ_ENABLE_CHIP}) is not high on {self.ssh['host']} "
+                              f'although DAQ enable is low; runScaler would lose file 0')
+
     def start(self, period):
         """Start runScaler for the period; DAQ enable must be low."""
         self.period = period
@@ -103,6 +114,7 @@ class ScalerRunner:
         except OSError as e:
             raise ScalerError(f'cannot create {self.out_dir}: {e}')
 
+        self._wait_read_enable()
         remote = (f'nohup {shlex.quote(self.command)} {shlex.quote(self.remote_out_dir)} {period} '
                   f'> {REMOTE_LOG} 2>&1 < /dev/null & echo $!')
         done = self._ssh(remote)
@@ -124,7 +136,12 @@ class ScalerRunner:
         """The scaler must have written the line of file file_id by now."""
         expected = file_id + 1
         deadline = time.time() + LINE_WAIT
+        synced = False
         while count_lines(self.out_file()) < expected:
+            if not synced:
+                # The Zybo caches the NFS writes; sync makes the line visible here.
+                self._ssh('sync')
+                synced = True
             if time.time() > deadline:
                 raise ScalerError(f'the scaler did not record file {file_id} ({count_lines(self.out_file())} lines in '
                                   f'{self.out_file()}, expected {expected})')
