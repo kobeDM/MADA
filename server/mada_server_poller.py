@@ -26,7 +26,19 @@ FILES_INTERVAL_S = 10.0
 BACKOFF_MIN_S = 2.0
 BACKOFF_MAX_S = 30.0
 RUNNING_PHASES = ('running', 'starting', 'stopping')
-FIRST_FILE_ID = -1  # "after" is exclusive (API contract 4.7), and file_id starts at 0
+FIRST_FILE_ID = -1
+
+
+def is_acquiring(status):
+    """Files are being taken: running, or a soft stop waiting for the current
+    file to finish."""
+    if not status:
+        return False
+    phase = status.get('phase')
+    return phase == 'running' or (phase == 'stopping' and (status.get('daq') or {}).get('stop_mode') == 'soft')
+
+
+FIRST_FILE_ID_PLACEHOLDER = None  # "after" is exclusive (API contract 4.7), and file_id starts at 0
 
 
 class Poller:
@@ -56,7 +68,7 @@ class Poller:
 
             if self.state.connected:
                 if now >= self._next_progress:
-                    if (self.state.status or {}).get('phase') == 'running':
+                    if is_acquiring(self.state.status):
                         await self._poll_progress()
                     self._next_progress = now + PROGRESS_INTERVAL_S
                 if now >= self._next_warnings:
@@ -107,6 +119,11 @@ class Poller:
         self._check_monitor(status)
 
         phase, daq = status.get('phase'), status.get('daq')
+        if not is_acquiring(status):
+            # Nothing is being acquired: drop the last progress so the
+            # dashboard doesn't keep showing the final file's counts.
+            self.state.progress = None
+            self._prev_stale = None
         new_target = (daq.get('run'), daq.get('period')) if (phase in RUNNING_PHASES and daq) else None
 
         # Fetch one last round of warnings for the (run, period) we are

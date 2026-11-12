@@ -192,5 +192,29 @@ class WarningsDrainTest(PollerTestCase):
         self.assertEqual(poller.state.recent_warnings, [{'t': 10.0, 'message': 'last warning'}])
 
 
+class ProgressClearTest(PollerTestCase):
+    """The last progress must not stay on the dashboard once the DAQ stops."""
+
+    def test_progress_cleared_when_idle(self):
+        state = FakeState()
+        poller = Poller(FakeClient(), state)
+        state.progress = {'file_id': 3, 'boards': {'A': {'events': 1000}}}
+
+        run_async(poller._on_status_success(make_status('running', run='20261112', period=3)))
+        self.assertIsNotNone(state.progress)
+        run_async(poller._on_status_success(make_status('idle')))
+        self.assertIsNone(state.progress)
+
+    def test_progress_kept_while_a_soft_stop_waits_for_the_file(self):
+        state = FakeState()
+        poller = Poller(FakeClient(), state)
+        state.progress = {'file_id': 3, 'boards': {'A': {'events': 400}}}
+        status = make_status('stopping', run='20261112', period=3)
+        status['daq']['stop_mode'] = 'soft'
+
+        run_async(poller._on_status_success(status))
+        self.assertIsNotNone(state.progress)
+
+
 if __name__ == '__main__':
     unittest.main()

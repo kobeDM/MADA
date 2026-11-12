@@ -12,7 +12,7 @@ This branch (`dev-cn1-daq-server`) contains the daq-server only; the DAQ itself 
 | Page / feature | Description |
 |---|---|
 | Dashboard (`/`) | Connection state, phase (`idle` / `starting` / `running` / `stopping`), run / period / file number, per-board progress (lagging boards highlighted), protection (LV auto-reset monitor, veto), last exit, notifications. Updated live over SSE |
-| Start / stop | Operators only. Start takes run, `file_num`, `event_num`, SCI, `config_from` and a source preset, with a confirmation dialog. There is no force-kill |
+| Start / stop | Operators only. The run field is pre-filled with the latest run and `file_num` / `event_num` with the configured defaults (512 / 1000). The config used is the one under the chosen run. Stop comes in two kinds: **soft** (stop after the file being acquired is complete) and **force** (stop now, only while a file is being acquired; refused while a file is being set up or closed, i.e. during ADALM control). All operations ask for confirmation, and the messages follow the reported phase. There is no kill |
 | Runs (`/runs`) | List of runs and periods. Links to each period's files and warnings, and to the run's `MADA_config.json` (read-only) |
 | Files | Valid / invalid (with reason), start and end time, size per board |
 | Warnings | Records of `warnings.log`, filterable by level and source |
@@ -67,6 +67,7 @@ mada_server.py -d
 | `client.base_url` | URL of daq-client (e.g. `http://192.168.100.10:8765`) |
 | `client.token_file` | The token file from step 2 |
 | `client.timeout` | Timeout of requests to daq-client [s] (default 5.0) |
+| `defaults` | Initial `file_num` and `event_num` on the start form (default 512 and 1000) |
 | `presets` | Source presets on the start form (`name` and `event_num`) |
 
 If the config has problems, the server lists all of them and exits at startup.
@@ -123,7 +124,9 @@ mada_server.py stop
 ```
 
 `stop` sends SIGTERM to the PID in the pidfile (the server removes the pidfile on exit). If only a stale pidfile is left, it is removed.
-Stopping the server does not stop the DAQ. To stop the DAQ, use the stop button on the dashboard (or daq-client).
+Stopping the server does not stop the DAQ. To stop the DAQ, use the stop buttons on the dashboard (or daq-client).
+
+Soft stop uses `POST /daq/stop/soft` of daq-client (API contract 4.4); until your daq-client implements it, the soft stop button reports `not_found`.
 
 ## Tests
 

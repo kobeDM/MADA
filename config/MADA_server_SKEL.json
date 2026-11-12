@@ -10,6 +10,7 @@
 		"token_file": "/home/msgc/.mada_server_client_token",
 		"timeout": 5.0
 	},
+	"defaults": { "file_num": 512, "event_num": 1000 },
 	"presets": [
 		{ "name": "55Fe", "event_num": 5000 },
 		{ "name": "252Cf", "event_num": 2000 }

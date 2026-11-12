@@ -77,7 +77,9 @@ function renderState(data) {
       if (status.phase === 'stopping' && daq.stop_requested_at) {
         const stoppingFor = clientNow - daq.stop_requested_at;
         stoppingNotice = `<p>Time since stop request: ${fmtElapsed(stoppingFor)}</p>`;
-        if (stoppingFor > 120) {
+        if (daq.stop_mode === 'soft') {
+          stoppingNotice += `<p>Soft stop: the DAQ stops when file ${daq.file_id ?? '-'} is complete.</p>`;
+        } else if (stoppingFor > 120) {
           stoppingNotice += '<p class="error">Cleanup is taking long. You may need to check the terminal.</p>';
         }
       }
@@ -142,6 +144,10 @@ function renderState(data) {
       lastExitCard.style.display = 'none';
     }
   }
+
+  fillRunDefault(status);
+  renderControls(data);
+  renderOperationMessages(data);
 }
 
 function subscribeState() {
@@ -155,42 +161,102 @@ function subscribeState() {
   };
 }
 
+// Operation messages follow the phase the server reports, not just the HTTP
+// answer: "202 accepted" only means the request was taken.
+let startPending = null;  // {at: ms, seenStarting: bool}
+let stopPending = null;   // 'soft' | 'force'
+
+function byId(id) { return document.getElementById(id); }
+
+function fillRunDefault(status) {
+  const input = byId('start-run');
+  if (!input || !status || !status.latest_run || input.dataset.touched === '1') return;
+  input.value = status.latest_run;
+}
+
+function renderControls(data) {
+  const c = data.controls;
+  if (!c) return;
+  const pairs = [['start-btn', c.start], ['soft-stop-btn', c.soft_stop], ['force-stop-btn', c.force_stop]];
+  pairs.forEach(([id, ctl]) => {
+    const el = byId(id);
+    if (!el) return;
+    el.disabled = !ctl.enabled;
+    el.title = ctl.enabled ? '' : (ctl.reason || '');
+  });
+  const startHint = byId('start-hint');
+  if (startHint) startHint.textContent = c.start.enabled ? '' : (c.start.reason || '');
+  const stopHint = byId('stop-hint');
+  if (stopHint) {
+    if (!c.soft_stop.enabled) stopHint.textContent = c.soft_stop.reason || '';
+    else if (!c.force_stop.enabled) stopHint.textContent = `Force stop is not available now: ${c.force_stop.reason}`;
+    else stopHint.textContent = '';
+  }
+}
+
+function renderOperationMessages(data) {
+  const status = data.status;
+  if (!status) return;
+  const phase = status.phase;
+  const daq = status.daq || {};
+
+  const startResult = byId('start-result');
+  if (startResult && startPending) {
+    if (phase === 'starting') {
+      startPending.seenStarting = true;
+      startResult.textContent = 'DAQ is starting: powering on the boards and setting DAC/Vth. No file is acquired yet.';
+    } else if (phase === 'running') {
+      startResult.textContent = `DAQ started and is running (run ${daq.run ?? '-'}, file ${daq.file_id ?? '-'}).`;
+      startPending = null;
+    } else if (phase === 'idle' && (startPending.seenStarting || Date.now() - startPending.at > 30000)) {
+      startResult.textContent = 'The DAQ is not running. It did not start or ended right after starting; see "Last exit" and the log.';
+      startPending = null;
+    }
+  }
+
+  const stopResult = byId('stop-result');
+  if (stopResult && stopPending) {
+    if (phase === 'idle') {
+      stopResult.textContent = 'DAQ stopped.';
+      stopPending = null;
+    } else if (daq.stop_mode === 'soft' || (stopPending === 'soft' && phase === 'running')) {
+      stopResult.textContent = `Soft stop requested: the DAQ stops when file ${daq.file_id ?? '-'} is complete.`;
+    } else if (phase === 'stopping') {
+      stopResult.textContent = 'DAQ is stopping: cleanup (DAQ enable low, power off) is in progress.';
+    }
+  }
+}
+
 function setupStartForm() {
-  const form = document.getElementById('start-form');
+  const form = byId('start-form');
   if (!form) return;
 
-  const suggestBtn = document.getElementById('suggest-run-btn');
-  suggestBtn.addEventListener('click', async () => {
-    const res = await fetch('/api/suggest_run_name', { credentials: 'same-origin' });
-    const data = await res.json();
-    document.getElementById('start-run').value = data.run;
-  });
+  byId('start-run').addEventListener('input', (e) => { e.target.dataset.touched = '1'; });
 
-  const presetSelect = document.getElementById('start-preset');
+  const presetSelect = byId('start-preset');
   if (presetSelect) {
     presetSelect.addEventListener('change', () => {
-      if (presetSelect.value) document.getElementById('start-event-num').value = presetSelect.value;
+      if (presetSelect.value) byId('start-event-num').value = presetSelect.value;
     });
   }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const run = document.getElementById('start-run').value;
+    const run = byId('start-run').value;
     if (!confirm(`Start DAQ with run "${run}". Are you sure?`)) return;
 
-    const body = { run: run, sci: document.getElementById('start-sci').checked };
-    const fileNum = document.getElementById('start-file-num').value;
-    const eventNum = document.getElementById('start-event-num').value;
-    const configFrom = document.getElementById('start-config-from').value;
+    const body = { run: run, sci: byId('start-sci').checked };
+    const fileNum = byId('start-file-num').value;
+    const eventNum = byId('start-event-num').value;
     if (fileNum) body.file_num = parseInt(fileNum, 10);
     if (eventNum) body.event_num = parseInt(eventNum, 10);
-    if (configFrom) body.config_from = configFrom;
 
-    const result = document.getElementById('start-result');
+    const result = byId('start-result');
     result.textContent = 'Requesting start...';
     const res = await postJSON('/daq/start', body);
     if (res.ok) {
-      result.textContent = 'Start requested. Wait until the phase becomes running.';
+      startPending = { at: Date.now(), seenStarting: false };
+      result.textContent = 'Start request accepted. Waiting for the DAQ to come up...';
     } else {
       const err = res.data && res.data.error;
       result.textContent = `Start failed: ${err ? err.code + ' ' + err.message : res.status}`;
@@ -198,20 +264,29 @@ function setupStartForm() {
   });
 }
 
-function setupStopButton() {
-  const btn = document.getElementById('stop-btn');
-  if (!btn) return;
-  btn.addEventListener('click', async () => {
-    if (!confirm('Stop DAQ. Are you sure?')) return;
-    const result = document.getElementById('stop-result');
-    result.textContent = 'Requesting stop...';
-    const res = await postJSON('/daq/stop');
-    if (res.ok) {
-      result.textContent = 'Stop requested. Cleanup can take tens of seconds.';
-    } else {
-      const err = res.data && res.data.error;
-      result.textContent = `Stop failed: ${err ? err.code + ' ' + err.message : res.status}`;
-    }
+function setupStopButtons() {
+  const modes = [
+    ['soft-stop-btn', 'soft', 'Stop the DAQ after the current file is complete?'],
+    ['force-stop-btn', 'force', 'Force stop: stop the DAQ NOW, in the middle of the current file. Are you sure?'],
+  ];
+  modes.forEach(([id, mode, question]) => {
+    const btn = byId(id);
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      if (!confirm(question)) return;
+      const result = byId('stop-result');
+      result.textContent = 'Requesting stop...';
+      const res = await postJSON('/daq/stop', { mode: mode });
+      if (res.ok) {
+        stopPending = mode;
+        result.textContent = mode === 'soft'
+          ? 'Soft stop request accepted. Waiting for the current file to finish...'
+          : 'Force stop request accepted. Waiting for the DAQ to stop...';
+      } else {
+        const err = res.data && res.data.error;
+        result.textContent = `Stop failed: ${err ? err.code + ' ' + err.message : res.status}`;
+      }
+    });
   });
 }
 
@@ -263,6 +338,6 @@ function startLogTail() {
 document.addEventListener('DOMContentLoaded', () => {
   subscribeState();
   setupStartForm();
-  setupStopButton();
+  setupStopButtons();
   setupNotificationAck();
 });

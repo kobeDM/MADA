@@ -28,6 +28,7 @@ DEFAULTS = {
     'cookie_secure': False,
     'presets': [],
     'users': {},
+    'defaults': {'file_num': 512, 'event_num': 1000},
 }
 
 
@@ -54,6 +55,8 @@ def load_config(config_path):
 
     merged = dict(DEFAULTS)
     merged.update(config)
+    if isinstance(config.get('defaults'), dict):
+        merged['defaults'] = {**DEFAULTS['defaults'], **config['defaults']}
     _validate(merged, config_path)
     return merged
 
@@ -89,6 +92,11 @@ def _validate(config, config_path):
 
     if not isinstance(config.get('port'), int) or not (1 <= config['port'] <= 65535):
         problems.append("'port' must be an integer 1-65535")
+
+    defaults = config.get('defaults')
+    if not isinstance(defaults, dict) or not all(
+            isinstance(defaults.get(k), int) and defaults[k] >= 1 for k in ('file_num', 'event_num')):
+        problems.append("'defaults' needs positive integers 'file_num' and 'event_num'")
 
     presets = config.get('presets', [])
     if not isinstance(presets, list):

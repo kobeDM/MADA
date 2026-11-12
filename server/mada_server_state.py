@@ -8,6 +8,8 @@ snapshot. Losing this on restart is fine: it is rebuilt from the next poll."""
 import asyncio
 import time
 
+from mada_server_controls import controls
+
 RECENT_WARNINGS_MAX = 200
 
 
@@ -30,6 +32,7 @@ class ServerState:
             'status': self.status,
             'progress': self.progress,
             'recent_warnings': list(self.recent_warnings[-50:]),
+            'controls': controls(self.status if self.connected else None, self.progress),
             'server_time': time.time(),
         }
 

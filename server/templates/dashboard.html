@@ -46,10 +46,8 @@
   <h2>Start</h2>
   <form id="start-form">
     <label>run <input type="text" name="run" id="start-run" required></label>
-    <button type="button" id="suggest-run-btn">Suggest today's name</button>
-    <label>config_from (new run only, optional) <input type="text" name="config_from" id="start-config-from"></label>
-    <label>file_num <input type="number" name="file_num" id="start-file-num" min="1" max="10000"></label>
-    <label>event_num <input type="number" name="event_num" id="start-event-num" min="1" max="100000"></label>
+    <label>file_num <input type="number" name="file_num" id="start-file-num" min="1" max="10000" value="{{ defaults.file_num }}"></label>
+    <label>event_num <input type="number" name="event_num" id="start-event-num" min="1" max="100000" value="{{ defaults.event_num }}"></label>
     {% if presets %}
     <label>Preset
       <select id="start-preset">
@@ -61,12 +59,15 @@
     <label><input type="checkbox" name="sci" id="start-sci"> SCI mode</label>
     <button type="submit" id="start-btn">Request DAQ start</button>
   </form>
+  <p id="start-hint" class="muted"></p>
   <p id="start-result"></p>
 </section>
 
 <section class="card">
   <h2>Stop</h2>
-  <button type="button" id="stop-btn">Request DAQ stop</button>
+  <button type="button" id="soft-stop-btn">Soft stop (after this file)</button>
+  <button type="button" id="force-stop-btn">Force stop (now)</button>
+  <p id="stop-hint" class="muted"></p>
   <p id="stop-result"></p>
 </section>
 {% endif %}

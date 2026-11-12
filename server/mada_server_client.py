@@ -93,15 +93,20 @@ class DaqClient:
             params['max_bytes'] = max_bytes
         return await self._request('GET', '/log', params=params)
 
-    async def daq_start(self, run, file_num=None, event_num=None, sci=False, config_from=None):
+    async def daq_start(self, run, file_num=None, event_num=None, sci=False):
         body = {'run': run, 'sci': sci}
         if file_num is not None:
             body['file_num'] = file_num
         if event_num is not None:
             body['event_num'] = event_num
-        if config_from is not None:
-            body['config_from'] = config_from
         return await self._request('POST', '/daq/start', json=body)
 
     async def daq_stop(self):
+        """Force stop: SIGTERM now (API contract 4.4)."""
         return await self._request('POST', '/daq/stop')
+
+    async def daq_stop_soft(self):
+        """Soft stop: stop after the file being acquired is complete. A
+        separate path, not a parameter of /daq/stop, so that a client that
+        doesn't know it answers 404 instead of silently force-stopping."""
+        return await self._request('POST', '/daq/stop/soft')

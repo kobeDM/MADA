@@ -8,9 +8,8 @@ after loading config and initializing the DB."""
 import asyncio
 import json
 import os
-import time
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
@@ -21,6 +20,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 import mada_server_auth as auth
 import mada_server_config as cfg
+import mada_server_controls as ctl
 import mada_server_db as db
 from mada_server_client import DaqClient, DaqClientError
 from mada_server_poller import Poller
@@ -35,7 +35,10 @@ class StartRequest(BaseModel):
     file_num: Optional[int] = None
     event_num: Optional[int] = None
     sci: bool = False
-    config_from: Optional[str] = None
+
+
+class StopRequest(BaseModel):
+    mode: Literal['soft', 'force']
 
 
 def _client_error_response(error: DaqClientError):
@@ -46,6 +49,7 @@ def _client_error_response(error: DaqClientError):
 def create_app(config):
     cookie_secure = config.get('cookie_secure', False)
     presets = config.get('presets', [])
+    defaults = config['defaults']
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -106,6 +110,7 @@ def create_app(config):
             'user': user,
             'state_json': json.dumps(state.snapshot(), ensure_ascii=False),
             'presets': presets,
+            'defaults': defaults,
             'notifications': db.list_notifications(),
         })
         auth.issue_csrf_cookie(response, cookie_secure)
@@ -126,22 +131,6 @@ def create_app(config):
 
         return StreamingResponse(events(), media_type='text/event-stream')
 
-    @app.get('/api/suggest_run_name')
-    async def suggest_run_name(request: Request, user=Depends(auth.require_user)):
-        client = client_of(request)
-        existing = set()
-        try:
-            result = await client.runs()
-            existing = {r['run'] for r in result.get('runs', [])}
-        except DaqClientError:
-            pass
-        base_name = time.strftime('%Y%m%d')
-        name, n = base_name, 2
-        while name in existing:
-            name = f'{base_name}_{n}'
-            n += 1
-        return {'run': name}
-
     # -- start / stop -------------------------------------------------------------
 
     @app.post('/daq/start')
@@ -150,7 +139,7 @@ def create_app(config):
         client = client_of(request)
         params = body.model_dump_json()
         try:
-            result = await client.daq_start(body.run, body.file_num, body.event_num, body.sci, body.config_from)
+            result = await client.daq_start(body.run, body.file_num, body.event_num, body.sci)
         except DaqClientError as e:
             db.record_operation(user['username'], 'start', params, e.status_code, e.code, e.message)
             return _client_error_response(e)
@@ -158,14 +147,28 @@ def create_app(config):
         return JSONResponse(result, status_code=202)
 
     @app.post('/daq/stop')
-    async def daq_stop(request: Request, user=Depends(auth.require_operator), _csrf=Depends(auth.require_csrf)):
+    async def daq_stop(request: Request, body: StopRequest,
+                        user=Depends(auth.require_operator), _csrf=Depends(auth.require_csrf)):
+        """soft: stop after the current file is complete. force: stop now,
+        but only while a file is being acquired (not during the ADALM
+        control at the start and end of a file). The state is read fresh
+        from daq-client here, not from the poller's cache, so the check
+        doesn't act on a snapshot that is up to a couple of seconds old."""
         client = client_of(request)
+        params = body.model_dump_json()
         try:
-            result = await client.daq_stop()
+            status = await client.status()
+            progress = await client.progress() if body.mode == 'force' else None
+            refusal = ctl.soft_stop_refusal(status) if body.mode == 'soft' else ctl.force_stop_refusal(status, progress)
+            if refusal:
+                code, message = refusal
+                db.record_operation(user['username'], 'stop', params, 409, code, message)
+                return JSONResponse({'error': {'code': code, 'message': message}}, status_code=409)
+            result = await (client.daq_stop_soft() if body.mode == 'soft' else client.daq_stop())
         except DaqClientError as e:
-            db.record_operation(user['username'], 'stop', None, e.status_code, e.code, e.message)
+            db.record_operation(user['username'], 'stop', params, e.status_code, e.code, e.message)
             return _client_error_response(e)
-        db.record_operation(user['username'], 'stop', None, 202)
+        db.record_operation(user['username'], 'stop', params, 202)
         return JSONResponse(result, status_code=202)
 
     # -- runs / files / warnings / config (read-only browsing) --------------------
