@@ -8,12 +8,13 @@ import time
 
 from mada_adalm_roles import ROLE_DAQ_ENABLE, ROLE_COUNTER_RESET
 from mada_adalm_runner import run_adalm_control, AdalmError
+from mada_daemon import run_name
 from mada_autoreset_ctl import ensure_autoreset_running, MonitorError
 from mada_errors import MadaError
 from mada_gigaiwaki import start_readers, kill_readers, ReaderExitError
 from mada_progress import ProgressMonitor
 from mada_run_logger import RunLogger
-from mada_run_state import publish_run_state
+from mada_run_state import publish_run_state, publish_progress, clear_progress
 from mada_warning_log import event_message
 from mada_sci import SciRecorder
 from mada_software_veto import veto_failed
@@ -31,13 +32,14 @@ def check_protection(config_path):
         raise AdalmError('software veto could not be released (see run/veto.state); stopping')
 
 
-def run_file(logger, file_id, boards, event_num, roles, sci=None):
+def run_file(logger, file_id, boards, event_num, roles, sci=None, state_extra=None):
     """Acquire one file. Returns True for a valid file, False when a reader
     died: the file is kept, marked invalid, and the caller starts a new one."""
     daq_serial, daq_mask = roles[ROLE_DAQ_ENABLE]
     reset_serial, reset_mask = roles[ROLE_COUNTER_RESET]
 
-    publish_run_state(logger.period_dir_abs(), file_id)
+    state_extra = dict(state_extra or {})
+    publish_run_state(logger.period_dir_abs(), file_id, file_started_at=None, **state_extra)
     mada_files = logger.mada_file_paths(file_id, boards)
     warn = lambda source, message: logger.warning(file_id, source, message)
 
@@ -69,12 +71,14 @@ def run_file(logger, file_id, boards, event_num, roles, sci=None):
         print('Latch up DAQ enable...')
         run_adalm_control(daq_serial, latch=1, mask=daq_mask)
         start_time = time.time()
+        publish_run_state(logger.period_dir_abs(), file_id, file_started_at=start_time, **state_extra)
 
         print('Creating info files...')
         logger.write_info_start(file_id, boards, start_time)
 
         try:
-            ProgressMonitor(mada_files, event_num, warn=warn).wait_for_any_exit(procs, recorder.check if recorder else None)
+            publish = lambda counts, lagging: publish_progress(logger.period_dir_abs(), file_id, event_num, counts, lagging)
+            ProgressMonitor(mada_files, event_num, warn=warn, publish=publish).wait_for_any_exit(procs, recorder.check if recorder else None)
         except ReaderExitError as e:
             invalid = str(e)
             boards_failed = ','.join(e.failed)
@@ -92,6 +96,7 @@ def run_file(logger, file_id, boards, event_num, roles, sci=None):
     finally:
         print('Kill gigaiwaki processes...')
         kill_readers(procs)
+        clear_progress()
         if recorder and not recorder.stop():
             warn('SCI', 'WARNING the SCI acquisition did not end cleanly')
 
@@ -104,6 +109,8 @@ def run_period(config_path, period_id, file_num, event_num, boards, roles, sci=N
     """Acquire file_num valid files. An invalid file (a reader died) keeps its
     number and does not count; MAX_INVALID_IN_ROW of them in a row stop the DAQ."""
     logger = RunLogger(config_path, period_id)
+    state_extra = {'run': run_name(), 'period': period_id, 'file_num': file_num, 'event_num': event_num,
+                   'sci': bool(sci), 'boards': [{'id': board_id, 'ip': ip} for board_id, ip in boards]}
 
     file_id = 0
     valid = 0
@@ -111,7 +118,7 @@ def run_period(config_path, period_id, file_num, event_num, boards, roles, sci=N
     while valid < file_num:
         check_protection(config_path)
         print(f'Creating file {file_id} with {event_num} events...')
-        if run_file(logger, file_id, boards, event_num, roles, sci):
+        if run_file(logger, file_id, boards, event_num, roles, sci, dict(state_extra, valid_files=valid)):
             valid += 1
             invalid_in_row = 0
         else:

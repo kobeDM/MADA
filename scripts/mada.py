@@ -9,6 +9,7 @@ from mada_daemon import daemonize, install_sigterm_handler, remove_pidfile
 from mada_daq_session import run_daq
 from mada_errors import MadaError
 from mada_run_logger import RunLogger
+from mada_run_state import set_period, clear_last_exit, write_last_exit
 
 
 def print_header():
@@ -53,6 +54,7 @@ def main():
     # Allocate the starting period before daemonizing, since the per-period
     # log file name (<run_name>_<period>.log) needs to be known up front.
     first_period = RunLogger.new_period()
+    set_period(first_period)
 
     if args.daemon:
         daemonize(first_period)
@@ -69,13 +71,19 @@ def main():
     if sci:
         print('SCI mode : ADALM ' + sci['S/N'])
 
+    clear_last_exit()
     try:
         run_daq(config_path, file_num, event_num, first_period, args.daemon, calin, sci)
     except KeyboardInterrupt:
         print('DAQ stopped by user.')
+        write_last_exit('stopped')
     except MadaError as e:
         print(f'DAQ stopped due to error: {e}')
+        write_last_exit('error', str(e))
         sys.exit(1)
+    except Exception as e:
+        write_last_exit('error', f'{type(e).__name__}: {e}')
+        raise
     finally:
         if args.daemon:
             remove_pidfile()

@@ -9,6 +9,7 @@ from mada_gigaiwaki import ReaderExitError
 
 UPIC_FOOTER = b'uPIC'
 POLL_INTERVAL = 0.2  # sec
+PUBLISH_INTERVAL = 1.0  # sec between publish() calls
 LAG_SEC = 0.2  # sec, a board that lacks an event the other boards already have for this long is reported
 
 
@@ -16,9 +17,11 @@ class ProgressMonitor:
     """Tracks and displays each board's live event count during acquisition,
     by tailing the growing .mada files for the 'uPIC' footer marker."""
 
-    def __init__(self, mada_files, event_num, poll_interval=POLL_INTERVAL, warn=None, lag_sec=LAG_SEC):
+    def __init__(self, mada_files, event_num, poll_interval=POLL_INTERVAL, warn=None, lag_sec=LAG_SEC, publish=None):
         self.mada_files = mada_files
         self.warn = warn
+        self.publish = publish  # publish(counts, lagging board ids), about once per PUBLISH_INTERVAL
+        self._published = 0.0
         self.lag_sec = lag_sec
         # reach_time[n-1]: when the first board had stored n events
         self.reach_time = []
@@ -77,6 +80,14 @@ class ProgressMonitor:
                 start, _ = self.lagging.pop(board_id)
                 self._warn(board_id, f'INFO t={now:.3f} kind=board_lag_end events={count} sec={now - start:.3f}')
 
+    def publish_progress(self, force=False):
+        if not self.publish:
+            return
+        now = time.time()
+        if force or now - self._published >= PUBLISH_INTERVAL:
+            self._published = now
+            self.publish(self.counts, list(self.lagging))
+
     def _warn(self, board_id, message):
         if self.warn:
             self.warn(board_id, message)
@@ -112,6 +123,7 @@ class ProgressMonitor:
         while True:
             self.poll()
             self.check_lag()
+            self.publish_progress()
             self.render()
             if on_poll:
                 on_poll()
@@ -124,6 +136,7 @@ class ProgressMonitor:
         # Catch any events written just before the processes were found to
         # have stopped, and print the final per-board counts.
         self.poll()
+        self.publish_progress(force=True)
         self.render(final=True)
 
         failed = {board_id: proc.returncode for board_id, proc in procs.items()
