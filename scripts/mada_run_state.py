@@ -26,7 +26,7 @@ LAST_EXIT_PATH = MADAHOME + '/run/mada_last_exit.json'
 _context = {'period': None}  # period the DAQ is in, for the exit record
 
 
-def _write_json(path, data):
+def write_json(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + '.tmp'
     with open(tmp, 'w') as f:
@@ -53,7 +53,7 @@ def publish_run_state(period_dir, file_id, **extra):
     state.update(extra)
     if 'period' in extra:
         set_period(extra['period'])
-    _write_json(STATE_PATH, state)
+    write_json(STATE_PATH, state)
 
 
 def publish_progress(period_dir, file_id, event_num, counts, lagging):
@@ -61,7 +61,7 @@ def publish_progress(period_dir, file_id, event_num, counts, lagging):
     progress = {'pid': os.getpid(), 'period_dir': os.path.abspath(period_dir), 'file_id': file_id,
                 'time': time.time(), 'event_num': event_num, 'counts': dict(counts), 'lagging': list(lagging)}
     try:
-        _write_json(PROGRESS_PATH, progress)
+        write_json(PROGRESS_PATH, progress)
     except OSError as e:
         print(f'WARNING: could not write {PROGRESS_PATH} ({e})')
 
@@ -84,7 +84,7 @@ def write_last_exit(reason, message=None):
     record = {'reason': reason, 'message': message, 'time': time.time(),
               'run': run_name(), 'period': _context['period']}
     try:
-        _write_json(LAST_EXIT_PATH, record)
+        write_json(LAST_EXIT_PATH, record)
     except OSError as e:
         print(f'WARNING: could not write {LAST_EXIT_PATH} ({e})')
 

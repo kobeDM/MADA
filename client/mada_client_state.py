@@ -3,7 +3,6 @@ Nothing is kept in memory except the client's own record of what it started
 and stopped, which is stored in run/mada_client.json."""
 
 import json
-import os
 import time
 
 import psutil
@@ -33,11 +32,7 @@ def load_record():
 
 
 def save_record(record):
-    os.makedirs(paths.RUN_DIR, exist_ok=True)
-    tmp = paths.CLIENT_STATE_PATH + '.tmp'
-    with open(tmp, 'w') as f:
-        json.dump(record, f)
-    os.replace(tmp, paths.CLIENT_STATE_PATH)
+    mada_run_state.write_json(paths.CLIENT_STATE_PATH, record)
 
 
 def is_daq_process(pid):

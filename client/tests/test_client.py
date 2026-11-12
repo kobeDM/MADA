@@ -1,11 +1,10 @@
 import json
 import time
 
-import pytest
 from fastapi.testclient import TestClient
 
 import mada_client_files
-from conftest import HEADERS, HOME, make_run
+from conftest import HOME, make_run
 
 
 def wait_phase(api, phase, timeout=15.0):
@@ -20,7 +19,6 @@ def wait_phase(api, phase, timeout=15.0):
 
 def test_auth(client):
     api, settings = client
-    from mada_client_app import create_app
     anon = TestClient(api.app)
     assert anon.get('/api/v1/status').status_code == 401
     assert anon.get('/api/v1/status', headers={'Authorization': 'Bearer wrong'}).json()['error']['code'] == 'unauthorized'

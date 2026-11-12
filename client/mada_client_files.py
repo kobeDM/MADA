@@ -169,12 +169,12 @@ def read_warnings(period_dir, after=0.0, limit=200):
     return records
 
 
-def newest_log(exclude_names=()):
+def newest_log():
     """Newest daemon log (<run>_<period>.log) under $MADAHOME/run, or None."""
     best = None
     try:
         for entry in os.scandir(paths.RUN_DIR):
-            if LOG_RE.match(entry.name) and entry.name not in exclude_names:
+            if LOG_RE.match(entry.name):
                 if best is None or entry.stat().st_mtime > best[0]:
                     best = (entry.stat().st_mtime, entry.name)
     except OSError:

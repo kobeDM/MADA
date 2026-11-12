@@ -11,7 +11,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import mada_client_files as files
 import mada_client_ops as ops
-import mada_client_paths as paths
 import mada_client_state as state
 from mada_client_errors import ApiError
 
@@ -108,7 +107,7 @@ def create_app(settings):
         return files.read_log(current_log_name(), offset, max_bytes)
 
     def current_log_name():
-        _, pid, run_state = state.current_phase()
+        run_state = state.current_phase()[2]
         if run_state and run_state.get('run') is not None and run_state.get('period') is not None:
             return f"{run_state['run']}_{int(run_state['period']):04d}.log"
         return files.newest_log()
