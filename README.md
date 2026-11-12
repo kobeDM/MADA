@@ -12,6 +12,9 @@ This branch is tuned for GigaIwaki v3.1.
 | `bin/` | Install destination for built executables (gitignored) |
 | `build/` | CMake build directory (gitignored) |
 | `scripts/` | Python scripts for operation and automation |
+| `client/` | DAQ client: HTTP API on the DAQ PC for the web server, and its simulator and tests (see "DAQ client") |
+| `tests/` | Tests of the scaler control (`python3 -m pytest tests`) |
+| `docs/` | Manuals, update notes, verification records and the client/server specifications (`docs/INDEX.md`) |
 | `config/` | Config file templates, DAC files, DAC setting logs (`DAClog/`) |
 | `setup.sh` | Sets environment variables and `PATH` |
 
@@ -26,6 +29,8 @@ This branch is tuned for GigaIwaki v3.1.
 ```bash
 pip install psutil influxdb
 ```
+
+The DAQ client (`client/`) needs more packages; see "DAQ client" below.
 
 ## Setup
 
@@ -116,6 +121,8 @@ For each entry under `gigaIwaki`, set:
 | `mada_sci.py` | the SCI mode: one `AdalmAnalogIn` process per file (start, check, stop) |
 | `mada_scan.py`, `mada_scan_session.py`, `mada_scan_board.py`, `mada_scan_tools.py`, `mada_scan_progress.py`, `mada_scan_replot.py` | DAC/Vth scan: entry point, session (power, DAQ enable, parallel boards), one board's correction, scan binaries, progress bars, redo of the fits |
 | `mada_run_logger.py` | `perNNNN/` directories, `.info` files, rate log |
+| `mada_run_state.py` | `run/mada_run.json`, `mada_progress.json`, `mada_last_exit.json`: what the DAQ is doing and why it stopped, for the LV-reset monitor and the DAQ client |
+| `mada_scaler.py` | the scaler (`runScaler` on the Zybo): start per period over ssh, check after every file, stop |
 | `mada_config.py` / `mada_adalm_roles.py` | config access and validation / ADALM roles and DIO masks |
 | `mada_adalm_runner.py` / `mada_adalm_control.py` | run `AdalmControl` with lock and timeout / its command line |
 | `mada_process.py` | find and stop processes by program name |
