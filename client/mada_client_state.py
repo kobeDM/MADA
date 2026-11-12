@@ -82,12 +82,13 @@ def _daq_info(pid, state, record):
     info = {'pid': pid, 'run': None, 'period': None, 'file_id': None, 'valid_files': None,
             'file_num': None, 'event_num': None, 'sci': None, 'started_at': None,
             'file_started_at': None, 'stop_requested_at': stop['at'] if stop else None,
+            'stop_mode': stop.get('mode', 'force') if stop else None,
             'boards': []}
     if start:
         info.update({k: start[k] for k in ('run', 'file_num', 'event_num', 'sci')})
         info['started_at'] = start['started_at']
     if state:
-        info.update({k: state[k] for k in info if k in state and k not in ('pid', 'stop_requested_at')})
+        info.update({k: state[k] for k in info if k in state and k not in ('pid', 'stop_requested_at', 'stop_mode')})
     return info
 
 
@@ -145,8 +146,10 @@ def build_progress():
     now = time.time()
     empty = {'time': now, 'stale': False, 'file_id': None, 'event_num': None, 'boards': {}, 'lagging': []}
     phase, pid, _ = current_phase()
+    stop = load_record().get('stop') or {}
+    soft_pending = phase == 'stopping' and stop.get('pid') == pid and stop.get('mode') == 'soft'
     progress = read_json(mada_run_state.PROGRESS_PATH)
-    if phase != 'running' or not progress or progress.get('pid') != pid:
+    if (phase != 'running' and not soft_pending) or not progress or progress.get('pid') != pid:
         return empty
     return {'time': progress['time'], 'stale': now - progress['time'] > STALE_SEC,
             'file_id': progress['file_id'], 'event_num': progress['event_num'],

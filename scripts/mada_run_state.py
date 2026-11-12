@@ -7,6 +7,7 @@ records to the period's warning log, and the DAQ client):
   mada_run.json       where the DAQ is writing (period directory, file number, ...)
   mada_progress.json  events stored per board in the file being acquired
   mada_last_exit.json why the last DAQ run ended
+  mada_stop_request.json  soft stop asked for by the DAQ client (read by the DAQ)
 """
 
 import json
@@ -22,6 +23,7 @@ MADAHOME = os.environ['MADAHOME']
 STATE_PATH = MADAHOME + '/run/mada_run.json'
 PROGRESS_PATH = MADAHOME + '/run/mada_progress.json'
 LAST_EXIT_PATH = MADAHOME + '/run/mada_last_exit.json'
+STOP_REQUEST_PATH = MADAHOME + '/run/mada_stop_request.json'
 
 _context = {'period': None}  # period the DAQ is in, for the exit record
 
@@ -73,6 +75,20 @@ def clear_progress():
 def clear_run_state():
     _remove(STATE_PATH)
     clear_progress()
+
+
+def clear_stop_request():
+    _remove(STOP_REQUEST_PATH)
+
+
+def soft_stop_requested():
+    """True when the client asked this DAQ to stop after the current file."""
+    try:
+        with open(STOP_REQUEST_PATH) as f:
+            request = json.load(f)
+    except (OSError, ValueError):
+        return False
+    return request.get('pid') == os.getpid() and request.get('mode') == 'soft'
 
 
 def clear_last_exit():

@@ -4,6 +4,7 @@ import time
 from fastapi.testclient import TestClient
 
 import mada_client_files
+import mada_client_ops
 from conftest import HOME, make_run
 
 
@@ -202,3 +203,56 @@ def test_scaler_state(client):
     api.post('/api/v1/daq/stop')
     wait_phase(api, 'idle')
     assert api.get('/api/v1/status').json()['monitor']['scaler']['state'] == 'stopped'
+
+
+def test_soft_stop(client):
+    api, settings = client
+    make_run('runA')
+    mada_client_files.clear_cache()
+    settings.sim_env['MADA_SIM_FILE_SEC'] = '2.0'
+    api.post('/api/v1/daq/start', json={'run': 'runA', 'file_num': 50, 'event_num': 1000})
+    wait_phase(api, 'running')
+    deadline = time.time() + 5
+    while time.time() < deadline and not api.get('/api/v1/progress').json()['boards']:
+        time.sleep(0.1)
+    assert api.post('/api/v1/daq/stop/soft').json() == {'phase': 'stopping'}
+    daq = api.get('/api/v1/status').json()['daq']
+    assert daq['stop_mode'] == 'soft' and daq['stop_requested_at'] is not None
+    assert api.post('/api/v1/daq/stop/soft').json() == {'phase': 'stopping'}
+    final = wait_phase(api, 'idle')
+    assert final['last_exit']['reason'] == 'stopped'
+    files = api.get('/api/v1/runs/runA/periods/1/files').json()['files']
+    assert len(files) == 1 and files[0]['valid']
+
+
+def test_force_stop_refused_between_files(client, monkeypatch):
+    api, _ = client
+    make_run('runA')
+    mada_client_files.clear_cache()
+    api.post('/api/v1/daq/start', json={'run': 'runA', 'file_num': 50, 'event_num': 1000})
+    wait_phase(api, 'running')
+    monkeypatch.setattr(mada_client_ops, '_file_in_progress', lambda pid: False)
+    resp = api.post('/api/v1/daq/stop')
+    assert resp.status_code == 409 and resp.json()['error']['code'] == 'busy_file_update'
+    assert api.get('/api/v1/status').json()['phase'] == 'running'
+    monkeypatch.undo()
+    api.post('/api/v1/daq/stop')
+    wait_phase(api, 'idle')
+
+
+def test_progress_while_stopping(client):
+    api, settings = client
+    make_run('runA')
+    mada_client_files.clear_cache()
+    settings.sim_env['MADA_SIM_FILE_SEC'] = '3.0'
+    api.post('/api/v1/daq/start', json={'run': 'runA', 'file_num': 50, 'event_num': 1000})
+    wait_phase(api, 'running')
+    deadline = time.time() + 5
+    while time.time() < deadline and not api.get('/api/v1/progress').json()['boards']:
+        time.sleep(0.1)
+    api.post('/api/v1/daq/stop/soft')
+    assert api.get('/api/v1/status').json()['phase'] == 'stopping'
+    assert api.get('/api/v1/progress').json()['boards']
+    api.post('/api/v1/daq/stop')
+    assert api.get('/api/v1/progress').json()['boards'] == {}
+    wait_phase(api, 'idle')

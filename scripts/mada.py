@@ -10,7 +10,7 @@ from mada_daq_session import run_daq
 from mada_errors import MadaError
 from mada_run_logger import RunLogger
 from mada_scaler import ScalerRunner, ScalerError
-from mada_run_state import set_period, clear_last_exit, write_last_exit
+from mada_run_state import set_period, clear_last_exit, clear_stop_request, write_last_exit
 
 
 def print_header():
@@ -77,6 +77,7 @@ def main():
         print('SCI mode : ADALM ' + sci['S/N'])
 
     clear_last_exit()
+    clear_stop_request()
     try:
         run_daq(config_path, file_num, event_num, first_period, args.daemon, calin, sci)
     except KeyboardInterrupt:

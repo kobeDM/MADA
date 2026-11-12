@@ -86,6 +86,10 @@ def create_app(settings):
     def daq_stop(request: Request):
         return {'phase': ops.stop_daq(request.client.host)}
 
+    @app.post(API + '/daq/stop/soft', status_code=202, dependencies=auth)
+    def daq_stop_soft(request: Request):
+        return {'phase': ops.stop_daq(request.client.host, soft=True)}
+
     @app.get(API + '/runs', dependencies=auth)
     def runs():
         return {'runs': files.list_runs(settings)}

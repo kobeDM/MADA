@@ -16,3 +16,4 @@
 - [2026-10-30.md](2026-10-30.md) — SCIモード(mada.py --sci): 別のADALMのアナログ入力でPMTのNIMパルスとDAQトリガーの時間差を記録(AdalmAnalogIn、configのSCIセクション、SciDt.cxxでクロック分布)
 - [2026-11-08.md](2026-11-08.md) — 読み出し失敗ファイルを無効として残し全ボードでやり直す、recv_wait を廃止してボード間遅れ検出 (board_lag) に置換、recv 失敗の errno 記録
 - [2026-11-12.md](2026-11-12.md) — スケーラー(ZYBOのrunScaler)をsshでperiodごとに起動・停止しDAQに組み込む(起動前検査、各ファイル後の行数確認、失敗時のDAQ停止、状態ファイルとクライアントのmonitor.scaler)
+- [2026-11-13.md](2026-11-13.md) — soft 停止(POST /daq/stop/soft)の追加と、ファイル更新中の force 停止の拒否(busy_file_update)

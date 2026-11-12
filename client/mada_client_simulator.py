@@ -22,8 +22,8 @@ from mada_daemon import daemonize, install_sigterm_handler, remove_pidfile, run_
 from mada_errors import MadaError
 from mada_run_logger import RunLogger
 from mada_scaler import STATE_PATH as SCALER_STATE_PATH
-from mada_run_state import (clear_last_exit, clear_progress, clear_run_state, publish_progress,
-                            publish_run_state, set_period, write_json, write_last_exit)
+from mada_run_state import (clear_last_exit, clear_progress, clear_run_state, clear_stop_request, publish_progress,
+                            publish_run_state, set_period, soft_stop_requested, write_json, write_last_exit)
 from mada_warning_log import WARNING_LOG_NAME, append_warning, event_message
 
 STEP = 0.25  # sec between progress updates
@@ -118,6 +118,8 @@ def run_simulation(args, boards, first_period):
             write_info(period_dir, file_id, boards, start, end, counts, invalid)
             valid += 0 if invalid else 1
             taken += 1
+            if soft_stop_requested():
+                raise KeyboardInterrupt
         write_scaler_state('stopped', period)
         period = RunLogger.new_period()
 
@@ -131,6 +133,7 @@ def main():
         daemonize(first_period)
     install_sigterm_handler()
     clear_last_exit()
+    clear_stop_request()
     print(f'Simulated DAQ with {len(boards)} boards')
     try:
         run_simulation(args, boards, first_period)

@@ -13,6 +13,7 @@ import time
 import mada_client_paths as paths
 import mada_client_files as files
 import mada_client_state as state
+import mada_run_state
 from mada_client_config import RUN_PATTERN
 from mada_client_errors import ApiError
 
@@ -119,17 +120,42 @@ def start_daq(settings, request, remote):
     return 'starting'
 
 
-def stop_daq(remote):
-    """Send SIGTERM to the DAQ; returns the new phase."""
+def _file_in_progress(pid):
+    """True while the DAQ is acquiring a file (DAQ enable up, progress being
+    published); False while it prepares or closes one."""
+    run_state = mada_run_state.read_run_state()
+    if not run_state or run_state.get('pid') != pid:
+        return True  # not in the file loop yet; nothing to protect
+    progress = state.read_json(mada_run_state.PROGRESS_PATH)
+    return (run_state.get('file_started_at') is not None
+            and bool(progress) and progress.get('pid') == pid)
+
+
+def stop_daq(remote, soft=False):
+    """Stop the DAQ; returns the new phase. soft: after the current file;
+    otherwise SIGTERM (the shutdown of Ctrl+C), refused while mada.py handles
+    the ADALM between files."""
+    action = 'stop_soft' if soft else 'stop'
     with _lock:
-        phase, pid, _ = state.current_phase()
+        phase, pid, run_state = state.current_phase()
         if pid is None:
-            log_operation(remote, 'stop', {}, '409 not_running')
+            log_operation(remote, action, {}, '409 not_running')
             raise ApiError(409, 'not_running', 'the DAQ is not running')
-        if phase != 'stopping':
-            record = state.load_record()
-            record['stop'] = {'pid': pid, 'at': time.time()}
-            state.save_record(record)
+        record = state.load_record()
+        previous = record.get('stop') if (record.get('stop') or {}).get('pid') == pid else None
+        if phase == 'stopping' and (soft or previous.get('mode', 'force') == 'force'):
+            return 'stopping'
+        if soft and phase == 'running':
+            mada_run_state.write_json(mada_run_state.STOP_REQUEST_PATH,
+                                      {'pid': pid, 'mode': 'soft', 'time': time.time()})
+            record['stop'] = {'pid': pid, 'at': time.time(), 'mode': 'soft'}
+        else:
+            if phase == 'running' and not _file_in_progress(pid):
+                log_operation(remote, action, {'pid': pid}, '409 busy_file_update')
+                raise ApiError(409, 'busy_file_update',
+                               'the DAQ is preparing or closing a file; retry in a few seconds')
+            record['stop'] = {'pid': pid, 'at': previous['at'] if previous else time.time(), 'mode': 'force'}
             os.kill(pid, signal.SIGTERM)
-            log_operation(remote, 'stop', {'pid': pid}, 'ok')
+        state.save_record(record)
+        log_operation(remote, action, {'pid': pid}, 'ok')
     return 'stopping'

@@ -15,7 +15,7 @@ from mada_gigaiwaki import start_readers, kill_readers, ReaderExitError
 from mada_progress import ProgressMonitor
 from mada_run_logger import RunLogger
 from mada_scaler import ScalerError
-from mada_run_state import publish_run_state, publish_progress, clear_progress
+from mada_run_state import publish_run_state, publish_progress, clear_progress, soft_stop_requested
 from mada_warning_log import event_message
 from mada_sci import SciRecorder
 from mada_software_veto import veto_failed
@@ -136,6 +136,9 @@ def run_period(config_path, period_id, file_num, event_num, boards, roles, sci=N
             if invalid_in_row >= MAX_INVALID_IN_ROW:
                 raise MadaError(f'{invalid_in_row} invalid files in a row; stopping')
         file_id += 1
+        if soft_stop_requested():
+            print('Soft stop requested; stopping after this file.')
+            raise KeyboardInterrupt
 
     if scaler and not (scaler.stop() or scaler.stop()):
         raise ScalerError('could not stop the scaler of the finished period; stopping')
